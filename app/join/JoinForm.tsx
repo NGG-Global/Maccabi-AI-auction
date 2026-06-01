@@ -3,10 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-interface Props {
-  eventId: string
-  eventSlug: string
-}
+interface Props { eventId: string; eventSlug: string }
 
 export default function JoinForm({ eventId }: Props) {
   const router = useRouter()
@@ -18,64 +15,41 @@ export default function JoinForm({ eventId }: Props) {
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
-
     setLoading(true)
     setError(null)
-
     try {
       const res = await fetch('/api/participant/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ eventId, displayName: trimmed }),
       })
       const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error ?? 'שגיאה בהרשמה, נסו שוב')
-        return
-      }
-
-      // Persist session token in localStorage
+      if (!res.ok) { setError(data.error ?? 'שגיאה בהרשמה'); return }
       localStorage.setItem('auction_session_token', data.sessionToken)
       localStorage.setItem('auction_participant_id', data.participantId)
-
       router.push('/play')
-    } catch {
-      setError('שגיאת רשת. נסו שוב.')
-    } finally {
-      setLoading(false)
-    }
+    } catch { setError('שגיאת רשת. נסו שוב.') }
+    finally { setLoading(false) }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1 text-right">
-          שם התצוגה שלך
-        </label>
-        <input
-          id="name"
-          type="text"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="הכנס שם..."
-          maxLength={40}
-          required
-          disabled={loading}
-          className="w-full border border-gray-300 rounded-xl px-4 py-3 text-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-        />
-      </div>
-
-      {error && (
-        <p className="text-red-600 text-sm">{error}</p>
-      )}
-
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <input
+        type="text"
+        value={name}
+        onChange={e => setName(e.target.value)}
+        placeholder="השם שלך"
+        maxLength={40}
+        required
+        disabled={loading}
+        className="w-full bg-slate-800 border-2 border-slate-700 focus:border-amber-500 rounded-2xl px-5 py-4 text-xl font-bold text-center text-white focus:outline-none transition-colors placeholder:text-slate-600 disabled:opacity-50"
+      />
+      {error && <p className="text-red-400 text-sm text-center animate-slide-in-up">{error}</p>}
       <button
         type="submit"
         disabled={loading || !name.trim()}
-        className="w-full bg-blue-700 text-white rounded-xl py-4 text-lg font-bold hover:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-30 text-slate-900 rounded-2xl py-4 text-xl font-black transition-all active:scale-95 shadow-lg shadow-amber-500/20"
       >
-        {loading ? 'נרשם...' : 'כניסה למשחק'}
+        {loading ? 'נרשם...' : 'כניסה למשחק 🚀'}
       </button>
     </form>
   )

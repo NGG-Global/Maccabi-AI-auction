@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import type { Event, AuctionRound, Trait, Bid, Participant } from '@/lib/types'
 
@@ -10,21 +10,42 @@ interface Props {
   initialRound: AuctionRound | null
 }
 
-interface BidWithParticipant extends Bid {
+interface BidRow extends Bid {
   participant: Participant
 }
 
 export default function AdminDashboard({ event, traits, initialRound }: Props) {
   const [currentRound, setCurrentRound] = useState<AuctionRound | null>(initialRound)
-  const [bids, setBids] = useState<BidWithParticipant[]>([])
-  const [selectedTraitId, setSelectedTraitId] = useState<string>('')
+  const [bids, setBids] = useState<BidRow[]>([])
+  const [selectedTraitId, setSelectedTraitId] = useState('')
   const [participantCount, setParticipantCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-
+  const [confirmClose, setConfirmClose] = useState(false)
+  const [elapsed, setElapsed] = useState('0:00')
+  const [roundNumber, setRoundNumber] = useState(0)
   const supabase = createClient()
+  // Store traits state locally so we can update is_used without page refresh
+  const [localTraits, setLocalTraits] = useState<Trait[]>(traits)
 
-  const unusedTraits = traits.filter(t => !t.is_used)
+  const unusedTraits = localTraits.filter(t => !t.is_used)
+
+  /* ── timer ── */
+  useEffect(() => {
+    if (!currentRound?.opened_at || currentRound.status !== 'open') {
+      setElapsed('0:00')
+      return
+    }
+    const tick = () => {
+      const diff = Date.now() - new Date(currentRound.opened_at!).getTime()
+      const m = Math.floor(diff / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      setElapsed(`${m}:${s.toString().padStart(2, '0')}`)
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [currentRound?.opened_at, currentRound?.status])
 
   const fetchBids = useCallback(async (roundId: string) => {
     const { data } = await supabase
@@ -32,7 +53,7 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
       .select('*, participant:participants(*)')
       .eq('round_id', roundId)
       .order('amount', { ascending: false })
-    setBids((data ?? []) as BidWithParticipant[])
+    setBids((data ?? []) as BidRow[])
   }, [supabase])
 
   const fetchParticipantCount = useCallback(async () => {
@@ -41,6 +62,15 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
       .select('*', { count: 'exact', head: true })
       .eq('event_id', event.id)
     setParticipantCount(count ?? 0)
+  }, [supabase, event.id])
+
+  const fetchRoundNumber = useCallback(async () => {
+    const { count } = await supabase
+      .from('auction_rounds')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_id', event.id)
+      .in('status', ['open', 'closed'])
+    setRoundNumber(count ?? 0)
   }, [supabase, event.id])
 
   const refreshRound = useCallback(async () => {
@@ -54,10 +84,12 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
     const round = (rounds?.[0] ?? null) as AuctionRound | null
     setCurrentRound(round)
     if (round) fetchBids(round.id)
-  }, [supabase, event.id, fetchBids])
+    fetchRoundNumber()
+  }, [supabase, event.id, fetchBids, fetchRoundNumber])
 
   useEffect(() => {
     fetchParticipantCount()
+    fetchRoundNumber()
     if (initialRound) fetchBids(initialRound.id)
 
     const channel = supabase
@@ -65,28 +97,24 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, () => {
         if (currentRound) fetchBids(currentRound.id)
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds' }, () => {
-        refreshRound()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants' }, () => {
-        fetchParticipantCount()
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds' }, refreshRound)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants' }, fetchParticipantCount)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'traits' }, async () => {
+        const { data } = await supabase.from('traits').select('*').eq('event_id', event.id).order('sort_order')
+        if (data) setLocalTraits(data as Trait[])
       })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function showMessage(type: 'success' | 'error', text: string) {
+  function showMsg(type: 'success' | 'error', text: string) {
     setMessage({ type, text })
     setTimeout(() => setMessage(null), 4000)
   }
 
   async function handleOpenRound() {
     if (!selectedTraitId) return
-    if (currentRound?.status === 'open') {
-      showMessage('error', 'יש סבב פתוח כבר. סגרו אותו קודם.')
-      return
-    }
     setLoading(true)
     try {
       const res = await fetch('/api/admin/open-round', {
@@ -95,24 +123,18 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
         body: JSON.stringify({ eventId: event.id, traitId: selectedTraitId }),
       })
       const data = await res.json()
-      if (!res.ok) {
-        showMessage('error', data.error ?? 'שגיאה בפתיחת הסבב')
-      } else {
-        showMessage('success', 'הסבב נפתח!')
-        setSelectedTraitId('')
-        refreshRound()
-      }
-    } catch {
-      showMessage('error', 'שגיאת רשת')
-    } finally {
-      setLoading(false)
-    }
+      if (!res.ok) { showMsg('error', data.error ?? 'שגיאה'); return }
+      showMsg('success', 'הסבב נפתח!')
+      setSelectedTraitId('')
+      await refreshRound()
+    } catch { showMsg('error', 'שגיאת רשת') }
+    finally { setLoading(false) }
   }
 
   async function handleCloseRound() {
     if (!currentRound || currentRound.status !== 'open') return
-    if (!confirm('לסגור את הסבב? כל המשתתפים ייחויבו.')) return
     setLoading(true)
+    setConfirmClose(false)
     try {
       const res = await fetch('/api/admin/close-round', {
         method: 'POST',
@@ -120,17 +142,11 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
         body: JSON.stringify({ roundId: currentRound.id }),
       })
       const data = await res.json()
-      if (!res.ok) {
-        showMessage('error', data.error ?? 'שגיאה בסגירת הסבב')
-      } else {
-        showMessage('success', `הסבב נסגר! זוכה: ${data.winnerId ? 'יש זוכה' : 'אין הצעות'}`)
-        refreshRound()
-      }
-    } catch {
-      showMessage('error', 'שגיאת רשת')
-    } finally {
-      setLoading(false)
-    }
+      if (!res.ok) { showMsg('error', data.error ?? 'שגיאה'); return }
+      showMsg('success', `הסבב נסגר!`)
+      await refreshRound()
+    } catch { showMsg('error', 'שגיאת רשת') }
+    finally { setLoading(false) }
   }
 
   async function handleReset() {
@@ -142,173 +158,322 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ eventId: event.id }),
       })
-      if (!res.ok) {
-        showMessage('error', 'שגיאה באיפוס')
-      } else {
-        showMessage('success', 'האירוע אופס בהצלחה')
-        setCurrentRound(null)
-        setBids([])
-        refreshRound()
-        fetchParticipantCount()
-      }
-    } catch {
-      showMessage('error', 'שגיאת רשת')
-    } finally {
-      setLoading(false)
-    }
+      if (!res.ok) { showMsg('error', 'שגיאה באיפוס'); return }
+      showMsg('success', 'האירוע אופס')
+      setCurrentRound(null)
+      setBids([])
+      await refreshRound()
+      await fetchParticipantCount()
+    } catch { showMsg('error', 'שגיאת רשת') }
+    finally { setLoading(false) }
   }
 
+  const leader = bids[0] ?? null
+  const highestBid = leader?.amount ?? 0
   const avgBid = bids.length > 0 ? Math.round(bids.reduce((s, b) => s + b.amount, 0) / bids.length) : 0
   const totalBid = bids.reduce((s, b) => s + b.amount, 0)
+  const isOpen = currentRound?.status === 'open'
+  const isClosed = currentRound?.status === 'closed'
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="bg-gray-900 text-white rounded-2xl p-6 mb-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">לוח בקרה — מנהל</h1>
-            <p className="text-gray-400 text-sm mt-1">{event.name}</p>
-          </div>
-          <div className="text-left">
-            <p className="text-gray-400 text-xs">משתתפים</p>
-            <p className="text-3xl font-bold">{participantCount}</p>
-          </div>
+    <main className="min-h-screen bg-slate-950 flex overflow-hidden" style={{ fontFamily: 'var(--font-heebo), Arial, sans-serif' }}>
+
+      {/* ── Left: Admin Controls ────────────────────────────── */}
+      <aside className="w-72 shrink-0 bg-slate-900 border-l border-white/10 flex flex-col gap-4 p-5 overflow-y-auto">
+
+        {/* Branding */}
+        <div className="text-center pb-3 border-b border-white/10">
+          <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">מכירה פומבית</p>
+          <p className="text-slate-300 font-semibold text-sm truncate">{event.name}</p>
         </div>
 
+        {/* Status */}
+        <div className={`rounded-xl px-4 py-3 text-center text-sm font-bold ${
+          isOpen ? 'bg-green-500/15 text-green-400 border border-green-500/30' :
+          isClosed ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+          'bg-slate-800 text-slate-400'
+        }`}>
+          {isOpen ? '🟢 סבב פתוח' : isClosed ? '🟡 סבב נסגר' : '⚪ ממתין'}
+        </div>
+
+        {/* Toast */}
         {message && (
-          <div className={`rounded-xl p-4 mb-4 font-semibold text-center ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          <div className={`rounded-xl px-4 py-3 text-sm font-medium animate-slide-in-up text-center ${
+            message.type === 'success' ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'
+          }`}>
             {message.text}
           </div>
         )}
 
-        {/* Round status */}
-        <div className="bg-white rounded-2xl p-6 mb-4 shadow">
-          <h2 className="text-lg font-bold text-gray-700 mb-4">סטטוס סבב נוכחי</h2>
+        {/* Open round */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs text-slate-400 font-medium">תכונה לסבב הבא</label>
+          <select
+            value={selectedTraitId}
+            onChange={e => setSelectedTraitId(e.target.value)}
+            disabled={loading || isOpen}
+            className="bg-slate-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 disabled:opacity-40 w-full"
+          >
+            <option value="">— בחר תכונה —</option>
+            {unusedTraits.map(t => (
+              <option key={t.id} value={t.id}>{t.title}</option>
+            ))}
+          </select>
 
-          {!currentRound && (
-            <p className="text-gray-400">אין סבב פעיל כרגע.</p>
-          )}
-
-          {currentRound && (
-            <div className="flex gap-4 items-start flex-wrap">
-              <div className="flex-1">
-                <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold mb-2 ${
-                  currentRound.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {currentRound.status === 'open' ? 'פתוח' : 'סגור'}
-                </span>
-                <p className="font-bold text-xl">{currentRound.trait?.title}</p>
-                <p className="text-gray-500 text-sm">{currentRound.trait?.description}</p>
-
-                {currentRound.status === 'closed' && currentRound.winner && (
-                  <div className="mt-3 bg-yellow-50 border border-yellow-300 rounded-xl p-3">
-                    <p className="font-bold text-yellow-800">🏆 זוכה: {(currentRound.winner as Participant).display_name}</p>
-                    <p className="text-yellow-700 text-sm">הצעה: {currentRound.winning_bid_amount} מטבעות</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="text-left text-sm text-gray-500 space-y-1">
-                <p>הצעות: <span className="font-bold text-gray-800">{bids.length}</span></p>
-                <p>גבוה ביותר: <span className="font-bold text-gray-800">{bids[0]?.amount ?? 0}</span></p>
-                <p>ממוצע: <span className="font-bold text-gray-800">{avgBid}</span></p>
-                <p>סה"כ הוצאה: <span className="font-bold text-gray-800">{totalBid}</span></p>
-              </div>
-            </div>
-          )}
+          <button
+            onClick={handleOpenRound}
+            disabled={loading || !selectedTraitId || isOpen}
+            className="bg-green-600 hover:bg-green-500 disabled:opacity-30 text-white rounded-xl py-3 font-bold text-sm transition-all active:scale-95 w-full"
+          >
+            {loading && !isOpen ? 'פותח...' : '▶ פתח סבב'}
+          </button>
         </div>
 
-        {/* Controls */}
-        <div className="bg-white rounded-2xl p-6 mb-4 shadow">
-          <h2 className="text-lg font-bold text-gray-700 mb-4">בקרת סבב</h2>
-
-          <div className="flex gap-3 flex-wrap mb-4">
-            <select
-              value={selectedTraitId}
-              onChange={e => setSelectedTraitId(e.target.value)}
-              disabled={loading || currentRound?.status === 'open'}
-              className="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              <option value="">בחר תכונה לסבב הבא</option>
-              {unusedTraits.map(t => (
-                <option key={t.id} value={t.id}>{t.title}</option>
-              ))}
-            </select>
-
-            <button
-              onClick={handleOpenRound}
-              disabled={loading || !selectedTraitId || currentRound?.status === 'open'}
-              className="bg-green-600 text-white rounded-xl px-6 py-3 font-bold hover:bg-green-700 disabled:opacity-50"
-            >
-              פתח סבב
-            </button>
-          </div>
-
-          {currentRound?.status === 'open' && (
-            <button
-              onClick={handleCloseRound}
-              disabled={loading}
-              className="w-full bg-red-600 text-white rounded-xl py-4 text-lg font-bold hover:bg-red-700 disabled:opacity-50"
-            >
-              {loading ? 'סוגר...' : '⏹ סגור סבב וחשב תוצאות'}
-            </button>
-          )}
-        </div>
-
-        {/* Bids table */}
-        {bids.length > 0 && (
-          <div className="bg-white rounded-2xl p-6 mb-4 shadow">
-            <h2 className="text-lg font-bold text-gray-700 mb-4">הצעות ({bids.length})</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-gray-400 border-b">
-                    <th className="text-right pb-2">משתתף</th>
-                    <th className="text-right pb-2">הצעה</th>
-                    <th className="text-right pb-2">זמן עדכון</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bids.map((bid, i) => (
-                    <tr key={bid.id} className={`border-b ${i === 0 ? 'bg-yellow-50 font-bold' : ''}`}>
-                      <td className="py-2">{bid.participant?.display_name}</td>
-                      <td className="py-2">{bid.amount} 🪙</td>
-                      <td className="py-2 text-gray-400 text-xs">
-                        {new Date(bid.updated_at).toLocaleTimeString('he-IL')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        {/* Close round */}
+        {isOpen && (
+          <div className="flex flex-col gap-2">
+            {!confirmClose ? (
+              <button
+                onClick={() => setConfirmClose(true)}
+                disabled={loading}
+                className="bg-red-600/80 hover:bg-red-500 disabled:opacity-30 text-white rounded-xl py-3 font-bold text-sm transition-all active:scale-95 w-full border border-red-500/50"
+              >
+                ⏹ סגור סבב
+              </button>
+            ) : (
+              <div className="flex flex-col gap-2 animate-scale-in">
+                <p className="text-xs text-red-400 text-center">בטוח לסגור? כל המציעים ייחויבו.</p>
+                <div className="flex gap-2">
+                  <button onClick={() => setConfirmClose(false)} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-2.5 text-sm font-medium transition-all">
+                    ביטול
+                  </button>
+                  <button onClick={handleCloseRound} disabled={loading} className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded-xl py-2.5 text-sm font-bold transition-all">
+                    {loading ? '...' : 'אשר'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Traits list */}
-        <div className="bg-white rounded-2xl p-6 mb-4 shadow">
-          <h2 className="text-lg font-bold text-gray-700 mb-4">תכונות ({traits.length})</h2>
-          <div className="grid gap-2">
-            {traits.map(t => (
-              <div key={t.id} className={`flex justify-between items-center p-3 rounded-xl ${t.is_used ? 'bg-gray-100 text-gray-400' : 'bg-blue-50'}`}>
-                <span className={t.is_used ? 'line-through' : 'font-medium'}>{t.title}</span>
-                {t.is_used && <span className="text-xs text-gray-400">שימש</span>}
+        {/* Divider */}
+        <div className="border-t border-white/10" />
+
+        {/* Quick stats */}
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: 'משתתפים', value: participantCount },
+            { label: 'מציעים', value: bids.length },
+            { label: 'הגבוה', value: highestBid || '—' },
+            { label: 'ממוצע', value: avgBid || '—' },
+          ].map(s => (
+            <div key={s.label} className="bg-slate-800/60 rounded-xl p-3 text-center">
+              <p className="text-[10px] text-slate-500 uppercase tracking-wide">{s.label}</p>
+              <p className="text-lg font-bold text-white mt-0.5">{s.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Traits used */}
+        <div>
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">תכונות</p>
+          <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+            {localTraits.map(t => (
+              <div key={t.id} className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs transition-all ${
+                t.is_used ? 'bg-slate-800/30 text-slate-600' : 'bg-slate-800/60 text-slate-300'
+              }`}>
+                <span className={t.is_used ? 'line-through' : ''}>{t.title}</span>
+                {t.is_used && <span className="text-slate-600">✓</span>}
               </div>
             ))}
           </div>
         </div>
 
         {/* Reset */}
-        <div className="bg-white rounded-2xl p-6 shadow border border-red-200">
-          <h2 className="text-lg font-bold text-red-700 mb-2">איפוס לחזרה</h2>
-          <p className="text-gray-500 text-sm mb-4">מחיקת כל המשתתפים, הצעות וסבבים. לשימוש לפני האירוע האמיתי.</p>
+        <div className="mt-auto pt-4 border-t border-white/10">
           <button
             onClick={handleReset}
             disabled={loading}
-            className="bg-red-600 text-white rounded-xl px-6 py-3 font-bold hover:bg-red-700 disabled:opacity-50"
+            className="w-full bg-transparent hover:bg-red-900/30 border border-red-900/50 text-red-500 hover:text-red-400 rounded-xl py-2.5 text-xs font-medium transition-all"
           >
-            אפס אירוע
+            🗑 אפס אירוע (לחזרות)
           </button>
+        </div>
+      </aside>
+
+      {/* ── Right: Stage / Audience Display ────────────────── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+
+        {/* Header bar */}
+        <header className="flex items-center justify-between px-8 py-4 border-b border-white/10 bg-slate-900/50">
+          <div className="flex items-center gap-3">
+            {isOpen && (
+              <span className="flex items-center gap-2 bg-red-500/20 border border-red-500/40 rounded-full px-3 py-1">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-live-dot" />
+                <span className="text-red-400 text-xs font-bold uppercase tracking-widest">LIVE</span>
+              </span>
+            )}
+            {roundNumber > 0 && (
+              <span className="text-slate-400 text-sm">סבב {roundNumber}</span>
+            )}
+          </div>
+
+          <h1 className="text-slate-300 font-semibold text-lg">{event.name}</h1>
+
+          <div className="flex items-center gap-4 text-sm text-slate-400">
+            {isOpen && (
+              <span className="tabular-nums font-mono text-amber-400 font-bold">{elapsed}</span>
+            )}
+            <span>{participantCount} משתתפים</span>
+          </div>
+        </header>
+
+        {/* Main stage */}
+        <div className="flex-1 flex flex-col lg:flex-row gap-6 p-8 overflow-y-auto">
+
+          {/* ── Trait + Leader (left-ish column on wide screens) ── */}
+          <div className="flex-1 flex flex-col gap-6">
+
+            {/* No round */}
+            {!currentRound && (
+              <div className="flex-1 flex flex-col items-center justify-center gap-6 animate-fade-in">
+                <div className="text-8xl animate-float">🏆</div>
+                <div className="text-center">
+                  <p className="text-4xl font-black text-white mb-2">ממתינים לסבב הבא</p>
+                  <p className="text-slate-500 text-lg">בחרו תכונה ולחצו על &quot;פתח סבב&quot;</p>
+                </div>
+                <div className="bg-slate-800/50 rounded-2xl px-8 py-4 border border-white/10">
+                  <p className="text-slate-400 text-2xl font-bold">{participantCount} <span className="text-slate-500 text-lg font-normal">משתתפים רשומים</span></p>
+                </div>
+              </div>
+            )}
+
+            {/* Current trait card */}
+            {currentRound && (
+              <div
+                key={currentRound.id}
+                className={`rounded-3xl p-8 border animate-scale-in ${
+                  isOpen
+                    ? 'bg-gradient-to-br from-blue-950 to-slate-900 border-blue-500/30'
+                    : 'bg-gradient-to-br from-slate-900 to-slate-950 border-white/10'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
+                    isOpen ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'
+                  }`}>
+                    {isOpen ? 'מתמודדים עכשיו' : 'הסבב הסתיים'}
+                  </span>
+                  {isClosed && currentRound.winning_bid_amount && (
+                    <span className="text-amber-400 font-bold text-sm">זכייה: {currentRound.winning_bid_amount.toLocaleString()} 🪙</span>
+                  )}
+                </div>
+                <h2 className={`font-black mb-3 ${isOpen ? 'text-5xl text-white' : 'text-4xl text-slate-300'}`}>
+                  {currentRound.trait?.title}
+                </h2>
+                <p className="text-slate-400 text-lg leading-relaxed">
+                  {currentRound.trait?.description}
+                </p>
+              </div>
+            )}
+
+            {/* Winner reveal */}
+            {isClosed && currentRound?.winner && (
+              <div
+                key={`winner-${currentRound.id}`}
+                className="rounded-3xl p-8 bg-gradient-to-br from-amber-950 to-slate-900 border-2 border-amber-500/50 animate-winner-reveal animate-pulse-gold"
+              >
+                <p className="text-amber-400 text-sm font-bold uppercase tracking-widest mb-3">👑 הזוכה</p>
+                <p className="text-6xl font-black text-white mb-2 shimmer-gold">
+                  {(currentRound.winner as Participant).display_name}
+                </p>
+                <p className="text-amber-400 text-4xl font-black">
+                  {currentRound.winning_bid_amount?.toLocaleString()} 🪙
+                </p>
+              </div>
+            )}
+
+            {/* Stats row — shown when there are bids */}
+            {bids.length > 0 && (
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { label: 'מציעים', value: bids.length, color: 'text-blue-400' },
+                  { label: 'הצעה גבוהה', value: `${highestBid.toLocaleString()} 🪙`, color: 'text-amber-400' },
+                  { label: 'ממוצע', value: `${avgBid.toLocaleString()} 🪙`, color: 'text-green-400' },
+                ].map(s => (
+                  <div key={s.label} className="glass rounded-2xl p-4 text-center">
+                    <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">{s.label}</p>
+                    <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── Leader Spotlight + Bid Leaderboard ── */}
+          {currentRound && bids.length > 0 && (
+            <div className="lg:w-96 flex flex-col gap-4">
+
+              {/* Leader spotlight */}
+              {leader && (
+                <div
+                  key={`leader-${leader.participant_id}-${leader.amount}`}
+                  className="rounded-3xl p-6 bg-gradient-to-br from-amber-950/80 to-slate-900 border-2 border-amber-400/60 animate-pulse-gold animate-scale-in"
+                >
+                  <p className="text-amber-400/80 text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <span>👑</span> מציע מוביל
+                  </p>
+                  <p className="text-white text-3xl font-black mb-1 truncate">{leader.participant?.display_name}</p>
+                  <p className="text-5xl font-black shimmer-gold">{leader.amount.toLocaleString()}</p>
+                  <p className="text-amber-600 text-sm mt-1">מטבעות</p>
+                </div>
+              )}
+
+              {/* Live bid list */}
+              <div className="glass rounded-3xl overflow-hidden flex-1">
+                <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
+                  <span className="text-slate-400 text-xs uppercase tracking-widest font-bold">טבלת הצעות</span>
+                  {isOpen && <span className="flex items-center gap-1.5 text-xs text-green-400"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-live-dot" />חי</span>}
+                </div>
+                <div className="overflow-y-auto max-h-80">
+                  {bids.map((bid, i) => (
+                    <div
+                      key={`${bid.participant_id}-${bid.amount}`}
+                      className="flex items-center gap-3 px-5 py-3 border-b border-white/5 animate-slide-in-right hover:bg-white/5 transition-colors"
+                      style={{ animationDelay: `${i * 40}ms` }}
+                    >
+                      {/* Rank badge */}
+                      <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
+                        i === 0 ? 'bg-amber-500 text-slate-900' :
+                        i === 1 ? 'bg-slate-400 text-slate-900' :
+                        i === 2 ? 'bg-amber-700 text-white' :
+                        'bg-slate-700 text-slate-300'
+                      }`}>
+                        {i + 1}
+                      </span>
+                      <span className="flex-1 text-white font-medium text-sm truncate">{bid.participant?.display_name}</span>
+                      <span className={`font-black tabular-nums text-sm ${i === 0 ? 'text-amber-400' : 'text-slate-300'}`}>
+                        {bid.amount.toLocaleString()} 🪙
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* No bids yet message when round is open */}
+          {isOpen && bids.length === 0 && (
+            <div className="lg:w-72 flex flex-col items-center justify-center gap-3 animate-fade-in">
+              <div className="glass rounded-3xl p-8 text-center w-full">
+                <p className="text-5xl mb-3 animate-float">⏳</p>
+                <p className="text-slate-400 text-lg font-medium">ממתין להצעות</p>
+                <p className="text-slate-600 text-sm mt-1">המשתתפים ממלאים את הטפסים...</p>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </main>

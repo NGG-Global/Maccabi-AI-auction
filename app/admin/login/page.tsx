@@ -13,30 +13,25 @@ export default function AdminLoginPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
-
     try {
       const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
       })
-      if (!res.ok) {
-        setError('סיסמה שגויה')
-        return
-      }
+      if (!res.ok) { setError('סיסמה שגויה'); return }
       router.push('/admin')
       router.refresh()
-    } catch {
-      setError('שגיאת רשת')
-    } finally {
-      setLoading(false)
-    }
+    } catch { setError('שגיאת רשת') }
+    finally { setLoading(false) }
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
-      <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-xl">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">כניסת מנהל</h1>
+    <main className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
+      <div className="glass rounded-3xl p-8 w-full max-w-sm animate-scale-in">
+        <div className="text-center mb-8">
+          <div className="text-5xl mb-3">🔒</div>
+          <h1 className="text-2xl font-black text-white">כניסת מנהל</h1>
+        </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
             type="password"
@@ -45,15 +40,15 @@ export default function AdminLoginPage() {
             placeholder="סיסמה"
             required
             disabled={loading}
-            className="border border-gray-300 rounded-xl px-4 py-3 text-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="bg-slate-800 border-2 border-slate-700 focus:border-amber-500 rounded-2xl px-5 py-4 text-xl text-center text-white focus:outline-none transition-colors placeholder:text-slate-600 disabled:opacity-50"
           />
-          {error && <p className="text-red-600 text-sm text-center">{error}</p>}
+          {error && <p className="text-red-400 text-sm text-center animate-slide-in-up">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="bg-gray-900 text-white rounded-xl py-3 font-bold hover:bg-gray-700 transition-colors disabled:opacity-50"
+            className="bg-amber-500 hover:bg-amber-400 disabled:opacity-30 text-slate-900 rounded-2xl py-4 font-black text-lg transition-all active:scale-95"
           >
-            {loading ? 'מתחבר...' : 'כניסה'}
+            {loading ? '...' : 'כניסה'}
           </button>
         </form>
       </div>
