@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import type { Event, AuctionRound, Trait, Bid, Participant } from '@/lib/types'
 
@@ -25,11 +25,16 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
   const [confirmReset, setConfirmReset] = useState(false)
   const [elapsed, setElapsed] = useState('0:00')
   const [roundNumber, setRoundNumber] = useState(0)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
+  // Keep a ref to currentRound so realtime callbacks always see the latest value
+  const currentRoundRef = useRef<AuctionRound | null>(initialRound)
   // Store traits state locally so we can update is_used without page refresh
   const [localTraits, setLocalTraits] = useState<Trait[]>(traits)
 
   const unusedTraits = localTraits.filter(t => !t.is_used)
+
+  /* ── keep ref in sync so realtime callbacks are never stale ── */
+  useEffect(() => { currentRoundRef.current = currentRound }, [currentRound])
 
   /* ── timer ── */
   useEffect(() => {
@@ -83,8 +88,10 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
       .order('created_at', { ascending: false })
       .limit(1)
     const round = (rounds?.[0] ?? null) as AuctionRound | null
+    currentRoundRef.current = round
     setCurrentRound(round)
     if (round) fetchBids(round.id)
+    else setBids([])
     fetchRoundNumber()
   }, [supabase, event.id, fetchBids, fetchRoundNumber])
 
@@ -96,7 +103,7 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
     const channel = supabase
       .channel('admin-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, () => {
-        if (currentRound) fetchBids(currentRound.id)
+        if (currentRoundRef.current) fetchBids(currentRoundRef.current.id)
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds' }, refreshRound)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'participants' }, fetchParticipantCount)
