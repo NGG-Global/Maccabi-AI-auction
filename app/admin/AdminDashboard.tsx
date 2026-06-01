@@ -41,10 +41,19 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
   /* ── keep ref in sync so realtime callbacks are never stale ── */
   useEffect(() => { currentRoundRef.current = currentRound }, [currentRound])
 
-  /* ── drop used traits from queue when localTraits updates ── */
+  /* ── sync queue with localTraits: remove used, restore unused after reset ── */
   useEffect(() => {
-    const usedIds = new Set(localTraits.filter(t => t.is_used).map(t => t.id))
-    setTraitQueue(prev => prev.filter(t => !usedIds.has(t.id)))
+    setTraitQueue(prev => {
+      const unusedById = new Map(localTraits.filter(t => !t.is_used).map(t => [t.id, t]))
+      // Preserve admin's custom drag order for traits still in queue
+      const kept = prev.filter(t => unusedById.has(t.id))
+      const keptIds = new Set(kept.map(t => t.id))
+      // Re-add any unused traits missing from queue (e.g. after a reset)
+      const restored = [...unusedById.values()]
+        .filter(t => !keptIds.has(t.id))
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      return [...kept, ...restored]
+    })
   }, [localTraits])
 
   /* ── timer ── */

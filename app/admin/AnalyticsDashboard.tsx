@@ -179,8 +179,8 @@ export default function AnalyticsDashboard({ event }: Props) {
   return (
     <div className="flex-1 flex flex-col bg-slate-950 overflow-y-auto" dir="rtl">
 
-      {/* ── Connection warning bar ──────────────────────────────────────────── */}
-      {connectionStatus !== 'connected' && (
+      {/* ── Connection warning bar — only shown after connection is lost, not on initial load ── */}
+      {(connectionStatus === 'disconnected' || connectionStatus === 'error') && (
         <div
           className={`shrink-0 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium ${
             connectionStatus === 'error'
@@ -191,8 +191,6 @@ export default function AnalyticsDashboard({ event }: Props) {
           <span className="w-2 h-2 rounded-full bg-current animate-live-dot" />
           {connectionStatus === 'error'
             ? 'שגיאת חיבור — מנסה להתחבר מחדש...'
-            : connectionStatus === 'connecting'
-            ? 'מתחבר לשידור חי...'
             : 'החיבור החי נותק זמנית. מנסה להתחבר מחדש...'}
         </div>
       )}
@@ -271,23 +269,23 @@ export default function AnalyticsDashboard({ event }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
           {/* Left column — discussion insight / winner reveal */}
-          <div>
+          <div className="flex flex-col gap-3">
             {status === 'open' && discussionInsight && (
-              <div className="glass rounded-2xl p-7 border border-blue-500/20 bg-blue-950/20 h-full flex flex-col gap-3">
+              <div className="glass rounded-2xl p-7 border border-blue-500/20 bg-blue-950/20 flex flex-col gap-3">
                 <p className="text-xs uppercase tracking-widest text-blue-400 font-bold">💬 נקודה לדיון</p>
                 <p className="text-xl font-medium text-slate-200 leading-relaxed">{discussionInsight}</p>
               </div>
             )}
 
             {status === 'open' && !discussionInsight && (
-              <div className="glass rounded-2xl p-7 flex flex-col items-center justify-center gap-3 h-full text-center">
+              <div className="glass rounded-2xl p-7 flex flex-col items-center justify-center gap-3 text-center">
                 <p className="text-4xl animate-float">⏳</p>
                 <p className="text-slate-400 text-lg font-medium">ממתין להצעות...</p>
               </div>
             )}
 
             {status === 'closed' && winnerName && (
-              <div className="rounded-2xl p-8 bg-gradient-to-br from-amber-950 to-slate-900 border-2 border-amber-500/50 animate-pulse-gold h-full flex flex-col gap-3">
+              <div className="rounded-2xl p-8 bg-gradient-to-br from-amber-950 to-slate-900 border-2 border-amber-500/50 animate-pulse-gold flex flex-col gap-3">
                 <p className="text-amber-400 text-sm font-bold uppercase tracking-widest">👑 הזוכה</p>
                 <p className="text-5xl font-black text-white shimmer-gold leading-tight">{winnerName}</p>
                 {winningBid !== null && (
@@ -302,15 +300,23 @@ export default function AnalyticsDashboard({ event }: Props) {
             )}
 
             {status === 'closed' && !winnerName && (
-              <div className="glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center h-full">
+              <div className="glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center">
                 <p className="text-4xl">🤷</p>
                 <p className="text-slate-300 text-xl font-bold">הסבב נסגר ללא הצעות</p>
                 <p className="text-slate-500 text-sm">לא הוגשו הצעות בסבב זה</p>
               </div>
             )}
 
+            {/* Discussion insight after close — most useful moment for group debrief */}
+            {status === 'closed' && discussionInsight && (
+              <div className="glass rounded-2xl p-6 border border-amber-500/20 bg-amber-950/10 flex flex-col gap-2">
+                <p className="text-xs uppercase tracking-widest text-amber-500 font-bold">💬 נקודה לדיון</p>
+                <p className="text-lg font-medium text-slate-200 leading-relaxed">{discussionInsight}</p>
+              </div>
+            )}
+
             {status === 'waiting' && (
-              <div className="glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center h-full">
+              <div className="glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center">
                 <p className="text-4xl animate-float">🏆</p>
                 <p className="text-slate-400 text-lg font-medium">ממתינים לפתיחת הסבב</p>
               </div>

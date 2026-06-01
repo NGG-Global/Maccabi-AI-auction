@@ -221,7 +221,9 @@ export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyti
           setConnectionStatus('connected')
         } else if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') {
           setConnectionStatus('error')
-          fetchAll() // re-sync on connection trouble
+          fetchAll().catch(() => {
+            if (mountedRef.current) setError('שגיאה בסנכרון נתונים לאחר ניתוק')
+          })
         } else if (status === 'CLOSED') {
           setConnectionStatus('disconnected')
         }

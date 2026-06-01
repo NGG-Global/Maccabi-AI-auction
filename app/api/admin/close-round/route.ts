@@ -31,16 +31,22 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'הסבב אינו פתוח' }, { status: 409 })
   }
 
-  // 2. Mark as closed immediately to prevent duplicate closes (optimistic lock)
-  const { error: closeErr } = await supabase
+  // 2. Mark as closed atomically — the WHERE status='open' guard ensures only one
+  //    concurrent caller can win this update. If 0 rows are returned, another request
+  //    already closed this round.
+  const { data: locked, error: closeErr } = await supabase
     .from('auction_rounds')
     .update({ status: 'closed', closed_at: new Date().toISOString() })
     .eq('id', body.roundId)
-    .eq('status', 'open') // double-guard
+    .eq('status', 'open')
+    .select('id')
 
   if (closeErr) {
     console.error('Close round lock error:', closeErr)
     return Response.json({ error: 'שגיאה בסגירת הסבב' }, { status: 500 })
+  }
+  if (!locked || locked.length === 0) {
+    return Response.json({ error: 'הסבב כבר נסגר' }, { status: 409 })
   }
 
   // 3. Fetch all final bids for this round

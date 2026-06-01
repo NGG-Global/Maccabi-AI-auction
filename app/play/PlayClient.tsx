@@ -270,10 +270,10 @@ export default function PlayClient() {
               </div>
             </div>
 
-            {/* Payment warning */}
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-3 flex items-start gap-2">
-              <span className="text-amber-400 text-lg shrink-0">⚠️</span>
-              <p className="text-amber-300 text-sm leading-relaxed">ההצעה הסופית שלך תנוכה מהיתרה — <strong>גם אם לא תזכה</strong>.</p>
+            {/* Payment info */}
+            <div className="bg-green-500/10 border border-green-500/30 rounded-2xl px-4 py-3 flex items-start gap-2">
+              <span className="text-green-400 text-lg shrink-0">💡</span>
+              <p className="text-green-300 text-sm leading-relaxed">רק <strong>הזוכה</strong> משלם את הצעתו. אם לא תזכה — המטבעות שלך נשארים אצלך.</p>
             </div>
 
             {/* Current bid status */}
