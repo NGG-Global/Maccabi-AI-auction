@@ -52,34 +52,32 @@ export async function POST(req: NextRequest) {
   const finalBids = (bids ?? []) as Bid[]
   const winner = determineWinner(finalBids)
 
-  // 4. Deduct each bidder's wallet and insert wallet transactions
+  // 4. Charge only the winner — losing bidders keep their coins
   const now = new Date().toISOString()
-  for (const bid of finalBids) {
-    // Deduct wallet (Supabase doesn't have inline arithmetic in the JS client easily, so we do rpc or two steps)
-    // Fetch current balance first to avoid race (we already locked the round)
+  if (winner) {
     const { data: p } = await supabase
       .from('participants')
       .select('wallet_balance')
-      .eq('id', bid.participant_id)
+      .eq('id', winner.winnerId)
       .single()
 
-    if (!p) continue
+    if (p) {
+      const newBalance = Math.max(0, p.wallet_balance - winner.winningAmount)
 
-    const newBalance = Math.max(0, p.wallet_balance - bid.amount)
+      await supabase
+        .from('participants')
+        .update({ wallet_balance: newBalance })
+        .eq('id', winner.winnerId)
 
-    await supabase
-      .from('participants')
-      .update({ wallet_balance: newBalance })
-      .eq('id', bid.participant_id)
-
-    await supabase.from('wallet_transactions').insert({
-      event_id: round.event_id,
-      participant_id: bid.participant_id,
-      round_id: body.roundId,
-      amount_delta: -bid.amount,
-      reason: 'round_bid_payment',
-      created_at: now,
-    })
+      await supabase.from('wallet_transactions').insert({
+        event_id: round.event_id,
+        participant_id: winner.winnerId,
+        round_id: body.roundId,
+        amount_delta: -winner.winningAmount,
+        reason: 'round_bid_payment',
+        created_at: now,
+      })
+    }
   }
 
   // 5. Record winner and mark trait as used
