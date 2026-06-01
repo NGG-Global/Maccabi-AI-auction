@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import type { AuctionRound, Participant, Bid } from '@/lib/types'
 
@@ -18,7 +18,13 @@ export default function PlayClient() {
   const [bidSubmitting, setBidSubmitting] = useState(false)
   const [bidError, setBidError] = useState<string | null>(null)
   const [bidSuccess, setBidSuccess] = useState(false)
+  const bidSoundRef = useRef<HTMLAudioElement | null>(null)
   const supabase = createClient()
+
+  useEffect(() => {
+    bidSoundRef.current = new Audio('/bid-success.mp3')
+    bidSoundRef.current.preload = 'auto'
+  }, [])
 
   const fetchState = useCallback(async (participantId: string) => {
     const { data: participant } = await supabase
@@ -79,6 +85,10 @@ export default function PlayClient() {
       else {
         setBidSuccess(true)
         setBidInput('')
+        if (bidSoundRef.current) {
+          bidSoundRef.current.currentTime = 0
+          bidSoundRef.current.play().catch(() => {/* autoplay blocked — silently ignore */})
+        }
         const id = localStorage.getItem('auction_participant_id')
         if (id) fetchState(id)
       }
