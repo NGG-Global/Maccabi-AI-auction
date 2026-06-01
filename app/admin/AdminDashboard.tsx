@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import type { Event, AuctionRound, Trait, Bid, Participant } from '@/lib/types'
+import { TraitQueue } from './TraitQueue'
 
 interface Props {
   event: Event
@@ -17,7 +18,6 @@ interface BidRow extends Bid {
 export default function AdminDashboard({ event, traits, initialRound }: Props) {
   const [currentRound, setCurrentRound] = useState<AuctionRound | null>(initialRound)
   const [bids, setBids] = useState<BidRow[]>([])
-  const [selectedTraitId, setSelectedTraitId] = useState('')
   const [participantCount, setParticipantCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -31,10 +31,21 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
   // Store traits state locally so we can update is_used without page refresh
   const [localTraits, setLocalTraits] = useState<Trait[]>(traits)
 
-  const unusedTraits = localTraits.filter(t => !t.is_used)
+  // Drag-and-drop queue — unused traits in admin-controlled order
+  const [traitQueue, setTraitQueue] = useState<Trait[]>(() =>
+    traits.filter(t => !t.is_used).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  )
+
+  const usedTraits = localTraits.filter(t => t.is_used)
 
   /* ── keep ref in sync so realtime callbacks are never stale ── */
   useEffect(() => { currentRoundRef.current = currentRound }, [currentRound])
+
+  /* ── drop used traits from queue when localTraits updates ── */
+  useEffect(() => {
+    const usedIds = new Set(localTraits.filter(t => t.is_used).map(t => t.id))
+    setTraitQueue(prev => prev.filter(t => !usedIds.has(t.id)))
+  }, [localTraits])
 
   /* ── timer ── */
   useEffect(() => {
@@ -122,18 +133,18 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
   }
 
   async function handleOpenRound() {
-    if (!selectedTraitId) return
+    const nextTrait = traitQueue[0]
+    if (!nextTrait) return
     setLoading(true)
     try {
       const res = await fetch('/api/admin/open-round', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventId: event.id, traitId: selectedTraitId }),
+        body: JSON.stringify({ eventId: event.id, traitId: nextTrait.id }),
       })
       const data = await res.json()
       if (!res.ok) { showMsg('error', data.error ?? 'שגיאה'); return }
-      showMsg('success', 'הסבב נפתח!')
-      setSelectedTraitId('')
+      showMsg('success', `סבב נפתח: ${nextTrait.title}`)
       await refreshRound()
     } catch { showMsg('error', 'שגיאת רשת') }
     finally { setLoading(false) }
@@ -214,29 +225,26 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
           </div>
         )}
 
-        {/* Open round */}
-        <div className="flex flex-col gap-2">
-          <label className="text-xs text-slate-400 font-medium">תכונה לסבב הבא</label>
-          <select
-            value={selectedTraitId}
-            onChange={e => setSelectedTraitId(e.target.value)}
-            disabled={loading || isOpen}
-            className="bg-slate-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 disabled:opacity-40 w-full"
-          >
-            <option value="">— בחר תכונה —</option>
-            {unusedTraits.map(t => (
-              <option key={t.id} value={t.id}>{t.title}</option>
-            ))}
-          </select>
+        {/* Trait queue */}
+        <TraitQueue
+          queue={traitQueue}
+          usedTraits={usedTraits}
+          disabled={loading || isOpen}
+          onReorder={setTraitQueue}
+        />
 
-          <button
-            onClick={handleOpenRound}
-            disabled={loading || !selectedTraitId || isOpen}
-            className="bg-green-600 hover:bg-green-500 disabled:opacity-30 text-white rounded-xl py-3 font-bold text-sm transition-all active:scale-95 w-full"
-          >
-            {loading && !isOpen ? 'פותח...' : '▶ פתח סבב'}
-          </button>
-        </div>
+        {/* Open round */}
+        <button
+          onClick={handleOpenRound}
+          disabled={loading || traitQueue.length === 0 || isOpen}
+          className="bg-green-600 hover:bg-green-500 disabled:opacity-30 text-white rounded-xl py-3 font-bold text-sm transition-all active:scale-95 w-full"
+        >
+          {loading && !isOpen
+            ? 'פותח...'
+            : traitQueue[0]
+            ? `▶ פתח: ${traitQueue[0].title}`
+            : '▶ פתח סבב'}
+        </button>
 
         {/* Close round */}
         {isOpen && (
@@ -251,7 +259,7 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
               </button>
             ) : (
               <div className="flex flex-col gap-2 animate-scale-in">
-                <p className="text-xs text-red-400 text-center">בטוח לסגור? כל המציעים ייחויבו.</p>
+                <p className="text-xs text-red-400 text-center">בטוח לסגור את הסבב?</p>
                 <div className="flex gap-2">
                   <button onClick={() => setConfirmClose(false)} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-2.5 text-sm font-medium transition-all">
                     ביטול
@@ -269,6 +277,7 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
         <div className="border-t border-white/10" />
 
         {/* Quick stats */}
+
         <div className="grid grid-cols-2 gap-2">
           {[
             { label: 'משתתפים', value: participantCount },
@@ -281,21 +290,6 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
               <p className="text-lg font-bold text-white mt-0.5">{s.value}</p>
             </div>
           ))}
-        </div>
-
-        {/* Traits used */}
-        <div>
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">תכונות</p>
-          <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
-            {localTraits.map(t => (
-              <div key={t.id} className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs transition-all ${
-                t.is_used ? 'bg-slate-800/30 text-slate-600' : 'bg-slate-800/60 text-slate-300'
-              }`}>
-                <span className={t.is_used ? 'line-through' : ''}>{t.title}</span>
-                {t.is_used && <span className="text-slate-600">✓</span>}
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Reset */}
