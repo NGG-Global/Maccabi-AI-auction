@@ -12,8 +12,19 @@ interface GameState {
   error: string | null
 }
 
+interface RoundStats {
+  bidderCount: number   // have a bid in this round
+  noBidCount: number    // wallet > 0 but no bid yet
+  foldedCount: number   // wallet = 0, cannot bid
+  highestBid: number
+  isLeading: boolean    // current participant holds top bid
+}
+
+const EMPTY_STATS: RoundStats = { bidderCount: 0, noBidCount: 0, foldedCount: 0, highestBid: 0, isLeading: false }
+
 export default function PlayClient() {
   const [state, setState] = useState<GameState>({ participant: null, currentRound: null, myBid: null, loading: true, error: null })
+  const [roundStats, setRoundStats] = useState<RoundStats>(EMPTY_STATS)
   const [bidInput, setBidInput] = useState('')
   const [bidSubmitting, setBidSubmitting] = useState(false)
   const [bidError, setBidError] = useState<string | null>(null)
@@ -25,6 +36,26 @@ export default function PlayClient() {
     bidSoundRef.current = new Audio('/bid-success.mp3')
     bidSoundRef.current.preload = 'auto'
   }, [])
+
+  const fetchRoundStats = useCallback(async (roundId: string, eventId: string, participantId: string) => {
+    const [{ data: allParticipants }, { data: bids }] = await Promise.all([
+      supabase.from('participants').select('id, wallet_balance').eq('event_id', eventId),
+      supabase.from('bids').select('participant_id, amount').eq('round_id', roundId).order('amount', { ascending: false }),
+    ])
+
+    const bidderIds = new Set((bids ?? []).map(b => b.participant_id))
+    const highestBid = bids?.[0]?.amount ?? 0
+
+    const bidderCount = bidderIds.size
+    const foldedCount = (allParticipants ?? []).filter(p => p.wallet_balance === 0 && !bidderIds.has(p.id)).length
+    const noBidCount = (allParticipants ?? []).length - bidderCount - foldedCount
+
+    // Leading = this participant has the top bid (alone or tied for first)
+    const myAmount = bids?.find(b => b.participant_id === participantId)?.amount ?? 0
+    const isLeading = myAmount > 0 && myAmount === highestBid
+
+    setRoundStats({ bidderCount, noBidCount: Math.max(0, noBidCount), foldedCount, highestBid, isLeading })
+  }, [supabase])
 
   const fetchState = useCallback(async (participantId: string) => {
     const { data: participant } = await supabase
@@ -47,8 +78,15 @@ export default function PlayClient() {
         .from('bids').select('*').eq('round_id', round.id).eq('participant_id', participantId).maybeSingle<Bid>()
       myBid = bid ?? null
     }
+
     setState(prev => ({ ...prev, participant, currentRound: round, myBid, loading: false }))
-  }, [supabase])
+
+    if (round?.status === 'open') {
+      fetchRoundStats(round.id, participant.event_id, participantId)
+    } else {
+      setRoundStats(EMPTY_STATS)
+    }
+  }, [supabase, fetchRoundStats])
 
   useEffect(() => {
     const participantId = localStorage.getItem('auction_participant_id')
@@ -87,7 +125,7 @@ export default function PlayClient() {
         setBidInput('')
         if (bidSoundRef.current) {
           bidSoundRef.current.currentTime = 0
-          bidSoundRef.current.play().catch(() => {/* autoplay blocked — silently ignore */})
+          bidSoundRef.current.play().catch(() => {})
         }
         const id = localStorage.getItem('auction_participant_id')
         if (id) fetchState(id)
@@ -185,6 +223,51 @@ export default function PlayClient() {
               </span>
               <h2 className="text-3xl font-black text-white mb-2">{currentRound!.trait?.title}</h2>
               <p className="text-slate-400 text-sm leading-relaxed">{currentRound!.trait?.description}</p>
+            </div>
+
+            {/* ── Live group stats ── */}
+            <div className="glass rounded-2xl overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
+                <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">מצב הקבוצה</span>
+                <span className="flex items-center gap-1.5 text-xs text-green-400">
+                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-live-dot" />
+                  חי
+                </span>
+              </div>
+
+              {/* Highest bid banner — visible once any bid exists */}
+              {roundStats.highestBid > 0 && (
+                <div className={`flex items-center justify-between px-4 py-2.5 border-b border-white/10 ${
+                  roundStats.isLeading
+                    ? 'bg-amber-500/15 border-b border-amber-500/20'
+                    : 'bg-white/[0.03]'
+                }`}>
+                  <span className="text-sm">
+                    {roundStats.isLeading
+                      ? <span className="text-amber-400 font-bold">👑 אתה/את בראש!</span>
+                      : <span className="text-slate-400">הצעה גבוהה</span>}
+                  </span>
+                  <span className={`font-black tabular-nums text-lg ${roundStats.isLeading ? 'text-amber-400' : 'text-white'}`}>
+                    {roundStats.highestBid.toLocaleString()} 🪙
+                  </span>
+                </div>
+              )}
+
+              {/* Three stat counters */}
+              <div className="grid grid-cols-3 divide-x divide-x-reverse divide-white/10">
+                {[
+                  { value: roundStats.bidderCount,  label: 'הציעו',        color: 'text-green-400',  icon: '✅' },
+                  { value: roundStats.noBidCount,   label: 'טרם הציעו',    color: 'text-slate-400',  icon: '⏳' },
+                  { value: roundStats.foldedCount,  label: 'אין יתרה',     color: 'text-red-400',    icon: '💔' },
+                ].map(s => (
+                  <div key={s.label} className="flex flex-col items-center py-4 gap-0.5">
+                    <span className="text-base">{s.icon}</span>
+                    <span key={s.value} className={`text-2xl font-black tabular-nums ${s.color} animate-scale-in`}>{s.value}</span>
+                    <span className="text-[10px] text-slate-500 text-center leading-tight">{s.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Payment warning */}
