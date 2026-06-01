@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import type { Event, AuctionRound, Participant } from '@/lib/types'
 
@@ -17,7 +17,7 @@ interface ScreenState {
 export default function ScreenClient({ event }: Props) {
   const [state, setState] = useState<ScreenState>({ round: null, bidderCount: 0, highestBid: 0, totalSpent: 0, winner: null })
   const [participantCount, setParticipantCount] = useState(0)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchState = useCallback(async () => {
     const { data: rounds } = await supabase
@@ -51,7 +51,7 @@ export default function ScreenClient({ event }: Props) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'participants' }, fetchState)
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [fetchState, supabase])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { round, bidderCount, highestBid, totalSpent, winner } = state
 

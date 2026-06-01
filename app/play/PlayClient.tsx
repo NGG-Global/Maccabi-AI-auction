@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import type { AuctionRound, Participant, Bid } from '@/lib/types'
 
@@ -30,7 +30,7 @@ export default function PlayClient() {
   const [bidError, setBidError] = useState<string | null>(null)
   const [bidSuccess, setBidSuccess] = useState(false)
   const bidSoundRef = useRef<HTMLAudioElement | null>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     bidSoundRef.current = new Audio('/bid-success.mp3')
@@ -103,7 +103,7 @@ export default function PlayClient() {
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [fetchState, supabase])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleBidSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -204,7 +204,7 @@ export default function PlayClient() {
               <>
                 <p className="text-4xl mb-3">🤷</p>
                 <p className="text-white text-xl font-bold mb-1">הסבב נסגר</p>
-                {myBid && <p className="text-slate-400 text-sm">הצעתך: <span className="text-red-400 font-bold">{myBid.amount} 🪙 נוכו</span></p>}
+                {myBid && <p className="text-slate-400 text-sm">הגשת הצעה של <span className="text-white font-bold">{myBid.amount} 🪙</span></p>}
                 {!myBid && <p className="text-slate-500 text-sm">לא הגשת הצעה בסבב זה</p>}
               </>
             )}
