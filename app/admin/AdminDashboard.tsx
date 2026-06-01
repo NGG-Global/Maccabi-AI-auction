@@ -22,6 +22,7 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [confirmClose, setConfirmClose] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
   const [elapsed, setElapsed] = useState('0:00')
   const [roundNumber, setRoundNumber] = useState(0)
   const supabase = createClient()
@@ -150,7 +151,8 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
   }
 
   async function handleReset() {
-    if (!confirm('⚠️ לאפס את כל האירוע? פעולה זו תמחק את כל המשתתפים, ההצעות והסבבים.')) return
+    if (!confirmReset) { setConfirmReset(true); return }
+    setConfirmReset(false)
     setLoading(true)
     try {
       const res = await fetch('/api/admin/reset', {
@@ -291,13 +293,37 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
 
         {/* Reset */}
         <div className="mt-auto pt-4 border-t border-white/10">
-          <button
-            onClick={handleReset}
-            disabled={loading}
-            className="w-full bg-transparent hover:bg-red-900/30 border border-red-900/50 text-red-500 hover:text-red-400 rounded-xl py-2.5 text-xs font-medium transition-all"
-          >
-            🗑 אפס אירוע (לחזרות)
-          </button>
+          {!confirmReset ? (
+            <button
+              onClick={() => setConfirmReset(true)}
+              disabled={loading}
+              className="w-full bg-transparent hover:bg-red-900/30 border border-red-900/50 text-red-500 hover:text-red-400 rounded-xl py-2.5 text-xs font-medium transition-all"
+            >
+              🔄 איפוס משחק
+            </button>
+          ) : (
+            <div className="flex flex-col gap-2 animate-scale-in bg-red-950/40 border border-red-700/50 rounded-xl p-3">
+              <p className="text-red-400 text-xs font-bold text-center">⚠️ איפוס מלא</p>
+              <p className="text-slate-400 text-[11px] text-center leading-relaxed">
+                ימחקו כל המשתתפים, ההצעות והסבבים. פעולה זו אינה הפיכה.
+              </p>
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={() => setConfirmReset(false)}
+                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-lg py-2 text-xs font-medium transition-all"
+                >
+                  ביטול
+                </button>
+                <button
+                  onClick={handleReset}
+                  disabled={loading}
+                  className="flex-1 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg py-2 text-xs font-bold transition-all"
+                >
+                  {loading ? '...' : 'אשר איפוס'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 
