@@ -30,12 +30,23 @@ export default function PlayClient() {
   const [bidError, setBidError] = useState<string | null>(null)
   const [bidSuccess, setBidSuccess] = useState(false)
   const bidSoundRef = useRef<HTMLAudioElement | null>(null)
+  const prevBalanceRef = useRef<number | null>(null)
+  const [walletFlash, setWalletFlash] = useState(false)
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     bidSoundRef.current = new Audio('/bid-success.mp3')
     bidSoundRef.current.preload = 'auto'
   }, [])
+
+  useEffect(() => {
+    const newBalance = state.participant?.wallet_balance ?? null
+    if (prevBalanceRef.current !== null && newBalance !== null && newBalance !== prevBalanceRef.current) {
+      setWalletFlash(true)
+      setTimeout(() => setWalletFlash(false), 800)
+    }
+    prevBalanceRef.current = newBalance
+  }, [state.participant?.wallet_balance])
 
   const fetchRoundStats = useCallback(async (roundId: string, eventId: string, participantId: string) => {
     const [{ data: allParticipants }, { data: bids }] = await Promise.all([
@@ -112,6 +123,7 @@ export default function PlayClient() {
     setBidSubmitting(true)
     setBidError(null)
     setBidSuccess(false)
+    setBidInput('')
     const sessionToken = localStorage.getItem('auction_session_token')
     try {
       const res = await fetch('/api/bid/submit', {
@@ -121,8 +133,18 @@ export default function PlayClient() {
       const data = await res.json()
       if (!res.ok) { setBidError(data.error ?? 'שגיאה') }
       else {
+        setState(prev => ({
+          ...prev,
+          myBid: {
+            id: 'optimistic',
+            round_id: state.currentRound?.id ?? '',
+            participant_id: prev.participant?.id ?? '',
+            amount,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        }))
         setBidSuccess(true)
-        setBidInput('')
         if (bidSoundRef.current) {
           bidSoundRef.current.currentTime = 0
           bidSoundRef.current.play().catch(() => {})
@@ -137,10 +159,18 @@ export default function PlayClient() {
   const { participant, currentRound, myBid, loading, error } = state
 
   if (loading) return (
-    <main className="min-h-screen bg-slate-950 flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
-        <p className="text-slate-400">טוען...</p>
+    <main className="min-h-screen bg-slate-950 flex flex-col" dir="rtl">
+      <header className="bg-slate-900 border-b border-white/10 px-5 py-4 flex items-center justify-between">
+        <div className="flex flex-col gap-2">
+          <div className="skeleton h-3 w-10 rounded" />
+          <div className="skeleton h-5 w-28 rounded" />
+        </div>
+        <div className="skeleton h-12 w-24 rounded-2xl" />
+      </header>
+      <div className="flex-1 flex flex-col px-4 py-6 gap-4">
+        <div className="skeleton h-40 w-full rounded-3xl" />
+        <div className="skeleton h-24 w-full rounded-2xl" />
+        <div className="skeleton h-14 w-full rounded-2xl" />
       </div>
     </main>
   )
@@ -168,7 +198,11 @@ export default function PlayClient() {
           <p className="text-slate-500 text-xs">שלום,</p>
           <p className="text-white font-bold text-base">{participant.display_name}</p>
         </div>
-        <div className="text-left bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-2">
+        <div className={`text-left rounded-2xl px-4 py-2 border transition-colors duration-300 ${
+          walletFlash
+            ? 'bg-amber-500/30 border-amber-400/60 animate-wallet-flash'
+            : 'bg-amber-500/10 border-amber-500/30'
+        }`}>
           <p className="text-amber-500/70 text-xs">יתרה</p>
           <p className="text-amber-400 text-2xl font-black tabular-nums">{participant.wallet_balance.toLocaleString()} <span className="text-lg">🪙</span></p>
         </div>

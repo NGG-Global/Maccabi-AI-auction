@@ -340,6 +340,11 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
       {/* ── Right: Stage / Audience Display ────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden">
 
+        {/* Loading progress bar */}
+        <div className={`h-0.5 shrink-0 transition-all duration-300 ${loading ? 'bg-amber-400/60' : 'bg-transparent'}`}
+          style={loading ? { backgroundImage: 'linear-gradient(90deg, transparent 0%, #f59e0b 50%, transparent 100%)', backgroundSize: '200% 100%', animation: 'skeletonShimmer 1s ease-in-out infinite' } : {}}
+        />
+
         {/* Header bar */}
         <header className="flex items-center justify-between px-8 py-4 border-b border-white/10 bg-slate-900/50">
           <div className="flex items-center gap-3">
@@ -470,6 +475,7 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
                 <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
                   <span className="text-slate-400 text-xs uppercase tracking-widest font-bold">טבלת הצעות</span>
                   {isOpen && <span className="flex items-center gap-1.5 text-xs text-green-400"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-live-dot" />חי</span>}
+                  {loading && <span className="w-3 h-3 rounded-full border-2 border-slate-600 border-t-slate-400 animate-spin" />}
                 </div>
                 <div className="overflow-y-auto max-h-80">
                   {bids.map((bid, i) => (
@@ -478,7 +484,6 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
                       className="flex items-center gap-3 px-5 py-3 border-b border-white/5 animate-slide-in-right hover:bg-white/5 transition-colors"
                       style={{ animationDelay: `${i * 40}ms` }}
                     >
-                      {/* Rank badge */}
                       <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
                         i === 0 ? 'bg-amber-500 text-slate-900' :
                         i === 1 ? 'bg-slate-400 text-slate-900' :

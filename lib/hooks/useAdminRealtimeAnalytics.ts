@@ -17,6 +17,7 @@ import {
 export interface AdminRealtimeAnalyticsResult {
   currentRoundAnalytics: CurrentRoundAnalytics
   cumulativeAnalytics: CumulativeGameAnalytics
+  currentBids: Bid[]
   discussionInsight: string | null
   connectionStatus: RealtimeConnectionStatus
   lastSyncedAt: string | null
@@ -54,6 +55,9 @@ function emptyCumulative(): CumulativeGameAnalytics {
     averageRemainingWallet: 0,
     completedRounds: 0,
     traitRankings: [],
+    roundSummaries: [],
+    categoryBreakdown: [],
+    budgetTimeline: [],
   }
 }
 
@@ -108,7 +112,7 @@ export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyti
     }
     const { data, error: err } = await supabase
       .from('bids')
-      .select('*')
+      .select('*, participant:participants(id, display_name)')
       .eq('round_id', roundId)
       .order('amount', { ascending: false })
 
@@ -255,6 +259,7 @@ export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyti
   return {
     currentRoundAnalytics,
     cumulativeAnalytics,
+    currentBids,
     discussionInsight,
     connectionStatus,
     lastSyncedAt,

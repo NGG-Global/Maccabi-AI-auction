@@ -36,6 +36,39 @@ export interface TraitRanking {
   winnerName: string | null
 }
 
+export interface RoundSummary {
+  roundId: string
+  roundNumber: number     // 1-based chronological index
+  traitId: string
+  traitTitle: string
+  category: string | null
+  winnerName: string | null
+  winningBid: number | null
+  bidderCount: number
+  participationRate: number   // 0–100
+  averageBid: number | null
+  medianBid: number | null
+  highestBid: number | null
+  lowestBid: number | null
+  totalBid: number
+}
+
+export interface CategoryAnalytics {
+  category: string
+  roundCount: number
+  totalWinningBid: number
+  averageWinningBid: number | null
+  averageParticipation: number  // 0–100
+}
+
+export interface BudgetCheckpoint {
+  roundNumber: number
+  traitTitle: string
+  winningBid: number
+  cumulativeSpent: number
+  spendPercent: number   // 0–100
+}
+
 export interface CumulativeGameAnalytics {
   totalStartingBudget: number         // registeredCount * 1000
   totalSpent: number                  // totalStartingBudget - sum(wallet_balance)
@@ -43,6 +76,9 @@ export interface CumulativeGameAnalytics {
   averageRemainingWallet: number
   completedRounds: number
   traitRankings: TraitRanking[]       // sorted by winningBid desc
+  roundSummaries: RoundSummary[]
+  categoryBreakdown: CategoryAnalytics[]
+  budgetTimeline: BudgetCheckpoint[]
 }
 
 // ─── Pure computation helpers ─────────────────────────────────────────────────
@@ -166,6 +202,10 @@ export function computeCumulativeAnalytics(
     return b.winningBid - a.winningBid
   })
 
+  const roundSummaries = computeRoundSummaries(closedRounds, bidAmountsByRound, registeredCount)
+  const categoryBreakdown = computeCategoryBreakdown(roundSummaries)
+  const budgetTimeline = computeBudgetTimeline(roundSummaries, totalStartingBudget)
+
   return {
     totalStartingBudget,
     totalSpent,
@@ -173,6 +213,9 @@ export function computeCumulativeAnalytics(
     averageRemainingWallet,
     completedRounds: closedRounds.length,
     traitRankings,
+    roundSummaries,
+    categoryBreakdown,
+    budgetTimeline,
   }
 }
 
@@ -229,4 +272,209 @@ export function generateDiscussionInsight(analytics: CurrentRoundAnalytics): str
   }
 
   return null
+}
+
+// ─── Round-level summary ──────────────────────────────────────────────────────
+
+/**
+ * Maps each closed round (in chronological array order) to a RoundSummary.
+ * `bidAmountsByRound` maps roundId → array of bid amounts.
+ * `registeredCount` is used to compute participationRate.
+ */
+export function computeRoundSummaries(
+  closedRounds: AuctionRound[],
+  bidAmountsByRound: Record<string, number[]>,
+  registeredCount: number,
+): RoundSummary[] {
+  return closedRounds.map((round, index) => {
+    const amounts = bidAmountsByRound[round.id] ?? []
+    const bidderCount = amounts.length
+    const totalBid = amounts.reduce((s, v) => s + v, 0)
+    const averageBid = bidderCount > 0 ? Math.round(totalBid / bidderCount) : null
+    const medianBid = computeMedian(amounts)
+    const highestBid = bidderCount > 0 ? Math.max(...amounts) : null
+    const lowestBid = bidderCount > 0 ? Math.min(...amounts) : null
+    const participationRate =
+      registeredCount > 0 ? Math.round((bidderCount / registeredCount) * 100) : 0
+
+    return {
+      roundId: round.id,
+      roundNumber: index + 1,
+      traitId: round.trait_id,
+      traitTitle: round.trait?.title ?? '—',
+      category: round.trait?.category ?? null,
+      winnerName: round.winner?.display_name ?? null,
+      winningBid: round.winning_bid_amount,
+      bidderCount,
+      participationRate,
+      averageBid,
+      medianBid,
+      highestBid,
+      lowestBid,
+      totalBid,
+    }
+  })
+}
+
+// ─── Category breakdown ───────────────────────────────────────────────────────
+
+/**
+ * Groups RoundSummary records by category (defaulting to 'אחר' when null).
+ * Returns one CategoryAnalytics per group, sorted descending by totalWinningBid.
+ */
+export function computeCategoryBreakdown(roundSummaries: RoundSummary[]): CategoryAnalytics[] {
+  const groups = new Map<string, RoundSummary[]>()
+
+  for (const summary of roundSummaries) {
+    const key = summary.category ?? 'אחר'
+    const existing = groups.get(key)
+    if (existing) {
+      existing.push(summary)
+    } else {
+      groups.set(key, [summary])
+    }
+  }
+
+  const result: CategoryAnalytics[] = []
+
+  for (const [category, summaries] of groups) {
+    const roundCount = summaries.length
+    const winningBids = summaries
+      .map(s => s.winningBid)
+      .filter((b): b is number => b !== null)
+    const totalWinningBid = winningBids.reduce((s, v) => s + v, 0)
+    const averageWinningBid =
+      winningBids.length > 0 ? Math.round(totalWinningBid / winningBids.length) : null
+    const averageParticipation =
+      roundCount > 0
+        ? Math.round(summaries.reduce((s, r) => s + r.participationRate, 0) / roundCount)
+        : 0
+
+    result.push({
+      category,
+      roundCount,
+      totalWinningBid,
+      averageWinningBid,
+      averageParticipation,
+    })
+  }
+
+  result.sort((a, b) => b.totalWinningBid - a.totalWinningBid)
+
+  return result
+}
+
+// ─── Budget timeline ──────────────────────────────────────────────────────────
+
+/**
+ * Accumulates winning bids round by round, producing a spending checkpoint
+ * for each round. spendPercent is capped at 100.
+ * `totalStartingBudget` is the group's combined starting coins.
+ */
+export function computeBudgetTimeline(
+  roundSummaries: RoundSummary[],
+  totalStartingBudget: number,
+): BudgetCheckpoint[] {
+  let cumulativeSpent = 0
+
+  return roundSummaries.map(summary => {
+    const winningBid = summary.winningBid ?? 0
+    cumulativeSpent += winningBid
+    const spendPercent =
+      totalStartingBudget > 0
+        ? Math.min(100, Math.round((cumulativeSpent / totalStartingBudget) * 100))
+        : 0
+
+    return {
+      roundNumber: summary.roundNumber,
+      traitTitle: summary.traitTitle,
+      winningBid,
+      cumulativeSpent,
+      spendPercent,
+    }
+  })
+}
+
+// ─── Session-level Hebrew insights ───────────────────────────────────────────
+
+/**
+ * Generates an array of Hebrew insight strings suitable for post-session
+ * facilitation or a summary screen. Returns an empty array when no rounds
+ * have been completed yet.
+ */
+export function generateSessionInsights(analytics: CumulativeGameAnalytics): string[] {
+  const {
+    traitRankings,
+    roundSummaries,
+    categoryBreakdown,
+    completedRounds,
+    totalStartingBudget,
+    totalSpent,
+  } = analytics
+
+  if (roundSummaries.length === 0) return []
+
+  const insights: string[] = []
+
+  // (a) Most valued trait — highest winning bid
+  const topTrait = traitRankings[0]
+  if (topTrait && topTrait.winningBid !== null) {
+    insights.push(
+      `התכונה המוערכת ביותר היא "${topTrait.traitTitle}" — זכייה בהצעה של ${topTrait.winningBid.toLocaleString()} מטבעות.`,
+    )
+  }
+
+  // (b) Round with highest participation
+  const mostParticipated = roundSummaries.reduce(
+    (best, r) => (r.participationRate > best.participationRate ? r : best),
+    roundSummaries[0],
+  )
+  insights.push(
+    `הסבב עם ההשתתפות הגבוהה ביותר היה "${mostParticipated.traitTitle}" — ${mostParticipated.participationRate}% מהמשתתפים הגישו הצעה.`,
+  )
+
+  // (c) Engagement trend — only when at least 4 rounds completed
+  if (completedRounds >= 4) {
+    const half = Math.floor(roundSummaries.length / 2)
+    const firstHalf = roundSummaries.slice(0, half)
+    const secondHalf = roundSummaries.slice(roundSummaries.length - half)
+    const avgFirst =
+      firstHalf.reduce((s, r) => s + r.participationRate, 0) / firstHalf.length
+    const avgSecond =
+      secondHalf.reduce((s, r) => s + r.participationRate, 0) / secondHalf.length
+    const diff = avgSecond - avgFirst
+
+    if (diff > 5) {
+      insights.push(
+        `מגמת מעורבות עולה — ההשתתפות גדלה בממוצע ב-${Math.round(diff)}% בין המחצית הראשונה למחצית השנייה של המשחק.`,
+      )
+    } else if (diff < -5) {
+      insights.push(
+        `מגמת מעורבות יורדת — ההשתתפות ירדה בממוצע ב-${Math.round(Math.abs(diff))}% בין המחצית הראשונה למחצית השנייה של המשחק.`,
+      )
+    } else {
+      insights.push(
+        `המעורבות נשמרה יציבה לאורך המשחק — ממוצע השתתפות דומה בין המחצית הראשונה לשנייה.`,
+      )
+    }
+  }
+
+  // (d) Top category by total winning bid
+  const topCategory = categoryBreakdown[0]
+  if (topCategory) {
+    insights.push(
+      `הקטגוריה עם ההשקעה הגבוהה ביותר היא "${topCategory.category}" — סה"כ ${topCategory.totalWinningBid.toLocaleString()} מטבעות הושקעו ב-${topCategory.roundCount} סבבים.`,
+    )
+  }
+
+  // (e) Budget usage percent
+  const budgetPercent =
+    totalStartingBudget > 0
+      ? Math.min(100, Math.round((totalSpent / totalStartingBudget) * 100))
+      : 0
+  insights.push(
+    `בסך הכל הוצאה הקבוצה ${budgetPercent}% מהתקציב המשותף — ${totalSpent.toLocaleString()} מתוך ${totalStartingBudget.toLocaleString()} מטבעות.`,
+  )
+
+  return insights
 }

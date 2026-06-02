@@ -75,3 +75,30 @@ body {
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.1);
 }
+
+/* Skeleton loading shimmer */
+@keyframes skeletonShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(255,255,255,0.10) 50%,
+    rgba(255,255,255,0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+/* Wallet balance flash on update */
+@keyframes walletFlash {
+  0%   { background-color: rgba(245,158,11,0.30); transform: scale(1.05); }
+  100% { background-color: rgba(245,158,11,0.10); transform: scale(1); }
+}
+
+.animate-wallet-flash {
+  animation: walletFlash 0.7s ease-out forwards;
+}
