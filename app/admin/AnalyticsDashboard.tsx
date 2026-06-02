@@ -77,7 +77,7 @@ function LiveBidderList({ bids, bidderCount }: LiveBidderListProps) {
     )
   }
 
-  const rankBadgeClass = (rank: number) => {
+  const rankBadgeClass = (rank: number): string => {
     if (rank === 1) return 'bg-amber-500 text-slate-900'
     if (rank === 2) return 'bg-slate-300 text-slate-900'
     if (rank === 3) return 'bg-amber-700 text-white'
@@ -133,7 +133,7 @@ interface RoundCardProps {
 }
 
 function RoundCard({ summary, prev }: RoundCardProps) {
-  const categoryBadge = (cat: string | null) => {
+  const categoryBadgeClass = (cat: string | null): string => {
     switch (cat) {
       case 'שיפוט':
         return 'bg-blue-500/20 text-blue-300'
@@ -148,7 +148,7 @@ function RoundCard({ summary, prev }: RoundCardProps) {
     }
   }
 
-  const trendArrow = () => {
+  const trendArrow = (): { symbol: string; className: string } => {
     if (!prev) return { symbol: '→', className: 'text-slate-500' }
     const diff = summary.participationRate - prev.participationRate
     if (diff > 0) return { symbol: '↑', className: 'text-green-400' }
@@ -160,25 +160,30 @@ function RoundCard({ summary, prev }: RoundCardProps) {
 
   return (
     <div className="glass rounded-2xl p-4 flex flex-col gap-2.5">
+      {/* Top row: round number + category badge */}
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-slate-500 font-medium">#{summary.roundNumber}</span>
         {summary.category && (
           <span
-            className={`text-[10px] rounded-full px-2 py-0.5 font-semibold ${categoryBadge(summary.category)}`}
+            className={`text-[10px] rounded-full px-2 py-0.5 font-semibold ${categoryBadgeClass(summary.category)}`}
           >
             {summary.category}
           </span>
         )}
       </div>
 
+      {/* Trait title */}
       <p className="text-sm font-bold text-white leading-tight">{summary.traitTitle}</p>
 
+      {/* Winner row */}
       {summary.winnerName ? (
         <div className="flex items-center gap-2 bg-amber-500/10 rounded-lg px-3 py-1.5">
           <span className="text-base">👑</span>
-          <span className="text-xs font-bold text-amber-300 truncate">{summary.winnerName}</span>
+          <span className="text-xs font-bold text-amber-300 truncate flex-1">
+            {summary.winnerName}
+          </span>
           {summary.winningBid !== null && (
-            <span className="text-xs text-amber-400 tabular-nums mr-auto">
+            <span className="text-xs text-amber-400 tabular-nums shrink-0">
               {summary.winningBid.toLocaleString()}
             </span>
           )}
@@ -189,6 +194,7 @@ function RoundCard({ summary, prev }: RoundCardProps) {
         </div>
       )}
 
+      {/* Stats row: participation trend + average bid */}
       <div className="flex items-center justify-between text-xs">
         <span className="text-slate-400">
           <span className={`font-bold ${trend.className}`}>{trend.symbol}</span>{' '}
@@ -216,7 +222,7 @@ function CategoryBars({ breakdown }: CategoryBarsProps) {
 
   const maxTotal = Math.max(...breakdown.map(c => c.totalWinningBid), 1)
 
-  const barColor = (cat: string) => {
+  const barColorClass = (cat: string): string => {
     switch (cat) {
       case 'שיפוט':
         return 'bg-blue-500'
@@ -247,7 +253,7 @@ function CategoryBars({ breakdown }: CategoryBarsProps) {
               </div>
               <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-700 ${barColor(cat.category)}`}
+                  className={`h-full rounded-full transition-all duration-700 ${barColorClass(cat.category)}`}
                   style={{ width: `${barWidth}%` }}
                 />
               </div>
@@ -287,20 +293,24 @@ function BudgetHealth({
   const spendPercent =
     totalStarting > 0 ? Math.min(100, Math.round((totalSpent / totalStarting) * 100)) : 0
 
-  const maxCumulative = budgetTimeline.length > 0
-    ? budgetTimeline[budgetTimeline.length - 1].cumulativeSpent
-    : 1
+  const maxCumulative =
+    budgetTimeline.length > 0 ? budgetTimeline[budgetTimeline.length - 1].cumulativeSpent : 1
 
   return (
     <div className="glass rounded-2xl p-5 flex flex-col gap-4">
       <p className="text-sm font-bold uppercase tracking-widest text-slate-400">💰 תקציב</p>
 
+      {/* 2-col stat grid */}
       <div className="grid grid-cols-2 gap-2">
         {[
           { label: 'נותר', value: totalRemaining.toLocaleString(), color: 'text-green-400' },
           { label: 'הושקע', value: totalSpent.toLocaleString(), color: 'text-red-400' },
           { label: 'יתרה ממוצעת', value: averageWallet.toLocaleString(), color: 'text-blue-400' },
-          { label: 'תקציב התחלתי', value: totalStarting.toLocaleString(), color: 'text-slate-300' },
+          {
+            label: 'תקציב התחלתי',
+            value: totalStarting.toLocaleString(),
+            color: 'text-slate-300',
+          },
         ].map(stat => (
           <div key={stat.label} className="bg-white/5 rounded-xl p-3 text-center">
             <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-0.5">
@@ -311,6 +321,7 @@ function BudgetHealth({
         ))}
       </div>
 
+      {/* Overall spend progress bar */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between text-xs text-slate-400">
           <span>ניצול תקציב</span>
@@ -324,6 +335,7 @@ function BudgetHealth({
         </div>
       </div>
 
+      {/* Per-round budget timeline */}
       {budgetTimeline.length > 0 && (
         <div className="flex flex-col gap-2 mt-1">
           <p className="text-[10px] uppercase tracking-widest text-slate-500">לפי סבב</p>
@@ -340,7 +352,10 @@ function BudgetHealth({
                     style={{ width: `${barWidth}%` }}
                   />
                 </div>
-                <span className="text-[10px] text-slate-400 tabular-nums w-16 text-left shrink-0 truncate">
+                <span className="text-[10px] text-slate-500 truncate shrink-0 max-w-[5rem]">
+                  {checkpoint.traitTitle}
+                </span>
+                <span className="text-[10px] text-slate-400 tabular-nums w-16 text-left shrink-0">
                   {checkpoint.cumulativeSpent.toLocaleString()}
                 </span>
               </div>
@@ -379,11 +394,11 @@ export default function AnalyticsDashboard({ event }: Props) {
           <div className="skeleton rounded-3xl h-40 w-full" />
           {/* Metrics skeleton */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
+            {[0, 1, 2, 3].map(i => (
               <div key={i} className="skeleton rounded-2xl h-24" />
             ))}
           </div>
-          {/* Content skeleton */}
+          {/* Two-column content skeleton */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="skeleton rounded-2xl h-64" />
             <div className="skeleton rounded-2xl h-64" />
@@ -405,6 +420,8 @@ export default function AnalyticsDashboard({ event }: Props) {
       </div>
     )
   }
+
+  // ── Destructure analytics ──────────────────────────────────────────────────
 
   const {
     status,
@@ -435,24 +452,23 @@ export default function AnalyticsDashboard({ event }: Props) {
     participationRate >= 50
       ? 'text-green-400'
       : participationRate >= 25
-      ? 'text-amber-400'
-      : 'text-red-400'
+        ? 'text-amber-400'
+        : 'text-red-400'
 
-  const sessionInsights =
-    completedRounds > 0 ? generateSessionInsights(cumulativeAnalytics) : []
+  const sessionInsights = completedRounds > 0 ? generateSessionInsights(cumulativeAnalytics) : []
 
-  // Hero card border/background based on status
+  // Hero card visual style based on round status
   const heroBg =
     status === 'open'
       ? 'bg-gradient-to-r from-blue-950 to-slate-900 border border-blue-500/30'
       : status === 'closed'
-      ? 'bg-gradient-to-r from-amber-950/50 to-slate-900 border border-amber-500/30'
-      : 'bg-slate-900 border border-white/10'
+        ? 'bg-gradient-to-r from-amber-950/50 to-slate-900 border border-amber-500/30'
+        : 'bg-slate-900 border border-white/10'
 
   return (
     <div className="flex-1 flex flex-col bg-slate-950 overflow-y-auto" dir="rtl">
 
-      {/* ── Connection warning bar — only when lost, not on initial connecting ── */}
+      {/* ── Connection warning bar — only when disconnected or error, not connecting ── */}
       {(connectionStatus === 'disconnected' || connectionStatus === 'error') && (
         <div
           className={`shrink-0 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium ${
@@ -471,11 +487,12 @@ export default function AnalyticsDashboard({ event }: Props) {
       <div className="flex-1 flex flex-col gap-5 p-6 lg:p-8">
 
         {/* ══════════════════════════════════════════════════════════════════════
-            Section 1 — Current round
+            Section 1 — Current Round
         ══════════════════════════════════════════════════════════════════════ */}
 
         {/* Compact hero card */}
         <div className={`rounded-3xl p-6 ${heroBg}`}>
+
           {status === 'waiting' && (
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
@@ -555,9 +572,11 @@ export default function AnalyticsDashboard({ event }: Props) {
         {/* Two-column live section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-          {/* Left — live bids or winner or waiting state */}
+          {/* Left — live bids / winner card / waiting placeholder */}
           <div className="flex flex-col gap-3">
-            {status === 'open' && <LiveBidderList bids={currentBids} bidderCount={bidderCount} />}
+            {status === 'open' && (
+              <LiveBidderList bids={currentBids} bidderCount={bidderCount} />
+            )}
 
             {status === 'closed' && winnerName && (
               <div className="rounded-2xl p-6 bg-gradient-to-br from-amber-950 to-slate-900 border-2 border-amber-500/50 flex flex-col gap-2">
@@ -592,7 +611,7 @@ export default function AnalyticsDashboard({ event }: Props) {
             )}
           </div>
 
-          {/* Right — discussion insight or budget mini-summary */}
+          {/* Right — discussion insight or cumulative budget mini-summary */}
           <div className="flex flex-col gap-3">
             {discussionInsight ? (
               <div
@@ -657,7 +676,7 @@ export default function AnalyticsDashboard({ event }: Props) {
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════════
-            Section 2 — Completed rounds
+            Section 2 — Completed Rounds
         ══════════════════════════════════════════════════════════════════════ */}
         {completedRounds > 0 && (
           <div className="flex flex-col gap-3">
@@ -680,7 +699,7 @@ export default function AnalyticsDashboard({ event }: Props) {
         )}
 
         {/* ══════════════════════════════════════════════════════════════════════
-            Section 3 — Analysis (categories + budget) — only after 2+ rounds
+            Section 3 — Analysis: categories + budget (only after 2+ rounds)
         ══════════════════════════════════════════════════════════════════════ */}
         {completedRounds >= 2 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -697,7 +716,7 @@ export default function AnalyticsDashboard({ event }: Props) {
         )}
 
         {/* ══════════════════════════════════════════════════════════════════════
-            Section 4 — Session insights
+            Section 4 — Session Insights (only if insights exist)
         ══════════════════════════════════════════════════════════════════════ */}
         {sessionInsights.length > 0 && (
           <div className="glass rounded-2xl p-6 flex flex-col gap-4">
