@@ -212,8 +212,9 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
 
         {/* Branding */}
         <div className="text-center pb-3 border-b border-white/10">
-          <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">מכירה פומבית</p>
-          <p className="text-slate-300 font-semibold text-sm truncate">{event.name}</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Maccabi AI Master" className="w-40 mx-auto mb-2" />
+          <p className="text-slate-400 text-xs truncate">{event.name}</p>
         </div>
 
         {/* Status */}

@@ -23,11 +23,10 @@ export default async function JoinPage({ searchParams }: Props) {
   return (
     <main className="min-h-screen bg-slate-950 flex flex-col items-center justify-center px-4 py-10">
 
-      {/* Logo / Title */}
-      <div className="text-center mb-8 animate-slide-in-up">
-        <div className="text-6xl mb-4 animate-float">🏆</div>
-        <h1 className="text-4xl font-black text-white mb-1">מכירה פומבית</h1>
-        <p className="text-amber-400 text-lg font-semibold">תכונות ניהוליות</p>
+      {/* Logo */}
+      <div className="mb-8 animate-slide-in-up">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="Maccabi AI Master" className="w-56 mx-auto" />
       </div>
 
       {/* Main card */}
