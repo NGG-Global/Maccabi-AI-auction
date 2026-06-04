@@ -251,7 +251,7 @@ export default function LoadingScreen({ accent = '#36b8f5' }: Props) {
               <div className="maccabi-halo" />
               <div className="maccabi-logoWrap">
                 <Image
-                  src="/logo.png"
+                  src="/image002.png"
                   alt="Maccabi AI Master"
                   width={470}
                   height={244}

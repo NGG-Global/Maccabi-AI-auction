@@ -26,7 +26,7 @@ export default async function JoinPage({ searchParams }: Props) {
       {/* Logo */}
       <div className="mb-8 animate-slide-in-up">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="Maccabi AI Master" className="w-56 mx-auto" />
+        <img src="/image002.png" alt="Maccabi AI Master" className="w-56 mx-auto" />
       </div>
 
       {/* Main card */}
