@@ -14,56 +14,31 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceRoleClient()
 
-  // Guard: no open round already exists for this event
-  const { data: openRound } = await supabase
-    .from('auction_rounds')
-    .select('id')
-    .eq('event_id', body.eventId)
-    .eq('status', 'open')
-    .maybeSingle()
+  // Single atomic DB call: locks trait, marks it used, inserts round,
+  // updates current_round_id — all in one transaction. The partial
+  // UNIQUE INDEX uq_one_open_round_per_event enforces the one-open-round
+  // invariant at DB level, preventing race conditions.
+  const { data, error } = await supabase.rpc('open_auction_round', {
+    p_event_id: body.eventId,
+    p_trait_id: body.traitId,
+  })
 
-  if (openRound) {
-    return Response.json({ error: 'יש סבב פתוח כבר. סגרו אותו לפני פתיחת סבב חדש.' }, { status: 409 })
-  }
-
-  // Verify trait belongs to event and is not yet used
-  const { data: trait } = await supabase
-    .from('traits')
-    .select('id, is_used')
-    .eq('id', body.traitId)
-    .eq('event_id', body.eventId)
-    .single()
-
-  if (!trait) {
-    return Response.json({ error: 'התכונה לא נמצאה' }, { status: 404 })
-  }
-  if (trait.is_used) {
-    return Response.json({ error: 'תכונה זו כבר שימשה בסבב קודם' }, { status: 409 })
-  }
-
-  const now = new Date().toISOString()
-
-  const { data: round, error } = await supabase
-    .from('auction_rounds')
-    .insert({
-      event_id: body.eventId,
-      trait_id: body.traitId,
-      status: 'open',
-      opened_at: now,
-    })
-    .select('id')
-    .single()
-
-  if (error || !round) {
-    console.error('Open round error:', error)
+  if (error) {
+    if (error.message?.includes('trait_unavailable')) {
+      return Response.json({ error: 'תכונה זו כבר שימשה בסבב קודם' }, { status: 409 })
+    }
+    // Unique-index violation = concurrent open round already exists
+    if (error.code === '23505') {
+      return Response.json({ error: 'יש סבב פתוח כבר. סגרו אותו לפני פתיחת סבב חדש.' }, { status: 409 })
+    }
+    console.error('open_auction_round error:', error)
     return Response.json({ error: 'שגיאה בפתיחת הסבב' }, { status: 500 })
   }
 
-  // Update event's current_round_id
-  await supabase
-    .from('events')
-    .update({ current_round_id: round.id })
-    .eq('id', body.eventId)
+  const roundId = data?.[0]?.round_id ?? null
+  if (!roundId) {
+    return Response.json({ error: 'שגיאה בפתיחת הסבב' }, { status: 500 })
+  }
 
-  return Response.json({ success: true, roundId: round.id })
+  return Response.json({ success: true, roundId })
 }

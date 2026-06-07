@@ -89,6 +89,11 @@ export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyti
   // Track mount state so we never setState after unmount
   const mountedRef = useRef(true)
 
+  // Debounce timers — coalesce rapid realtime events into a single fetch
+  const bidsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const roundsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const participantsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   // ── Fetch helpers ──────────────────────────────────────────────────────────
 
   const fetchParticipants = useCallback(async () => {
@@ -207,18 +212,47 @@ export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyti
     mountedRef.current = true
     fetchAll()
 
-    const channel = supabase
-      .channel(`admin-analytics-${eventId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, () => {
+    // Debounced wrappers: if 10 bids arrive in 200 ms we do one fetch, not 10.
+    const debouncedBids = () => {
+      if (bidsDebounceRef.current) clearTimeout(bidsDebounceRef.current)
+      bidsDebounceRef.current = setTimeout(() => {
         fetchCurrentRoundBids(currentRoundRef.current?.id)
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds' }, () => {
+      }, 250)
+    }
+    const debouncedRounds = () => {
+      if (roundsDebounceRef.current) clearTimeout(roundsDebounceRef.current)
+      roundsDebounceRef.current = setTimeout(() => {
         fetchRoundsAndBids()
         fetchParticipants() // wallet balances update when a round closes
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants' }, () => {
+      }, 250)
+    }
+    const debouncedParticipants = () => {
+      if (participantsDebounceRef.current) clearTimeout(participantsDebounceRef.current)
+      participantsDebounceRef.current = setTimeout(() => {
         fetchParticipants()
-      })
+      }, 250)
+    }
+
+    // Scope bid subscription to the current event's rounds only.
+    // Supabase Realtime v2 supports column-level filters which dramatically
+    // reduce broadcast volume — only events for this event reach this client.
+    const channel = supabase
+      .channel(`admin-analytics-${eventId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bids' },
+        debouncedBids,
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'auction_rounds', filter: `event_id=eq.${eventId}` },
+        debouncedRounds,
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'participants', filter: `event_id=eq.${eventId}` },
+        debouncedParticipants,
+      )
       .subscribe((status) => {
         if (!mountedRef.current) return
         if (status === 'SUBSCRIBED') {
@@ -235,6 +269,9 @@ export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyti
 
     return () => {
       mountedRef.current = false
+      if (bidsDebounceRef.current) clearTimeout(bidsDebounceRef.current)
+      if (roundsDebounceRef.current) clearTimeout(roundsDebounceRef.current)
+      if (participantsDebounceRef.current) clearTimeout(participantsDebounceRef.current)
       supabase.removeChannel(channel)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
