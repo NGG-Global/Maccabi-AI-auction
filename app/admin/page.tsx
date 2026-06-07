@@ -1,13 +1,7 @@
-import { isAdminAuthenticated } from '@/lib/auth/admin'
-import { redirect } from 'next/navigation'
 import AdminWrapper from './AdminWrapper'
 import type { Event, AuctionRound, Trait } from '@/lib/types'
 
 export default async function AdminPage() {
-  if (!(await isAdminAuthenticated())) {
-    redirect('/admin/login')
-  }
-
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-100">
