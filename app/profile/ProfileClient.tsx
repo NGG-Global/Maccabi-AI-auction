@@ -112,8 +112,10 @@ export default function ProfileClient() {
               {won.map(r => (
                 <div key={r.round.id} className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between">
                   <div>
-                    <p className="text-white font-bold">{(r.round.trait as any)?.title}</p>
-                    <p className="text-slate-500 text-xs mt-0.5">{(r.round.trait as any)?.description}</p>
+                    <p className="text-white font-bold">{r.round.trait?.title}</p>
+                    {r.round.trait?.description && (
+                      <p className="text-slate-500 text-xs mt-0.5">{r.round.trait.description}</p>
+                    )}
                   </div>
                   <span className="text-amber-400 font-black text-sm shrink-0 mr-3">{r.bid.amount} 🪙</span>
                 </div>

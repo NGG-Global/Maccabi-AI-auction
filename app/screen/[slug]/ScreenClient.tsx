@@ -118,12 +118,14 @@ export default function ScreenClient({ event }: Props) {
         </div>
 
         <p className="text-slate-500 text-2xl uppercase tracking-widest mb-4 animate-fade-in">מתמודדים עכשיו</p>
-        <h1 key={round.id} className="text-[96px] font-black text-white leading-none mb-6 animate-scale-in">
+        <h1 key={round.id} className={`text-[96px] font-black text-white leading-none animate-scale-in ${round.trait?.description ? 'mb-6' : 'mb-16'}`}>
           {round.trait?.title}
         </h1>
-        <p className="text-slate-400 text-2xl leading-relaxed mb-16 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '100ms' }}>
-          {round.trait?.description}
-        </p>
+        {round.trait?.description && (
+          <p className="text-slate-400 text-2xl leading-relaxed mb-16 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '100ms' }}>
+            {round.trait.description}
+          </p>
+        )}
 
         <div className="grid grid-cols-2 gap-8 animate-slide-in-up" style={{ animationDelay: '200ms' }}>
           <div className="glass rounded-3xl py-10 px-8">

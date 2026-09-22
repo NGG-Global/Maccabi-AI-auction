@@ -409,12 +409,14 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
                     <span className="text-amber-400 font-bold text-sm">זכייה: {currentRound.winning_bid_amount.toLocaleString()} 🪙</span>
                   )}
                 </div>
-                <h2 className={`font-black mb-3 ${isOpen ? 'text-5xl text-white' : 'text-4xl text-slate-300'}`}>
+                <h2 className={`font-black ${currentRound.trait?.description ? 'mb-3' : ''} ${isOpen ? 'text-5xl text-white' : 'text-4xl text-slate-300'}`}>
                   {currentRound.trait?.title}
                 </h2>
-                <p className="text-slate-400 text-lg leading-relaxed">
-                  {currentRound.trait?.description}
-                </p>
+                {currentRound.trait?.description && (
+                  <p className="text-slate-400 text-lg leading-relaxed">
+                    {currentRound.trait.description}
+                  </p>
+                )}
               </div>
             )}
 
