@@ -1,5 +1,5 @@
 -- ============================================================
--- 005 Final auctioned statements + brand-neutral event slug
+-- 006 Final auctioned statements + brand-neutral event slug
 -- ============================================================
 -- Two changes ahead of the live workshop:
 --
