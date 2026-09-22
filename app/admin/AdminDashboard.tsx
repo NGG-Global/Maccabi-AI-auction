@@ -220,10 +220,8 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
       {/* ── Left: Admin Controls ────────────────────────────── */}
       <aside className="w-72 shrink-0 bg-slate-900 border-l border-white/10 flex flex-col gap-4 p-5 overflow-y-auto">
 
-        {/* Branding */}
+        {/* Event name */}
         <div className="text-center pb-3 border-b border-white/10">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/image002.png" alt="Maccabi AI Master" className="w-40 mx-auto mb-2" />
           <p className="text-slate-400 text-xs truncate">{event.name}</p>
         </div>
 

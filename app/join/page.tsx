@@ -23,12 +23,6 @@ export default async function JoinPage({ searchParams }: Props) {
   return (
     <main className="min-h-screen bg-slate-950 flex flex-col items-center justify-center px-4 py-10">
 
-      {/* Logo */}
-      <div className="mb-8 animate-slide-in-up">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/image002.png" alt="Maccabi AI Master" className="w-56 mx-auto" />
-      </div>
-
       {/* Main card */}
       <div className="w-full max-w-sm animate-scale-in" style={{ animationDelay: '100ms' }}>
 
