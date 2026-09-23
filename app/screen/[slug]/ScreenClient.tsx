@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import type { Event, AuctionRound, Participant } from '@/lib/types'
+import JoinShare from '@/components/screen/JoinShare'
 
 interface Props { event: Event }
 
@@ -81,6 +82,7 @@ export default function ScreenClient({ event }: Props) {
           <p className="text-6xl font-black text-white">{participantCount}</p>
         </div>
       </div>
+      <JoinShare slug={event.slug} />
     </main>
   )
 
@@ -119,6 +121,7 @@ export default function ScreenClient({ event }: Props) {
           ))}
         </div>
       </div>
+      <JoinShare slug={event.slug} />
     </main>
   )
 
@@ -152,6 +155,7 @@ export default function ScreenClient({ event }: Props) {
           </div>
         </div>
       </div>
+      <JoinShare slug={event.slug} />
     </main>
   )
 }
