@@ -255,8 +255,10 @@ export default function PlayClient() {
                 <span className="w-2 h-2 bg-blue-400 rounded-full animate-live-dot" />
                 סבב פתוח
               </span>
-              <h2 className="text-3xl font-black text-white mb-2">{currentRound!.trait?.title}</h2>
-              <p className="text-slate-400 text-sm leading-relaxed">{currentRound!.trait?.description}</p>
+              <h2 className={`text-3xl font-black text-white ${currentRound!.trait?.description ? 'mb-2' : ''}`}>{currentRound!.trait?.title}</h2>
+              {currentRound!.trait?.description && (
+                <p className="text-slate-400 text-sm leading-relaxed">{currentRound!.trait.description}</p>
+              )}
             </div>
 
             {/* ── Live group stats ── */}
