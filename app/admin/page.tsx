@@ -1,7 +1,13 @@
+import { connection } from 'next/server'
 import AdminWrapper from './AdminWrapper'
 import type { Event, AuctionRound, Trait } from '@/lib/types'
 
 export default async function AdminPage() {
+  // Render per request. Without a request-time API (the old password check
+  // read cookies) Next prerenders this page at build time, freezing the
+  // event, traits and round data until the next deploy.
+  await connection()
+
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-100">
