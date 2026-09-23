@@ -1,6 +1,16 @@
 import { NextRequest } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
-import { validateBid } from '@/lib/game/validation'
+
+// Error codes raised by the submit_bid stored procedure → HTTP response.
+const BID_ERRORS: Record<string, { status: number; error: string }> = {
+  invalid_session:      { status: 401, error: 'פגישה לא תקינה' },
+  round_not_found:      { status: 404, error: 'הסבב לא נמצא' },
+  event_mismatch:       { status: 403, error: 'אירוע לא תואם' },
+  round_not_open:       { status: 400, error: 'הסבב אינו פתוח' },
+  invalid_amount:       { status: 400, error: 'סכום ההצעה חייב להיות מספר שלם חיובי' },
+  insufficient_balance: { status: 400, error: 'אין מספיק מטבעות ביתרה' },
+  bid_not_higher:       { status: 400, error: 'הצעה חדשה חייבת להיות גבוהה מהקודמת' },
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
@@ -10,77 +20,28 @@ export async function POST(req: NextRequest) {
   }
 
   const amount = Number(body.amount)
+  if (!Number.isInteger(amount) || amount <= 0) {
+    return Response.json({ error: BID_ERRORS.invalid_amount.error }, { status: 400 })
+  }
+
   const supabase = createServiceRoleClient()
 
-  // Resolve participant from session token
-  const { data: participant } = await supabase
-    .from('participants')
-    .select('id, event_id, wallet_balance')
-    .eq('session_token', body.sessionToken)
-    .single()
-
-  if (!participant) {
-    return Response.json({ error: 'פגישה לא תקינה' }, { status: 401 })
-  }
-
-  // Fetch round and verify it belongs to the same event
-  const { data: round } = await supabase
-    .from('auction_rounds')
-    .select('id, status, event_id')
-    .eq('id', body.roundId)
-    .single()
-
-  if (!round) {
-    return Response.json({ error: 'הסבב לא נמצא' }, { status: 404 })
-  }
-  if (round.event_id !== participant.event_id) {
-    return Response.json({ error: 'אירוע לא תואם' }, { status: 403 })
-  }
-
-  // Check for existing bid
-  const { data: existingBid } = await supabase
-    .from('bids')
-    .select('id, amount')
-    .eq('round_id', body.roundId)
-    .eq('participant_id', participant.id)
-    .maybeSingle()
-
-  const validation = validateBid({
-    amount,
-    walletBalance: participant.wallet_balance,
-    existingBidAmount: existingBid?.amount ?? null,
-    roundStatus: round.status,
+  // Single atomic DB call: resolves the session, share-locks the round
+  // (serialised against close_auction_round), validates balance and
+  // raise, then upserts the bid — all in one transaction.
+  const { error } = await supabase.rpc('submit_bid', {
+    p_session_token: String(body.sessionToken),
+    p_round_id: body.roundId,
+    p_amount: amount,
   })
 
-  if (!validation.valid) {
-    return Response.json({ error: validation.error }, { status: 400 })
-  }
-
-  // Upsert bid
-  if (existingBid) {
-    const { error } = await supabase
-      .from('bids')
-      .update({ amount, updated_at: new Date().toISOString() })
-      .eq('id', existingBid.id)
-
-    if (error) {
-      console.error('Bid update error:', error)
-      return Response.json({ error: 'שגיאה בעדכון ההצעה' }, { status: 500 })
+  if (error) {
+    const known = Object.keys(BID_ERRORS).find(code => error.message?.includes(code))
+    if (known) {
+      return Response.json({ error: BID_ERRORS[known].error }, { status: BID_ERRORS[known].status })
     }
-  } else {
-    const now = new Date().toISOString()
-    const { error } = await supabase.from('bids').insert({
-      round_id: body.roundId,
-      participant_id: participant.id,
-      amount,
-      created_at: now,
-      updated_at: now,
-    })
-
-    if (error) {
-      console.error('Bid insert error:', error)
-      return Response.json({ error: 'שגיאה בשמירת ההצעה' }, { status: 500 })
-    }
+    console.error('submit_bid error:', error)
+    return Response.json({ error: 'שגיאה בשמירת ההצעה' }, { status: 500 })
   }
 
   return Response.json({ success: true, amount })

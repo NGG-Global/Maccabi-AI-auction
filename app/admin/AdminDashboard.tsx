@@ -120,11 +120,13 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
     fetchRoundNumber()
     if (initialRound) fetchBids(initialRound.id)
 
-    // Debounce timers — coalesce rapid bid events into a single fetch
+    // Throttle timer — coalesce rapid bid events into a single fetch without
+    // letting a continuous stream of bids postpone the refresh indefinitely
     let bidsTimer: ReturnType<typeof setTimeout> | null = null
     const debouncedFetchBids = () => {
-      if (bidsTimer) clearTimeout(bidsTimer)
+      if (bidsTimer) return
       bidsTimer = setTimeout(() => {
+        bidsTimer = null
         if (currentRoundRef.current) fetchBids(currentRoundRef.current.id)
       }, 250)
     }

@@ -32,6 +32,7 @@ export default function PlayClient() {
   const bidSoundRef = useRef<HTMLAudioElement | null>(null)
   const prevBalanceRef = useRef<number | null>(null)
   const [walletFlash, setWalletFlash] = useState(false)
+  const fetchSeqRef = useRef(0)
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
@@ -69,6 +70,8 @@ export default function PlayClient() {
   }, [supabase])
 
   const fetchState = useCallback(async (participantId: string) => {
+    // Responses can arrive out of order under load; only the latest call may write state.
+    const seq = ++fetchSeqRef.current
     const { data: participant } = await supabase
       .from('participants').select('*').eq('id', participantId).single<Participant>()
     if (!participant) return
@@ -90,6 +93,7 @@ export default function PlayClient() {
       myBid = bid ?? null
     }
 
+    if (seq !== fetchSeqRef.current) return
     setState(prev => ({ ...prev, participant, currentRound: round, myBid, loading: false }))
 
     if (round?.status === 'open') {
@@ -106,14 +110,28 @@ export default function PlayClient() {
       return
     }
     fetchState(participantId)
+
+    // Throttle — with ~100 phones each refetching on every bid, a burst of bids
+    // would otherwise multiply into thousands of queries. At most one refresh
+    // per 300 ms, and a steady stream of bids cannot postpone it.
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null
+    const scheduleRefresh = () => {
+      if (refreshTimer) return
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null
+        fetchState(participantId)
+      }, 300)
+    }
+
     const channel = supabase.channel('play-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds' }, () => fetchState(participantId))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, () => fetchState(participantId))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants' }, (payload) => {
-        if ((payload.new as Participant)?.id === participantId) fetchState(participantId)
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `id=eq.${participantId}` }, scheduleRefresh)
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer)
+      supabase.removeChannel(channel)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleBidSubmit(e: React.FormEvent) {

@@ -212,23 +212,28 @@ export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyti
     mountedRef.current = true
     fetchAll()
 
-    // Debounced wrappers: if 10 bids arrive in 200 ms we do one fetch, not 10.
+    // Throttled wrappers: if 10 bids arrive in 200 ms we do one fetch, not 10.
+    // The timer is not reset by later events, so a steady stream of bids
+    // still refreshes the dashboard every 250 ms instead of freezing it.
     const debouncedBids = () => {
-      if (bidsDebounceRef.current) clearTimeout(bidsDebounceRef.current)
+      if (bidsDebounceRef.current) return
       bidsDebounceRef.current = setTimeout(() => {
+        bidsDebounceRef.current = null
         fetchCurrentRoundBids(currentRoundRef.current?.id)
       }, 250)
     }
     const debouncedRounds = () => {
-      if (roundsDebounceRef.current) clearTimeout(roundsDebounceRef.current)
+      if (roundsDebounceRef.current) return
       roundsDebounceRef.current = setTimeout(() => {
+        roundsDebounceRef.current = null
         fetchRoundsAndBids()
         fetchParticipants() // wallet balances update when a round closes
       }, 250)
     }
     const debouncedParticipants = () => {
-      if (participantsDebounceRef.current) clearTimeout(participantsDebounceRef.current)
+      if (participantsDebounceRef.current) return
       participantsDebounceRef.current = setTimeout(() => {
+        participantsDebounceRef.current = null
         fetchParticipants()
       }, 250)
     }
