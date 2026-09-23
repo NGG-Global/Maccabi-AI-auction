@@ -45,12 +45,26 @@ export default function ScreenClient({ event }: Props) {
 
   useEffect(() => {
     fetchState()
+
+    // Throttle — coalesce bursts of bids into one refresh per 250 ms.
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null
+    const scheduleRefresh = () => {
+      if (refreshTimer) return
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null
+        fetchState()
+      }, 250)
+    }
+
     const channel = supabase.channel('screen-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds' }, fetchState)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, fetchState)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants' }, fetchState)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds', filter: `event_id=eq.${event.id}` }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `event_id=eq.${event.id}` }, scheduleRefresh)
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer)
+      supabase.removeChannel(channel)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { round, bidderCount, highestBid, totalSpent, winner } = state
@@ -96,7 +110,7 @@ export default function ScreenClient({ event }: Props) {
           {[
             { label: 'מציעים', value: bidderCount, color: 'text-blue-400' },
             { label: 'הצעה גבוהה', value: `${highestBid.toLocaleString()} 🪙`, color: 'text-amber-400' },
-            { label: 'סה"כ הוצאה', value: `${totalSpent.toLocaleString()} 🪙`, color: 'text-green-400' },
+            { label: 'סכום כל ההצעות', value: `${totalSpent.toLocaleString()} 🪙`, color: 'text-green-400' },
           ].map(s => (
             <div key={s.label} className="glass rounded-3xl py-8 px-6">
               <p className="text-slate-500 text-lg mb-2">{s.label}</p>

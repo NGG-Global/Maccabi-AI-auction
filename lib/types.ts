@@ -16,7 +16,6 @@ export interface Participant {
   event_id: string
   display_name: string
   wallet_balance: number
-  session_token: string
   created_at: string
   last_seen_at: string | null
 }

@@ -38,13 +38,23 @@ export async function POST(req: NextRequest) {
       event_id: body.eventId,
       display_name: displayName,
       wallet_balance: 1000,
-      session_token: sessionToken,
     })
     .select('id, wallet_balance')
     .single()
 
   if (error || !participant) {
     console.error('Register participant error:', error)
+    return Response.json({ error: 'שגיאה ביצירת המשתתף' }, { status: 500 })
+  }
+
+  // Session tokens live in a table the browser cannot read (see migration 007).
+  const { error: sessionError } = await supabase
+    .from('participant_sessions')
+    .insert({ participant_id: participant.id, session_token: sessionToken })
+
+  if (sessionError) {
+    console.error('Register session error:', sessionError)
+    await supabase.from('participants').delete().eq('id', participant.id)
     return Response.json({ error: 'שגיאה ביצירת המשתתף' }, { status: 500 })
   }
 
