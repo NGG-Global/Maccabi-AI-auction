@@ -61,8 +61,12 @@ export default function AdminWrapper(props: Props) {
         <span className="mr-auto text-xs text-slate-600 px-2">{props.event.name}</span>
       </nav>
 
-      {activeTab === 'controls' && <AdminDashboard {...props} />}
-      {activeTab === 'analytics' && <AnalyticsDashboard event={props.event} />}
+      <div className={activeTab === 'controls' ? 'contents' : 'hidden'}>
+        <AdminDashboard {...props} />
+      </div>
+      <div className={activeTab === 'analytics' ? 'contents' : 'hidden'}>
+        <AnalyticsDashboard event={props.event} />
+      </div>
     </div>
   )
 }

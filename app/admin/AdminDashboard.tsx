@@ -120,20 +120,30 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
     fetchRoundNumber()
     if (initialRound) fetchBids(initialRound.id)
 
-    const channel = supabase
-      .channel('admin-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, () => {
+    // Debounce timers — coalesce rapid bid events into a single fetch
+    let bidsTimer: ReturnType<typeof setTimeout> | null = null
+    const debouncedFetchBids = () => {
+      if (bidsTimer) clearTimeout(bidsTimer)
+      bidsTimer = setTimeout(() => {
         if (currentRoundRef.current) fetchBids(currentRoundRef.current.id)
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds' }, refreshRound)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants' }, fetchParticipantCount)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'traits' }, async () => {
+      }, 250)
+    }
+
+    const channel = supabase
+      .channel(`admin-controls-${event.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, debouncedFetchBids)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds', filter: `event_id=eq.${event.id}` }, refreshRound)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `event_id=eq.${event.id}` }, fetchParticipantCount)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'traits', filter: `event_id=eq.${event.id}` }, async () => {
         const { data } = await supabase.from('traits').select('*').eq('event_id', event.id).order('sort_order')
         if (data) setLocalTraits(data as Trait[])
       })
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      if (bidsTimer) clearTimeout(bidsTimer)
+      supabase.removeChannel(channel)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function showMsg(type: 'success' | 'error', text: string) {
@@ -210,10 +220,9 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
       {/* ── Left: Admin Controls ────────────────────────────── */}
       <aside className="w-72 shrink-0 bg-slate-900 border-l border-white/10 flex flex-col gap-4 p-5 overflow-y-auto">
 
-        {/* Branding */}
+        {/* Event name */}
         <div className="text-center pb-3 border-b border-white/10">
-          <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">מכירה פומבית</p>
-          <p className="text-slate-300 font-semibold text-sm truncate">{event.name}</p>
+          <p className="text-slate-400 text-xs truncate">{event.name}</p>
         </div>
 
         {/* Status */}
