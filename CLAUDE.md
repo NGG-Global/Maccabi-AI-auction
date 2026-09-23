@@ -4,10 +4,9 @@
 
 Live real-time auction game for an in-person leadership workshop (~100 participants).
 
-Three interfaces:
+Two interfaces:
 1. Participant — mobile phone, Hebrew RTL
-2. Facilitator/Admin — laptop dashboard
-3. Projection screen — large display, read-only
+2. Facilitator/Admin — laptop dashboard, which is also the display projected to the room (includes the join QR code)
 
 Core rule: Every participant starts with 1,000 coins. Each round auctions one leadership trait. Participants bid or raise while open. When the facilitator closes a round, every bidder pays their final bid even if they lost. Highest bid wins; ties broken by earliest `updated_at`.
 
@@ -50,13 +49,11 @@ app/
   join/          # /join?event=slug
   play/          # participant experience
   admin/         # facilitator dashboard
-  screen/[slug]/ # projection screen
   profile/       # end-of-game profile
   api/           # route handlers
 components/
   participant/
   admin/
-  screen/
   shared/
 lib/
   supabase/      # client + server + middleware helpers
@@ -82,6 +79,6 @@ scripts/
 - Winner is calculated correctly server-side.
 - All bidders are charged server-side.
 - Balances update correctly.
-- Projection screen updates in real time.
+- Admin dashboard (the projected display) updates in real time.
 - Participant profile shows meaningful summary.
 - Reset/test mode exists.

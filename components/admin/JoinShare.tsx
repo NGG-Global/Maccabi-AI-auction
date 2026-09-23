@@ -3,33 +3,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import QRCode from 'qrcode'
 
-interface Props {
-  slug: string
-  /** 'floating': subtle corner controls (projection screen). 'inline': compact buttons for a toolbar (admin header). */
-  variant?: 'floating' | 'inline'
-}
+interface Props { slug: string }
 
 type CopyState = 'idle' | 'copied' | 'failed'
 
-const CONTROL_STYLES = {
-  floating: {
-    wrapper: 'fixed bottom-6 left-6 z-40 flex gap-3 opacity-60 hover:opacity-100 focus-within:opacity-100 transition-opacity',
-    button: 'glass rounded-2xl px-5 py-3 text-white text-lg font-semibold hover:bg-white/10 transition-colors',
-    copyMinWidth: 'min-w-44',
-  },
-  inline: {
-    wrapper: 'flex items-center gap-2',
-    button: 'rounded-lg border border-white/10 bg-slate-800/60 hover:bg-slate-700 px-3 py-1.5 text-sm text-slate-200 font-semibold transition-colors',
-    copyMinWidth: 'min-w-32',
-  },
-} as const
+const BUTTON_CLASS =
+  'rounded-lg border border-white/10 bg-slate-800/60 hover:bg-slate-700 px-3 py-1.5 text-sm text-slate-200 font-semibold transition-colors'
 
 /**
- * Controls for letting people join: a full-screen QR code overlay and a
- * copy-link button. The QR is generated locally, so it works without any
- * external service.
+ * Admin header controls for letting people join: a full-screen QR code
+ * overlay and a copy-link button. The QR is generated locally, so it works
+ * without any external service.
  */
-export default function JoinShare({ slug, variant = 'floating' }: Props) {
+export default function JoinShare({ slug }: Props) {
   const joinUrl = useMemo(
     () => `${window.location.origin}/join?event=${encodeURIComponent(slug)}`,
     [slug],
@@ -78,8 +64,6 @@ export default function JoinShare({ slug, variant = 'floating' }: Props) {
     copyTimerRef.current = setTimeout(() => setCopyState('idle'), 2500)
   }
 
-  const styles = CONTROL_STYLES[variant]
-
   const copyLabel =
     copyState === 'copied' ? 'הקישור הועתק ✓' :
     copyState === 'failed' ? 'ההעתקה נכשלה' :
@@ -87,19 +71,18 @@ export default function JoinShare({ slug, variant = 'floating' }: Props) {
 
   return (
     <>
-      {/* Facilitator controls — the floating variant stays subtle so it doesn't distract the room */}
-      <div className={styles.wrapper}>
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => setShowQr(true)}
-          className={styles.button}
+          className={BUTTON_CLASS}
         >
           📱 קוד QR להצטרפות
         </button>
         <button
           type="button"
           onClick={copyLink}
-          className={`${styles.button} ${styles.copyMinWidth}`}
+          className={`${BUTTON_CLASS} min-w-32`}
         >
           {copyState === 'idle' ? '🔗 ' : ''}{copyLabel}
         </button>
