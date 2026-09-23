@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import type { Event, AuctionRound, Trait, Bid, Participant } from '@/lib/types'
 import { TraitQueue } from './TraitQueue'
-import JoinShare from '@/components/screen/JoinShare'
+import JoinShare from '@/components/admin/JoinShare'
 
 interface Props {
   event: Event
@@ -378,7 +378,7 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
               <span className="tabular-nums font-mono text-amber-400 font-bold">{elapsed}</span>
             )}
             <span>{participantCount} משתתפים</span>
-            <JoinShare slug={event.slug} variant="inline" />
+            <JoinShare slug={event.slug} />
           </div>
         </header>
 
