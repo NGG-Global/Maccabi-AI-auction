@@ -10,6 +10,15 @@ Two interfaces:
 
 Core rule: Every participant starts with 1,000 coins. Each round auctions one leadership trait. Participants bid or raise while open. When the facilitator closes a round, every bidder pays their final bid even if they lost. Highest bid wins; ties broken by earliest `updated_at`.
 
+## Game modes
+
+The facilitator picks the mode on the admin dashboard before the game starts (`events.game_mode`). It is locked while the event has any round; a reset unlocks it.
+
+- `auction` — the rule above: one trait per round, opened one at a time.
+- `allocation` — every trait opens at once (one `auction_rounds` row per trait, `mode = 'allocation'`). Each participant splits their wallet across the traits; a save replaces their whole split and the total may not exceed the wallet. They can change it until the facilitator closes. `close_allocation` closes all traits atomically: highest allocation per trait wins (ties: earliest `updated_at`), every allocation is charged. Participants see only their own split; the projected dashboard shows participation while open and the per-trait results after close.
+
+DB functions (migration 008): `set_game_mode`, `open_allocation`, `submit_allocation`, `close_allocation`. Auction functions refuse allocation events and vice versa.
+
 ## Top priorities
 
 1. Reliability during a live event.

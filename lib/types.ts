@@ -1,12 +1,17 @@
 export type EventStatus = 'draft' | 'active' | 'ended'
 export type RoundStatus = 'draft' | 'open' | 'closed' | 'cancelled'
 export type WalletReason = 'initial_grant' | 'round_bid_payment' | 'admin_adjustment' | 'reset'
+// auction: one trait per round. allocation: all traits open at once and
+// each participant splits their wallet across them (migration 008).
+export type GameMode = 'auction' | 'allocation'
 
 export interface Event {
   id: string
   slug: string
   name: string
   status: EventStatus
+  // Absent until migration 008 is applied; treat as 'auction'.
+  game_mode?: GameMode
   current_round_id: string | null
   created_at: string
 }
@@ -36,6 +41,7 @@ export interface AuctionRound {
   event_id: string
   trait_id: string
   status: RoundStatus
+  mode?: GameMode
   opened_at: string | null
   closed_at: string | null
   winner_participant_id: string | null

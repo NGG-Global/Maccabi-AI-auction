@@ -6,6 +6,7 @@ const BID_ERRORS: Record<string, { status: number; error: string }> = {
   invalid_session:      { status: 401, error: 'פגישה לא תקינה' },
   round_not_found:      { status: 404, error: 'הסבב לא נמצא' },
   event_mismatch:       { status: 403, error: 'אירוע לא תואם' },
+  wrong_mode:           { status: 400, error: 'המשחק במצב חלוקת תקציב' },
   round_not_open:       { status: 400, error: 'הסבב אינו פתוח' },
   invalid_amount:       { status: 400, error: 'סכום ההצעה חייב להיות מספר שלם חיובי' },
   insufficient_balance: { status: 400, error: 'אין מספיק מטבעות ביתרה' },
