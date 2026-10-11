@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
-import type { AuctionRound, Bid, Participant } from '@/lib/types'
+import type { AuctionRound, Bid, GameMode, Participant } from '@/lib/types'
+import { sortRoundsByTrait, ROUND_WINNERS_SELECT } from '@/lib/game/allocation'
 import {
   computeCurrentRoundAnalytics,
   computeCumulativeAnalytics,
@@ -14,8 +15,20 @@ import {
 
 // ─── Return type ──────────────────────────────────────────────────────────────
 
+// Allocation mode has no single "current round": every trait is open at
+// once. While it is open the overview carries participation only.
+export interface AllocationOverview {
+  status: 'waiting' | 'open' | 'closed'
+  openedAt: string | null
+  registeredParticipants: number
+  allocatorCount: number      // participants with at least one allocation
+  participationRate: number   // 0–100
+  totalAllocated: number
+}
+
 export interface AdminRealtimeAnalyticsResult {
   currentRoundAnalytics: CurrentRoundAnalytics
+  allocationOverview: AllocationOverview
   cumulativeAnalytics: CumulativeGameAnalytics
   currentBids: Bid[]
   discussionInsight: string | null
@@ -63,7 +76,10 @@ function emptyCumulative(): CumulativeGameAnalytics {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyticsResult {
+export function useAdminRealtimeAnalytics(
+  eventId: string,
+  gameMode: GameMode = 'auction',
+): AdminRealtimeAnalyticsResult {
   // Single, stable Supabase client instance
   const supabase = useMemo(() => createClient(), [])
 
@@ -73,6 +89,10 @@ export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyti
   const [currentBids, setCurrentBids] = useState<Bid[]>([])
   const [closedRounds, setClosedRounds] = useState<AuctionRound[]>([])
   const [bidAmountsByRound, setBidAmountsByRound] = useState<Record<string, number[]>>({})
+  // Allocation mode only
+  const [openAllocationRounds, setOpenAllocationRounds] = useState<AuctionRound[]>([])
+  const [allocationBids, setAllocationBids] = useState<{ participant_id: string; amount: number }[]>([])
+  const allocationRoundIdsRef = useRef<string[]>([])
 
   // UI state
   const [connectionStatus, setConnectionStatus] = useState<RealtimeConnectionStatus>('connecting')
@@ -120,6 +140,7 @@ export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyti
       .select('*, participant:participants(id, display_name)')
       .eq('round_id', roundId)
       .order('amount', { ascending: false })
+      .order('updated_at', { ascending: true }) // same order as the tie-break: first to reach the amount leads
 
     if (!mountedRef.current) return
     if (err) {
@@ -154,7 +175,56 @@ export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyti
     setBidAmountsByRound(grouped)
   }, [supabase])
 
+  const fetchAllocationBids = useCallback(async (roundIds: string[]) => {
+    if (roundIds.length === 0) {
+      if (mountedRef.current) setAllocationBids([])
+      return
+    }
+    const { data, error: err } = await supabase
+      .from('bids')
+      .select('participant_id, amount')
+      .in('round_id', roundIds)
+
+    if (!mountedRef.current) return
+    if (err) {
+      setError(`שגיאה בטעינת החלוקה: ${err.message}`)
+      return
+    }
+    setAllocationBids((data ?? []) as { participant_id: string; amount: number }[])
+  }, [supabase])
+
+  const fetchAllocationRounds = useCallback(async () => {
+    const { data, error: err } = await supabase
+      .from('auction_rounds')
+      .select(`*, trait:traits(*), ${ROUND_WINNERS_SELECT}`)
+      .eq('event_id', eventId)
+      .in('status', ['open', 'closed'])
+
+    if (!mountedRef.current) return
+    if (err) {
+      setError(`שגיאה בטעינת החלוקה: ${err.message}`)
+      return
+    }
+
+    const all = sortRoundsByTrait((data ?? []) as AuctionRound[])
+    const open = all.filter(r => r.status === 'open')
+    const closed = all.filter(r => r.status === 'closed')
+    allocationRoundIdsRef.current = all.map(r => r.id)
+    setOpenAllocationRounds(open)
+    setClosedRounds(closed)
+
+    await Promise.all([
+      fetchAllocationBids(allocationRoundIdsRef.current),
+      fetchClosedRoundBids(closed.map(r => r.id)),
+    ])
+  }, [supabase, eventId, fetchAllocationBids, fetchClosedRoundBids])
+
   const fetchRoundsAndBids = useCallback(async () => {
+    if (gameMode === 'allocation') {
+      await fetchAllocationRounds()
+      return
+    }
+
     // Fetch the most recent open or closed round (with trait + winner joined)
     const { data: recentRounds, error: recentErr } = await supabase
       .from('auction_rounds')
@@ -196,7 +266,7 @@ export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyti
       fetchCurrentRoundBids(latestRound?.id),
       fetchClosedRoundBids(closed.map(r => r.id)),
     ])
-  }, [supabase, eventId, fetchCurrentRoundBids, fetchClosedRoundBids])
+  }, [supabase, eventId, gameMode, fetchAllocationRounds, fetchCurrentRoundBids, fetchClosedRoundBids])
 
   const fetchAll = useCallback(async () => {
     await Promise.all([fetchParticipants(), fetchRoundsAndBids()])
@@ -219,7 +289,8 @@ export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyti
       if (bidsDebounceRef.current) return
       bidsDebounceRef.current = setTimeout(() => {
         bidsDebounceRef.current = null
-        fetchCurrentRoundBids(currentRoundRef.current?.id)
+        if (gameMode === 'allocation') fetchAllocationBids(allocationRoundIdsRef.current)
+        else fetchCurrentRoundBids(currentRoundRef.current?.id)
       }, 250)
     }
     const debouncedRounds = () => {
@@ -294,12 +365,29 @@ export function useAdminRealtimeAnalytics(eventId: string): AdminRealtimeAnalyti
   )
 
   const discussionInsight = useMemo(
-    () => generateDiscussionInsight(currentRoundAnalytics),
-    [currentRoundAnalytics],
+    () => (gameMode === 'allocation' ? null : generateDiscussionInsight(currentRoundAnalytics)),
+    [gameMode, currentRoundAnalytics],
   )
+
+  const allocationOverview = useMemo<AllocationOverview>(() => {
+    const registeredParticipants = participants.length
+    const status: AllocationOverview['status'] =
+      openAllocationRounds.length > 0 ? 'open' : closedRounds.length > 0 ? 'closed' : 'waiting'
+    const allocatorCount = new Set(allocationBids.map(b => b.participant_id)).size
+    return {
+      status,
+      openedAt: openAllocationRounds[0]?.opened_at ?? null,
+      registeredParticipants,
+      allocatorCount,
+      participationRate:
+        registeredParticipants > 0 ? Math.round((allocatorCount / registeredParticipants) * 100) : 0,
+      totalAllocated: allocationBids.reduce((s, b) => s + b.amount, 0),
+    }
+  }, [participants.length, openAllocationRounds, allocationBids, closedRounds.length])
 
   return {
     currentRoundAnalytics,
+    allocationOverview,
     cumulativeAnalytics,
     currentBids,
     discussionInsight,

@@ -2,28 +2,30 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
-import type { Event, AuctionRound, Trait, Bid, Participant } from '@/lib/types'
+import type { Event, AuctionRound, Trait, Bid, Participant, GameMode } from '@/lib/types'
 import { TraitQueue } from './TraitQueue'
 import JoinShare from '@/components/admin/JoinShare'
+import GameModeSwitch from '@/components/admin/GameModeSwitch'
+import ResetControl from '@/components/admin/ResetControl'
 
 interface Props {
   event: Event
   traits: Trait[]
   initialRound: AuctionRound | null
+  onModeChange: (mode: GameMode) => void
 }
 
 interface BidRow extends Bid {
   participant: Participant
 }
 
-export default function AdminDashboard({ event, traits, initialRound }: Props) {
+export default function AdminDashboard({ event, traits, initialRound, onModeChange }: Props) {
   const [currentRound, setCurrentRound] = useState<AuctionRound | null>(initialRound)
   const [bids, setBids] = useState<BidRow[]>([])
   const [participantCount, setParticipantCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [confirmClose, setConfirmClose] = useState(false)
-  const [confirmReset, setConfirmReset] = useState(false)
   const [elapsed, setElapsed] = useState('0:00')
   const [roundNumber, setRoundNumber] = useState(0)
   const supabase = useMemo(() => createClient(), [])
@@ -80,6 +82,7 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
       .select('*, participant:participants(*)')
       .eq('round_id', roundId)
       .order('amount', { ascending: false })
+      .order('updated_at', { ascending: true }) // same order as the tie-break: first to reach the amount leads
     setBids((data ?? []) as BidRow[])
   }, [supabase])
 
@@ -116,9 +119,17 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
     fetchRoundNumber()
   }, [supabase, event.id, fetchBids, fetchRoundNumber])
 
+  const fetchTraits = useCallback(async () => {
+    const { data } = await supabase.from('traits').select('*').eq('event_id', event.id).order('sort_order')
+    if (data) setLocalTraits(data as Trait[])
+  }, [supabase, event.id])
+
   useEffect(() => {
     fetchParticipantCount()
     fetchRoundNumber()
+    // The traits prop is from page load; is_used may have changed since
+    // (e.g. a reset before switching back from allocation mode).
+    fetchTraits()
     if (initialRound) fetchBids(initialRound.id)
 
     // Throttle timer — coalesce rapid bid events into a single fetch without
@@ -137,10 +148,7 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, debouncedFetchBids)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds', filter: `event_id=eq.${event.id}` }, refreshRound)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `event_id=eq.${event.id}` }, fetchParticipantCount)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'traits', filter: `event_id=eq.${event.id}` }, async () => {
-        const { data } = await supabase.from('traits').select('*').eq('event_id', event.id).order('sort_order')
-        if (data) setLocalTraits(data as Trait[])
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'traits', filter: `event_id=eq.${event.id}` }, fetchTraits)
       .subscribe()
 
     return () => {
@@ -190,27 +198,17 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
     finally { setLoading(false) }
   }
 
-  async function handleReset() {
-    if (!confirmReset) { setConfirmReset(true); return }
-    setConfirmReset(false)
-    setLoading(true)
-    try {
-      const res = await fetch('/api/admin/reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventId: event.id }),
-      })
-      if (!res.ok) { showMsg('error', 'שגיאה באיפוס'); return }
-      showMsg('success', 'האירוע אופס')
-      setCurrentRound(null)
-      setBids([])
-      await refreshRound()
-      await fetchParticipantCount()
-    } catch { showMsg('error', 'שגיאת רשת') }
-    finally { setLoading(false) }
+  async function handleAfterReset() {
+    showMsg('success', 'האירוע אופס')
+    setCurrentRound(null)
+    setBids([])
+    await refreshRound()
+    await fetchParticipantCount()
   }
 
   const leader = bids[0] ?? null
+  // Bids sharing the top amount; the first of them leads (and wins on close).
+  const tiedAtTop = leader ? bids.filter(b => b.amount === leader.amount).length : 0
   const highestBid = leader?.amount ?? 0
   const avgBid = bids.length > 0 ? Math.round(bids.reduce((s, b) => s + b.amount, 0) / bids.length) : 0
   const totalBid = bids.reduce((s, b) => s + b.amount, 0)
@@ -236,6 +234,14 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
         }`}>
           {isOpen ? '🟢 סבב פתוח' : isClosed ? '🟡 סבב נסגר' : '⚪ ממתין'}
         </div>
+
+        {/* Game mode — editable only before the first round */}
+        <GameModeSwitch
+          eventId={event.id}
+          mode="auction"
+          locked={roundNumber > 0 || !!currentRound}
+          onChange={onModeChange}
+        />
 
         {/* Toast */}
         {message && (
@@ -315,37 +321,12 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
 
         {/* Reset */}
         <div className="mt-auto pt-4 border-t border-white/10">
-          {!confirmReset ? (
-            <button
-              onClick={() => setConfirmReset(true)}
-              disabled={loading}
-              className="w-full bg-transparent hover:bg-red-900/30 border border-red-900/50 text-red-500 hover:text-red-400 rounded-xl py-2.5 text-xs font-medium transition-all"
-            >
-              🔄 איפוס משחק
-            </button>
-          ) : (
-            <div className="flex flex-col gap-2 animate-scale-in bg-red-950/40 border border-red-700/50 rounded-xl p-3">
-              <p className="text-red-400 text-xs font-bold text-center">⚠️ איפוס מלא</p>
-              <p className="text-slate-400 text-[11px] text-center leading-relaxed">
-                ימחקו כל המשתתפים, ההצעות והסבבים. פעולה זו אינה הפיכה.
-              </p>
-              <div className="flex gap-2 mt-1">
-                <button
-                  onClick={() => setConfirmReset(false)}
-                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-lg py-2 text-xs font-medium transition-all"
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={handleReset}
-                  disabled={loading}
-                  className="flex-1 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg py-2 text-xs font-bold transition-all"
-                >
-                  {loading ? '...' : 'אשר איפוס'}
-                </button>
-              </div>
-            </div>
-          )}
+          <ResetControl
+            eventId={event.id}
+            disabled={loading}
+            onReset={handleAfterReset}
+            onError={text => showMsg('error', text)}
+          />
         </div>
       </aside>
 
@@ -446,6 +427,9 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
                 <p className="text-amber-400 text-4xl font-black">
                   {currentRound.winning_bid_amount?.toLocaleString()} 🪙
                 </p>
+                {tiedAtTop > 1 && (
+                  <p className="text-amber-300/90 text-lg mt-3">⏱️ שוויון — הוכרע לטובת מי שהציע את הסכום ראשון</p>
+                )}
               </div>
             )}
 
@@ -482,6 +466,9 @@ export default function AdminDashboard({ event, traits, initialRound }: Props) {
                   <p className="text-white text-3xl font-black mb-1 truncate">{leader.participant?.display_name}</p>
                   <p className="text-5xl font-black shimmer-gold">{leader.amount.toLocaleString()}</p>
                   <p className="text-amber-600 text-sm mt-1">מטבעות</p>
+                  {tiedAtTop > 1 && (
+                    <p className="text-amber-300/90 text-xs mt-2">⏱️ שוויון עם עוד {tiedAtTop - 1} — מוביל מי שהציע ראשון</p>
+                  )}
                 </div>
               )}
 

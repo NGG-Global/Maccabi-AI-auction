@@ -1,18 +1,19 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useAdminRealtimeAnalytics } from '@/lib/hooks/useAdminRealtimeAnalytics'
+import { useAdminRealtimeAnalytics, type AllocationOverview } from '@/lib/hooks/useAdminRealtimeAnalytics'
 import {
   generateSessionInsights,
   type RoundSummary,
   type CategoryAnalytics,
   type BudgetCheckpoint,
 } from '@/lib/game/analytics'
-import type { Event } from '@/lib/types'
+import type { Event, GameMode } from '@/lib/types'
 import type { Bid } from '@/lib/types'
 
 interface Props {
   event: Event
+  gameMode: GameMode
 }
 
 // ─── Elapsed timer ────────────────────────────────────────────────────────────
@@ -130,9 +131,10 @@ function LiveBidderList({ bids, bidderCount }: LiveBidderListProps) {
 interface RoundCardProps {
   summary: RoundSummary
   prev?: RoundSummary
+  showTrend?: boolean   // false in allocation mode, where rounds have no order
 }
 
-function RoundCard({ summary, prev }: RoundCardProps) {
+function RoundCard({ summary, prev, showTrend = true }: RoundCardProps) {
   const categoryBadgeClass = (cat: string | null): string => {
     switch (cat) {
       case 'שיפוט':
@@ -178,9 +180,10 @@ function RoundCard({ summary, prev }: RoundCardProps) {
       {/* Winner row */}
       {summary.winnerName ? (
         <div className="flex items-center gap-2 bg-amber-500/10 rounded-lg px-3 py-1.5">
-          <span className="text-base">👑</span>
-          <span className="text-xs font-bold text-amber-300 truncate flex-1">
-            {summary.winnerName}
+          <span className="text-base">{summary.winnerCount > 1 ? '🤝' : '👑'}</span>
+          <span className="text-xs font-bold text-amber-300 flex-1 min-w-0">
+            {summary.winnerCount > 1 && <span className="block text-[10px] text-amber-400/80">שוויון · זכייה משותפת</span>}
+            <span className="block truncate">{summary.winnerName}</span>
           </span>
           {summary.winningBid !== null && (
             <span className="text-xs text-amber-400 tabular-nums shrink-0">
@@ -197,7 +200,7 @@ function RoundCard({ summary, prev }: RoundCardProps) {
       {/* Stats row: participation trend + average bid */}
       <div className="flex items-center justify-between text-xs">
         <span className="text-slate-400">
-          <span className={`font-bold ${trend.className}`}>{trend.symbol}</span>{' '}
+          {showTrend && <><span className={`font-bold ${trend.className}`}>{trend.symbol}</span>{' '}</>}
           <span className="text-white font-bold">{summary.participationRate}%</span> השתתפות
         </span>
         {summary.averageBid !== null && (
@@ -215,12 +218,16 @@ function RoundCard({ summary, prev }: RoundCardProps) {
 
 interface CategoryBarsProps {
   breakdown: CategoryAnalytics[]
+  /** winning: sum of winning bids (auction). allocated: every coin the group put in (allocation). */
+  metric?: 'winning' | 'allocated'
 }
 
-function CategoryBars({ breakdown }: CategoryBarsProps) {
+function CategoryBars({ breakdown, metric = 'winning' }: CategoryBarsProps) {
   if (breakdown.length === 0) return null
 
-  const maxTotal = Math.max(...breakdown.map(c => c.totalWinningBid), 1)
+  const valueOf = (c: CategoryAnalytics) => (metric === 'allocated' ? c.totalAllocated : c.totalWinningBid)
+  const rows = metric === 'allocated' ? [...breakdown].sort((a, b) => valueOf(b) - valueOf(a)) : breakdown
+  const maxTotal = Math.max(...rows.map(valueOf), 1)
 
   const barColorClass = (cat: string): string => {
     switch (cat) {
@@ -241,14 +248,14 @@ function CategoryBars({ breakdown }: CategoryBarsProps) {
     <div className="glass rounded-2xl p-5 flex flex-col gap-4">
       <p className="text-sm font-bold uppercase tracking-widest text-slate-400">🗂 קטגוריות</p>
       <div className="flex flex-col gap-3">
-        {breakdown.map(cat => {
-          const barWidth = Math.round((cat.totalWinningBid / maxTotal) * 100)
+        {rows.map(cat => {
+          const barWidth = Math.round((valueOf(cat) / maxTotal) * 100)
           return (
             <div key={cat.category} className="flex flex-col gap-1">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-200 font-semibold">{cat.category}</span>
                 <span className="text-slate-400 tabular-nums">
-                  {cat.totalWinningBid.toLocaleString()} מטבעות
+                  {valueOf(cat).toLocaleString()} מטבעות
                 </span>
               </div>
               <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
@@ -258,7 +265,7 @@ function CategoryBars({ breakdown }: CategoryBarsProps) {
                 />
               </div>
               <div className="flex items-center gap-3 text-[10px] text-slate-500">
-                <span>{cat.roundCount} סבבים</span>
+                <span>{cat.roundCount} {metric === 'allocated' ? 'כישורים' : 'סבבים'}</span>
                 <span>השתתפות ממוצעת {cat.averageParticipation}%</span>
                 {cat.averageWinningBid !== null && (
                   <span>ממוצע זכייה {cat.averageWinningBid.toLocaleString()}</span>
@@ -367,22 +374,97 @@ function BudgetHealth({
   )
 }
 
+// ─── Allocation overview ──────────────────────────────────────────────────────
+
+interface AllocationOverviewPanelProps {
+  overview: AllocationOverview
+  elapsed: string
+}
+
+/**
+ * Allocation-mode replacement for the current-round section. While the
+ * allocation is open it shows participation only — amounts stay hidden on
+ * the projected screen until the facilitator closes it.
+ */
+function AllocationOverviewPanel({ overview, elapsed }: AllocationOverviewPanelProps) {
+  const { status, registeredParticipants, allocatorCount, participationRate, totalAllocated } = overview
+  const participationColor =
+    participationRate >= 80 ? 'text-green-400' : participationRate >= 50 ? 'text-amber-400' : 'text-red-400'
+
+  const heroBg =
+    status === 'open'
+      ? 'bg-gradient-to-r from-blue-950 to-slate-900 border border-blue-500/30'
+      : status === 'closed'
+        ? 'bg-gradient-to-r from-amber-950/50 to-slate-900 border border-amber-500/30'
+        : 'bg-slate-900 border border-white/10'
+
+  return (
+    <>
+      <div className={`rounded-3xl p-6 ${heroBg}`}>
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold border ${
+            status === 'open'
+              ? 'bg-green-500/20 border-green-500/30 text-green-400'
+              : status === 'closed'
+                ? 'bg-amber-500/20 border-amber-500/30 text-amber-400'
+                : 'bg-white/10 border-white/10 text-slate-400'
+          }`}>
+            {status === 'open' && <span className="w-2 h-2 rounded-full bg-green-400 animate-live-dot" />}
+            {status === 'open' ? 'החלוקה פתוחה' : status === 'closed' ? 'החלוקה נסגרה' : 'ממתין'}
+          </span>
+          {status === 'open' && (
+            <span className="text-amber-400 font-black text-2xl tabular-nums font-mono">{elapsed}</span>
+          )}
+        </div>
+        <p className="text-3xl font-black text-white">
+          {status === 'waiting' ? 'ממתינים לפתיחת החלוקה' : 'חלוקת תקציב — כל הכישורים יחד'}
+        </p>
+        {status === 'open' && (
+          <p className="text-slate-400 text-sm mt-1">הסכומים מוסתרים עד לסגירת החלוקה.</p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <MetricCard label="משתתפים רשומים" value={registeredParticipants} />
+        <MetricCard
+          label="שמרו חלוקה"
+          value={status === 'waiting' ? '—' : allocatorCount}
+          subText={status === 'waiting' ? undefined : `${participationRate}%`}
+          valueClassName={status === 'waiting' ? 'text-slate-500' : participationColor}
+        />
+        <MetricCard
+          label="מטבעות שהוקצו"
+          value={status === 'closed' ? totalAllocated.toLocaleString() : '—'}
+          valueClassName={status === 'closed' ? 'text-amber-400' : 'text-slate-500'}
+        />
+        <MetricCard
+          label="ממוצע למשתתף"
+          value={status === 'closed' && allocatorCount > 0 ? Math.round(totalAllocated / allocatorCount).toLocaleString() : '—'}
+          valueClassName={status === 'closed' ? 'text-blue-400' : 'text-slate-500'}
+        />
+      </div>
+    </>
+  )
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function AnalyticsDashboard({ event }: Props) {
+export default function AnalyticsDashboard({ event, gameMode }: Props) {
+  const isAllocation = gameMode === 'allocation'
   const {
     currentRoundAnalytics,
+    allocationOverview,
     cumulativeAnalytics,
     currentBids,
     discussionInsight,
     connectionStatus,
     loading,
     error,
-  } = useAdminRealtimeAnalytics(event.id)
+  } = useAdminRealtimeAnalytics(event.id, gameMode)
 
   const elapsed = useElapsedTimer(
-    currentRoundAnalytics.openedAt,
-    currentRoundAnalytics.status === 'open',
+    isAllocation ? allocationOverview.openedAt : currentRoundAnalytics.openedAt,
+    isAllocation ? allocationOverview.status === 'open' : currentRoundAnalytics.status === 'open',
   )
 
   // ── Loading — skeleton UI ──────────────────────────────────────────────────
@@ -455,7 +537,7 @@ export default function AnalyticsDashboard({ event }: Props) {
         ? 'text-amber-400'
         : 'text-red-400'
 
-  const sessionInsights = completedRounds > 0 ? generateSessionInsights(cumulativeAnalytics) : []
+  const sessionInsights = completedRounds > 0 ? generateSessionInsights(cumulativeAnalytics, gameMode) : []
 
   // Hero card visual style based on round status
   const heroBg =
@@ -490,6 +572,9 @@ export default function AnalyticsDashboard({ event }: Props) {
             Section 1 — Current Round
         ══════════════════════════════════════════════════════════════════════ */}
 
+        {isAllocation ? (
+          <AllocationOverviewPanel overview={allocationOverview} elapsed={elapsed} />
+        ) : (<>
         {/* Compact hero card */}
         <div className={`rounded-3xl p-6 ${heroBg}`}>
 
@@ -592,6 +677,9 @@ export default function AnalyticsDashboard({ event }: Props) {
                 <p className="text-slate-400 text-sm mt-1">
                   מתוך <span className="font-bold text-white">{bidderCount}</span> מציעים
                 </p>
+                {winningBid !== null && currentBids.filter(b => b.amount === winningBid).length > 1 && (
+                  <p className="text-amber-300/90 text-sm">⏱️ שוויון — הוכרע לטובת מי שהציע את הסכום ראשון</p>
+                )}
               </div>
             )}
 
@@ -674,6 +762,7 @@ export default function AnalyticsDashboard({ event }: Props) {
             )}
           </div>
         </div>
+        </>)}
 
         {/* ══════════════════════════════════════════════════════════════════════
             Section 2 — Completed Rounds
@@ -681,7 +770,7 @@ export default function AnalyticsDashboard({ event }: Props) {
         {completedRounds > 0 && (
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
-              <h3 className="text-lg font-black text-white">📋 סבבים שהסתיימו</h3>
+              <h3 className="text-lg font-black text-white">{isAllocation ? '📋 תוצאות לפי כישור' : '📋 סבבים שהסתיימו'}</h3>
               <span className="bg-slate-700 text-slate-200 text-xs font-bold rounded-full px-2.5 py-0.5">
                 {completedRounds}
               </span>
@@ -692,6 +781,7 @@ export default function AnalyticsDashboard({ event }: Props) {
                   key={summary.roundId}
                   summary={summary}
                   prev={i > 0 ? roundSummaries[i - 1] : undefined}
+                  showTrend={!isAllocation}
                 />
               ))}
             </div>
@@ -703,14 +793,14 @@ export default function AnalyticsDashboard({ event }: Props) {
         ══════════════════════════════════════════════════════════════════════ */}
         {completedRounds >= 2 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <CategoryBars breakdown={categoryBreakdown} />
+            <CategoryBars breakdown={categoryBreakdown} metric={isAllocation ? 'allocated' : 'winning'} />
             <BudgetHealth
               totalStarting={totalStartingBudget}
               totalSpent={totalSpent}
               totalRemaining={totalRemainingBudget}
               averageWallet={averageRemainingWallet}
               completedRounds={completedRounds}
-              budgetTimeline={budgetTimeline}
+              budgetTimeline={isAllocation ? [] : budgetTimeline}
             />
           </div>
         )}

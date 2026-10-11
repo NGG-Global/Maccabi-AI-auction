@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
-import type { Event, AuctionRound, Trait } from '@/lib/types'
+import type { Event, AuctionRound, Trait, GameMode } from '@/lib/types'
+import { resolveGameMode } from '@/lib/game/allocation'
 
 const AdminDashboard = dynamic(() => import('./AdminDashboard'), { ssr: false })
+const AllocationDashboard = dynamic(() => import('./AllocationDashboard'), { ssr: false })
 const AnalyticsDashboard = dynamic(() => import('./AnalyticsDashboard'), { ssr: false })
 
 interface Props {
@@ -41,6 +43,15 @@ function TabButton({ id, label, active, onClick }: TabButtonProps) {
 
 export default function AdminWrapper(props: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('controls')
+  const [gameMode, setGameMode] = useState<GameMode>(() => resolveGameMode(props.event.game_mode))
+  // The mode can only change while the event has no rounds, so after a switch
+  // the round loaded with the page is stale by definition.
+  const [modeChanged, setModeChanged] = useState(false)
+
+  function handleModeChange(mode: GameMode) {
+    setModeChanged(true)
+    setGameMode(mode)
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
@@ -62,10 +73,18 @@ export default function AdminWrapper(props: Props) {
       </nav>
 
       <div className={activeTab === 'controls' ? 'contents' : 'hidden'}>
-        <AdminDashboard {...props} />
+        {gameMode === 'allocation' ? (
+          <AllocationDashboard event={props.event} traits={props.traits} onModeChange={handleModeChange} />
+        ) : (
+          <AdminDashboard
+            {...props}
+            initialRound={modeChanged ? null : props.initialRound}
+            onModeChange={handleModeChange}
+          />
+        )}
       </div>
       <div className={activeTab === 'analytics' ? 'contents' : 'hidden'}>
-        <AnalyticsDashboard event={props.event} />
+        <AnalyticsDashboard key={gameMode} event={props.event} gameMode={gameMode} />
       </div>
     </div>
   )

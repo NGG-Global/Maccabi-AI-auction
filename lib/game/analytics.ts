@@ -1,4 +1,5 @@
-import type { AuctionRound, Bid, Participant } from '@/lib/types'
+import type { AuctionRound, Bid, GameMode, Participant } from '@/lib/types'
+import { roundWinnerNames } from '@/lib/game/allocation'
 
 // ─── Connection status ────────────────────────────────────────────────────────
 
@@ -33,7 +34,8 @@ export interface TraitRanking {
   winningBid: number | null   // amount the winner paid
   bidderCount: number
   averageBid: number | null   // average of all bids submitted
-  winnerName: string | null
+  winnerName: string | null   // shared wins (allocation ties) are joined with ", "
+  winnerCount: number
 }
 
 export interface RoundSummary {
@@ -42,7 +44,8 @@ export interface RoundSummary {
   traitId: string
   traitTitle: string
   category: string | null
-  winnerName: string | null
+  winnerName: string | null   // shared wins (allocation ties) are joined with ", "
+  winnerCount: number
   winningBid: number | null
   bidderCount: number
   participationRate: number   // 0–100
@@ -57,6 +60,7 @@ export interface CategoryAnalytics {
   category: string
   roundCount: number
   totalWinningBid: number
+  totalAllocated: number        // sum of every bid in the category (allocation mode headline)
   averageWinningBid: number | null
   averageParticipation: number  // 0–100
 }
@@ -190,7 +194,8 @@ export function computeCumulativeAnalytics(
       winningBid: round.winning_bid_amount,
       bidderCount: amounts.length,
       averageBid,
-      winnerName: round.winner?.display_name ?? null,
+      winnerName: roundWinnerNames(round).join(', ') || null,
+      winnerCount: roundWinnerNames(round).length,
     }
   })
 
@@ -303,7 +308,8 @@ export function computeRoundSummaries(
       traitId: round.trait_id,
       traitTitle: round.trait?.title ?? '—',
       category: round.trait?.category ?? null,
-      winnerName: round.winner?.display_name ?? null,
+      winnerName: roundWinnerNames(round).join(', ') || null,
+      winnerCount: roundWinnerNames(round).length,
       winningBid: round.winning_bid_amount,
       bidderCount,
       participationRate,
@@ -343,6 +349,7 @@ export function computeCategoryBreakdown(roundSummaries: RoundSummary[]): Catego
       .map(s => s.winningBid)
       .filter((b): b is number => b !== null)
     const totalWinningBid = winningBids.reduce((s, v) => s + v, 0)
+    const totalAllocated = summaries.reduce((s, r) => s + r.totalBid, 0)
     const averageWinningBid =
       winningBids.length > 0 ? Math.round(totalWinningBid / winningBids.length) : null
     const averageParticipation =
@@ -354,6 +361,7 @@ export function computeCategoryBreakdown(roundSummaries: RoundSummary[]): Catego
       category,
       roundCount,
       totalWinningBid,
+      totalAllocated,
       averageWinningBid,
       averageParticipation,
     })
@@ -402,7 +410,12 @@ export function computeBudgetTimeline(
  * facilitation or a summary screen. Returns an empty array when no rounds
  * have been completed yet.
  */
-export function generateSessionInsights(analytics: CumulativeGameAnalytics): string[] {
+export function generateSessionInsights(
+  analytics: CumulativeGameAnalytics,
+  mode: GameMode = 'auction',
+): string[] {
+  if (mode === 'allocation') return generateAllocationInsights(analytics)
+
   const {
     traitRankings,
     roundSummaries,
@@ -474,6 +487,73 @@ export function generateSessionInsights(analytics: CumulativeGameAnalytics): str
       : 0
   insights.push(
     `בסך הכל הוצאה הקבוצה ${budgetPercent}% מהתקציב המשותף — ${totalSpent.toLocaleString()} מתוך ${totalStartingBudget.toLocaleString()} מטבעות.`,
+  )
+
+  return insights
+}
+
+// ─── Allocation-mode insights ────────────────────────────────────────────────
+
+/**
+ * Session insights for the budget-allocation mode, where every trait was
+ * open at the same time: rounds have no order, so there is no engagement
+ * trend, and "value" is what the whole group put on a trait rather than
+ * the winning bid alone.
+ */
+function generateAllocationInsights(analytics: CumulativeGameAnalytics): string[] {
+  const { roundSummaries, totalStartingBudget, totalSpent } = analytics
+  if (roundSummaries.length === 0) return []
+
+  const insights: string[] = []
+  const grandTotal = roundSummaries.reduce((s, r) => s + r.totalBid, 0)
+  const byTotal = [...roundSummaries].sort((a, b) => b.totalBid - a.totalBid)
+  const top = byTotal[0]
+  const bottom = byTotal[byTotal.length - 1]
+
+  if (top && top.totalBid > 0) {
+    const share = grandTotal > 0 ? Math.round((top.totalBid / grandTotal) * 100) : 0
+    insights.push(
+      `הכישור שקיבל את ההשקעה הגבוהה ביותר הוא "${top.traitTitle}" — ${top.totalBid.toLocaleString()} מטבעות, ${share}% מכלל המטבעות שהוקצו.`,
+    )
+  }
+
+  const broadest = roundSummaries.reduce(
+    (best, r) => (r.participationRate > best.participationRate ? r : best),
+    roundSummaries[0],
+  )
+  if (broadest.participationRate > 0) {
+    insights.push(
+      `"${broadest.traitTitle}" קיבל את התמיכה הרחבה ביותר — ${broadest.participationRate}% מהמשתתפים השקיעו בו.`,
+    )
+  }
+
+  const shared = roundSummaries.filter(r => r.winnerCount > 1)
+  if (shared.length > 0) {
+    insights.push(
+      shared.length === 1
+        ? `"${shared[0].traitTitle}" הסתיים בשוויון — ${shared[0].winnerCount} משתתפים הקצו את אותו סכום גבוה וזכו בו יחד.`
+        : `${shared.length} כישורים הסתיימו בשוויון וזכייה משותפת — סימן לכך שיש בקבוצה כמה אנשים עם אותו סדר עדיפויות.`,
+    )
+  }
+
+  if (bottom && top && bottom.roundId !== top.roundId) {
+    insights.push(
+      `"${bottom.traitTitle}" קיבל את ההשקעה הנמוכה ביותר (${bottom.totalBid.toLocaleString()} מטבעות) — שווה לשאול מה הוביל את הקבוצה לוותר עליו.`,
+    )
+  }
+
+  const categories = [...analytics.categoryBreakdown].sort((a, b) => b.totalAllocated - a.totalAllocated)
+  const topCategory = categories[0]
+  if (topCategory && topCategory.totalAllocated > 0) {
+    insights.push(
+      `הקטגוריה שקיבלה את ההשקעה הגבוהה ביותר היא "${topCategory.category}" — ${topCategory.totalAllocated.toLocaleString()} מטבעות על פני ${topCategory.roundCount} כישורים.`,
+    )
+  }
+
+  const budgetPercent =
+    totalStartingBudget > 0 ? Math.min(100, Math.round((totalSpent / totalStartingBudget) * 100)) : 0
+  insights.push(
+    `בסך הכל הקצתה הקבוצה ${budgetPercent}% מהתקציב המשותף — ${totalSpent.toLocaleString()} מתוך ${totalStartingBudget.toLocaleString()} מטבעות.`,
   )
 
   return insights

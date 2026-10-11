@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import type { Participant, AuctionRound, Bid } from '@/lib/types'
+import { isRoundWinner } from '@/lib/game/allocation'
 
 interface RoundWithBid { round: AuctionRound; bid: Bid; won: boolean }
 
@@ -38,10 +39,10 @@ export default function ProfileClient() {
       setParticipant(p)
       const { data: bids } = await supabase
         .from('bids')
-        .select('*, round:auction_rounds(*, trait:traits(*))')
+        .select('*, round:auction_rounds(*, trait:traits(*), winners:round_winners(participant_id))')
         .eq('participant_id', participantId)
       const rnd: RoundWithBid[] = (bids ?? [])
-        .map((b: Bid & { round: AuctionRound }) => ({ round: b.round, bid: b, won: b.round.winner_participant_id === participantId }))
+        .map((b: Bid & { round: AuctionRound }) => ({ round: b.round, bid: b, won: isRoundWinner(b.round, participantId) }))
         .filter(r => r.round.status === 'closed')
       setRounds(rnd)
       setLoading(false)
@@ -64,6 +65,7 @@ export default function ProfileClient() {
   const won = rounds.filter(r => r.won)
   const lost = rounds.filter(r => !r.won)
   const archetype = rounds.length > 0 ? getArchetype(rounds) : null
+  const isAllocation = rounds.some(r => r.round.mode === 'allocation')
 
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-8">
@@ -107,7 +109,7 @@ export default function ProfileClient() {
         {/* Won traits */}
         {won.length > 0 && (
           <div className="animate-slide-in-up" style={{ animationDelay: '200ms' }}>
-            <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-3">🏆 תכונות שרכשת</p>
+            <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-3">{isAllocation ? '🏆 כישורים שזכית בהם' : '🏆 תכונות שרכשת'}</p>
             <div className="flex flex-col gap-2">
               {won.map(r => (
                 <div key={r.round.id} className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between">
@@ -127,7 +129,7 @@ export default function ProfileClient() {
         {/* Lost bids */}
         {lost.length > 0 && (
           <div className="animate-slide-in-up" style={{ animationDelay: '260ms' }}>
-            <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-3">💸 הצעות שלא זכו</p>
+            <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-3">{isAllocation ? '💸 הקצאות שלא זכו' : '💸 הצעות שלא זכו'}</p>
             <div className="flex flex-col gap-2">
               {lost.map(r => (
                 <div key={r.round.id} className="glass rounded-2xl p-4 flex items-center justify-between">

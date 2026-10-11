@@ -1,5 +1,23 @@
 import JoinWrapper from './JoinWrapper'
 import type { Event } from '@/lib/types'
+import { resolveGameMode } from '@/lib/game/allocation'
+
+const RULES = {
+  auction: [
+    { icon: '🪙', text: 'מקבלים 1,000 מטבעות לכל האירוע' },
+    { icon: '🎯', text: 'בכל סבב מתמודדים על תכונה ניהולית אחת' },
+    { icon: '⬆️', text: 'אפשר להגיש הצעה ולהעלות אותה כל עוד הסבב פתוח' },
+    { icon: '💸', text: 'רק הזוכה משלם את הצעתו — מי שלא זכה שומר על המטבעות' },
+    { icon: '⏱️', text: 'בשוויון זוכה מי שהציע את הסכום ראשון' },
+  ],
+  allocation: [
+    { icon: '🪙', text: 'מקבלים 1,000 מטבעות לכל האירוע' },
+    { icon: '🧩', text: 'כל הכישורים פתוחים יחד — מחלקים את המטבעות ביניהם' },
+    { icon: '✏️', text: 'אפשר לשנות את החלוקה עד שהמנחה סוגר אותה' },
+    { icon: '🏆', text: 'ההקצאה הגבוהה ביותר בכל כישור זוכה בו; בשוויון כל המובילים זוכים יחד' },
+    { icon: '💸', text: 'כל המטבעות שהוקצו יורדים מהיתרה — גם בכישורים שלא זכית בהם' },
+  ],
+}
 
 interface Props {
   searchParams: Promise<{ event?: string }>
@@ -30,12 +48,7 @@ export default async function JoinPage({ searchParams }: Props) {
         <div className="glass rounded-3xl p-6 mb-4">
           <p className="text-slate-400 text-xs uppercase tracking-widest mb-4 font-bold">כללי המשחק</p>
           <div className="flex flex-col gap-3">
-            {[
-              { icon: '🪙', text: 'מקבלים 1,000 מטבעות לכל האירוע' },
-              { icon: '🎯', text: 'בכל סבב מתמודדים על תכונה ניהולית אחת' },
-              { icon: '⬆️', text: 'אפשר להגיש הצעה ולהעלות אותה כל עוד הסבב פתוח' },
-              { icon: '💸', text: 'ההצעה הסופית שלך נוכית — גם אם לא זכית' },
-            ].map(r => (
+            {RULES[resolveGameMode(event.game_mode)].map(r => (
               <div key={r.icon} className="flex items-start gap-3">
                 <span className="text-xl shrink-0">{r.icon}</span>
                 <p className="text-slate-300 text-sm leading-relaxed">{r.text}</p>

@@ -24,6 +24,9 @@ export async function POST(req: NextRequest) {
   })
 
   if (error) {
+    if (error.message?.includes('wrong_mode')) {
+      return Response.json({ error: 'האירוע במצב חלוקת תקציב' }, { status: 409 })
+    }
     if (error.message?.includes('trait_unavailable')) {
       return Response.json({ error: 'תכונה זו כבר שימשה בסבב קודם' }, { status: 409 })
     }
