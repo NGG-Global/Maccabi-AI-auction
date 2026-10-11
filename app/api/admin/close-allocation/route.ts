@@ -14,8 +14,9 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceRoleClient()
 
-  // Single atomic DB call: closes every open allocation round, picks each
-  // trait's winner, charges every allocation and writes the ledger.
+  // Single atomic DB call: closes every open allocation round, records each
+  // trait's winners (a tie on the top amount is a shared win), charges every
+  // allocation and writes the ledger.
   const { data, error } = await supabase.rpc('close_allocation', {
     p_event_id: body.eventId,
   })
@@ -37,5 +38,6 @@ export async function POST(req: NextRequest) {
     roundsClosed: result?.rounds_closed ?? 0,
     participantsCharged: result?.participants_charged ?? 0,
     totalCharged: result?.total_charged ?? 0,
+    tiedTraits: result?.tied_traits ?? 0,
   })
 }

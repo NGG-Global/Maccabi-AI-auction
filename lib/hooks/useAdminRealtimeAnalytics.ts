@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import type { AuctionRound, Bid, GameMode, Participant } from '@/lib/types'
-import { sortRoundsByTrait } from '@/lib/game/allocation'
+import { sortRoundsByTrait, ROUND_WINNERS_SELECT } from '@/lib/game/allocation'
 import {
   computeCurrentRoundAnalytics,
   computeCumulativeAnalytics,
@@ -140,6 +140,7 @@ export function useAdminRealtimeAnalytics(
       .select('*, participant:participants(id, display_name)')
       .eq('round_id', roundId)
       .order('amount', { ascending: false })
+      .order('updated_at', { ascending: true }) // same order as the tie-break: first to reach the amount leads
 
     if (!mountedRef.current) return
     if (err) {
@@ -195,7 +196,7 @@ export function useAdminRealtimeAnalytics(
   const fetchAllocationRounds = useCallback(async () => {
     const { data, error: err } = await supabase
       .from('auction_rounds')
-      .select('*, trait:traits(*), winner:participants!auction_rounds_winner_participant_id_fkey(*)')
+      .select(`*, trait:traits(*), ${ROUND_WINNERS_SELECT}`)
       .eq('event_id', eventId)
       .in('status', ['open', 'closed'])
 

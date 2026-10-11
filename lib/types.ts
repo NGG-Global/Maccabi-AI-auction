@@ -36,6 +36,13 @@ export interface Trait {
   created_at: string
 }
 
+// Allocation mode: everyone on a trait's top amount shares the win (migration 009).
+export interface RoundWinner {
+  participant_id: string
+  amount: number
+  participant?: Pick<Participant, 'id' | 'display_name'>
+}
+
 export interface AuctionRound {
   id: string
   event_id: string
@@ -50,6 +57,7 @@ export interface AuctionRound {
   // joined
   trait?: Trait
   winner?: Participant
+  winners?: RoundWinner[]
 }
 
 export interface Bid {

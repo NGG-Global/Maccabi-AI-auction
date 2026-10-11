@@ -8,6 +8,7 @@ import {
   draftToPayload,
   parseAllocationInput,
   sortRoundsByTrait,
+  isRoundWinner,
 } from '@/lib/game/allocation'
 import { PlaySkeleton, PlayError, WalletHeader } from './PlayShell'
 
@@ -76,7 +77,7 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
       supabase.from('participants').select('*').eq('id', participantId).maybeSingle<Participant>(),
       supabase
         .from('auction_rounds')
-        .select('*, trait:traits(*)')
+        .select('*, trait:traits(*), winners:round_winners(participant_id)')
         .eq('event_id', eventId)
         .in('status', ['open', 'closed']),
     ])
@@ -216,7 +217,7 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
   if (loadError || !participant) return <PlayError message={loadError ?? 'שגיאה לא צפויה'} />
 
   const totalSaved = Object.values(saved).reduce((s, v) => s + v, 0)
-  const wonRounds = rounds.filter(r => r.status === 'closed' && r.winner_participant_id === participant.id)
+  const wonRounds = rounds.filter(r => r.status === 'closed' && isRoundWinner(r, participant.id))
   const usedPct = balance > 0 ? Math.min(100, Math.round((check.total / balance) * 100)) : 0
 
   const statusLine =
@@ -257,7 +258,7 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
                 חלקו {balance.toLocaleString()} מטבעות בין {openRounds.length} הכישורים
               </h2>
               <p className="text-slate-400 text-sm leading-relaxed">
-                השינויים נשמרים אוטומטית, ואפשר לשנות עד שהמנחה סוגר את החלוקה. ההקצאה הגבוהה ביותר בכל כישור זוכה בו.
+                השינויים נשמרים אוטומטית, ואפשר לשנות עד שהמנחה סוגר את החלוקה. ההקצאה הגבוהה ביותר בכל כישור זוכה בו, ובשוויון כל המובילים זוכים יחד.
               </p>
             </div>
 
@@ -347,13 +348,17 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
                 </div>
                 {rounds.map(r => {
                   const mine = saved[r.id] ?? 0
-                  const won = r.winner_participant_id === participant.id
+                  const won = isRoundWinner(r, participant.id)
+                  const shared = won && (r.winners?.length ?? 0) > 1
                   return (
                     <div key={r.id} className={`flex items-center gap-3 px-4 py-3 border-b border-white/5 ${won ? 'bg-amber-500/10' : ''}`}>
                       <div className="flex-1 min-w-0">
                         <p className={`font-bold truncate ${won ? 'text-amber-300' : mine ? 'text-white' : 'text-slate-500'}`}>
                           {won && '🏆 '}{r.trait?.title}
                         </p>
+                        {shared && (
+                          <p className="text-amber-400/80 text-xs">🤝 זכייה משותפת עם עוד {(r.winners?.length ?? 1) - 1}</p>
+                        )}
                         {!won && r.winning_bid_amount !== null && (
                           <p className="text-slate-500 text-xs">ההקצאה הזוכה: {r.winning_bid_amount.toLocaleString()} 🪙</p>
                         )}
@@ -420,7 +425,7 @@ function AllocationRules() {
           { icon: '🪙', text: 'לכל משתתף 1,000 מטבעות' },
           { icon: '🧩', text: 'כל הכישורים פתוחים יחד — מחלקים את המטבעות ביניהם' },
           { icon: '✏️', text: 'אפשר לשנות את החלוקה עד שהמנחה סוגר אותה' },
-          { icon: '🏆', text: 'ההקצאה הגבוהה ביותר בכל כישור זוכה בו' },
+          { icon: '🏆', text: 'ההקצאה הגבוהה ביותר בכל כישור זוכה בו; בשוויון כל המובילים זוכים יחד' },
         ].map(r => (
           <div key={r.icon} className="flex items-start gap-3">
             <span className="text-xl shrink-0">{r.icon}</span>

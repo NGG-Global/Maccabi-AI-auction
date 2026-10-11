@@ -1,5 +1,25 @@
 import type { AuctionRound, GameMode } from '@/lib/types'
 
+/** PostgREST embed for the allocation winner list (round_winners, migration 009). */
+export const ROUND_WINNERS_SELECT = 'winners:round_winners(participant_id, amount, participant:participants(id, display_name))'
+
+/** Names of everyone who won the round, falling back to the single winner. */
+export function roundWinnerNames(round: AuctionRound): string[] {
+  if (round.winners && round.winners.length > 0) {
+    return round.winners
+      .map(w => w.participant?.display_name ?? '—')
+      .sort((a, b) => a.localeCompare(b, 'he'))
+  }
+  return round.winner?.display_name ? [round.winner.display_name] : []
+}
+
+export function isRoundWinner(round: AuctionRound, participantId: string): boolean {
+  if (round.winners && round.winners.length > 0) {
+    return round.winners.some(w => w.participant_id === participantId)
+  }
+  return round.winner_participant_id === participantId
+}
+
 // Pure helpers for the budget-allocation mode. Winners and charges are
 // decided server-side by close_allocation (migration 008); everything here
 // is input checking and display.
@@ -61,7 +81,7 @@ export interface AllocationTraitResult {
   supporterCount: number       // participants who put more than 0 on this trait
   averageAllocation: number | null
   sharePercent: number         // share of all coins allocated by the group, 0–100
-  winnerName: string | null
+  winnerNames: string[]        // more than one = shared win (tie on the top amount)
   winningAmount: number | null
 }
 
@@ -99,7 +119,7 @@ export function summarizeAllocation(
         supporterCount: amounts.length,
         averageAllocation: amounts.length > 0 ? Math.round(totalAllocated / amounts.length) : null,
         sharePercent: grandTotal > 0 ? Math.round((totalAllocated / grandTotal) * 100) : 0,
-        winnerName: round.winner?.display_name ?? null,
+        winnerNames: roundWinnerNames(round),
         winningAmount: round.winning_bid_amount,
       }
     })

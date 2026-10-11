@@ -6,7 +6,7 @@ import type { Event, AuctionRound, Trait, GameMode } from '@/lib/types'
 import JoinShare from '@/components/admin/JoinShare'
 import GameModeSwitch from '@/components/admin/GameModeSwitch'
 import ResetControl from '@/components/admin/ResetControl'
-import { summarizeAllocation, sortRoundsByTrait, type AllocationBidRow } from '@/lib/game/allocation'
+import { summarizeAllocation, sortRoundsByTrait, ROUND_WINNERS_SELECT, type AllocationBidRow } from '@/lib/game/allocation'
 
 interface Props {
   event: Event
@@ -75,7 +75,7 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
   const refreshRounds = useCallback(async () => {
     const { data } = await supabase
       .from('auction_rounds')
-      .select('*, trait:traits(*), winner:participants!auction_rounds_winner_participant_id_fkey(id, display_name)')
+      .select(`*, trait:traits(*), ${ROUND_WINNERS_SELECT}`)
       .eq('event_id', event.id)
       .in('status', ['open', 'closed'])
     const list = sortRoundsByTrait((data ?? []) as AuctionRound[])
@@ -153,7 +153,10 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
       })
       const data = await res.json()
       if (!res.ok) { showMsg('error', data.error ?? 'שגיאה'); return }
-      showMsg('success', 'החלוקה נסגרה והזוכים חושבו')
+      const ties = Number(data.tiedTraits ?? 0)
+      showMsg('success', ties > 0
+        ? `החלוקה נסגרה. ${ties === 1 ? 'כישור אחד הסתיים' : `${ties} כישורים הסתיימו`} בשוויון וזכייה משותפת`
+        : 'החלוקה נסגרה והזוכים חושבו')
       await refreshRounds()
     } catch { showMsg('error', 'שגיאת רשת') }
     finally { setLoading(false) }
@@ -440,10 +443,18 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
                     </div>
 
                     <div className="w-44 shrink-0 text-left border-r border-white/10 pr-4">
-                      {r.winnerName ? (
+                      {r.winnerNames.length > 1 ? (
+                        <>
+                          <p className="text-amber-400/80 text-[10px] font-bold uppercase tracking-widest">🤝 שוויון · זכייה משותפת</p>
+                          {r.winnerNames.map(name => (
+                            <p key={name} className="text-white font-black truncate leading-snug">{name}</p>
+                          ))}
+                          <p className="text-amber-400 text-sm font-bold tabular-nums">{r.winningAmount?.toLocaleString()} 🪙 כל אחד</p>
+                        </>
+                      ) : r.winnerNames.length === 1 ? (
                         <>
                           <p className="text-amber-400/80 text-[10px] font-bold uppercase tracking-widest">👑 זוכה</p>
-                          <p className="text-white font-black truncate">{r.winnerName}</p>
+                          <p className="text-white font-black truncate">{r.winnerNames[0]}</p>
                           <p className="text-amber-400 text-sm font-bold tabular-nums">{r.winningAmount?.toLocaleString()} 🪙</p>
                         </>
                       ) : (

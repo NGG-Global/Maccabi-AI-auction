@@ -1,4 +1,5 @@
 import type { AuctionRound, Bid, GameMode, Participant } from '@/lib/types'
+import { roundWinnerNames } from '@/lib/game/allocation'
 
 // ─── Connection status ────────────────────────────────────────────────────────
 
@@ -33,7 +34,8 @@ export interface TraitRanking {
   winningBid: number | null   // amount the winner paid
   bidderCount: number
   averageBid: number | null   // average of all bids submitted
-  winnerName: string | null
+  winnerName: string | null   // shared wins (allocation ties) are joined with ", "
+  winnerCount: number
 }
 
 export interface RoundSummary {
@@ -42,7 +44,8 @@ export interface RoundSummary {
   traitId: string
   traitTitle: string
   category: string | null
-  winnerName: string | null
+  winnerName: string | null   // shared wins (allocation ties) are joined with ", "
+  winnerCount: number
   winningBid: number | null
   bidderCount: number
   participationRate: number   // 0–100
@@ -191,7 +194,8 @@ export function computeCumulativeAnalytics(
       winningBid: round.winning_bid_amount,
       bidderCount: amounts.length,
       averageBid,
-      winnerName: round.winner?.display_name ?? null,
+      winnerName: roundWinnerNames(round).join(', ') || null,
+      winnerCount: roundWinnerNames(round).length,
     }
   })
 
@@ -304,7 +308,8 @@ export function computeRoundSummaries(
       traitId: round.trait_id,
       traitTitle: round.trait?.title ?? '—',
       category: round.trait?.category ?? null,
-      winnerName: round.winner?.display_name ?? null,
+      winnerName: roundWinnerNames(round).join(', ') || null,
+      winnerCount: roundWinnerNames(round).length,
       winningBid: round.winning_bid_amount,
       bidderCount,
       participationRate,
@@ -519,6 +524,15 @@ function generateAllocationInsights(analytics: CumulativeGameAnalytics): string[
   if (broadest.participationRate > 0) {
     insights.push(
       `"${broadest.traitTitle}" קיבל את התמיכה הרחבה ביותר — ${broadest.participationRate}% מהמשתתפים השקיעו בו.`,
+    )
+  }
+
+  const shared = roundSummaries.filter(r => r.winnerCount > 1)
+  if (shared.length > 0) {
+    insights.push(
+      shared.length === 1
+        ? `"${shared[0].traitTitle}" הסתיים בשוויון — ${shared[0].winnerCount} משתתפים הקצו את אותו סכום גבוה וזכו בו יחד.`
+        : `${shared.length} כישורים הסתיימו בשוויון וזכייה משותפת — סימן לכך שיש בקבוצה כמה אנשים עם אותו סדר עדיפויות.`,
     )
   }
 

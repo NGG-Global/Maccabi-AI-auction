@@ -18,10 +18,11 @@ interface RoundStats {
   noBidCount: number    // wallet > 0 but no bid yet
   foldedCount: number   // wallet = 0, cannot bid
   highestBid: number
-  isLeading: boolean    // current participant holds top bid
+  isLeading: boolean    // current participant would win if the round closed now
+  isTiedBehind: boolean // matches the top bid, but someone reached it first
 }
 
-const EMPTY_STATS: RoundStats = { bidderCount: 0, noBidCount: 0, foldedCount: 0, highestBid: 0, isLeading: false }
+const EMPTY_STATS: RoundStats = { bidderCount: 0, noBidCount: 0, foldedCount: 0, highestBid: 0, isLeading: false, isTiedBehind: false }
 
 interface Props {
   /** Called when the event turns out to be in the other mode (switched by the facilitator). */
@@ -47,7 +48,9 @@ export default function AuctionPlay({ onModeChange }: Props) {
   const fetchRoundStats = useCallback(async (roundId: string, eventId: string, participantId: string) => {
     const [{ data: allParticipants }, { data: bids }] = await Promise.all([
       supabase.from('participants').select('id, wallet_balance').eq('event_id', eventId),
-      supabase.from('bids').select('participant_id, amount').eq('round_id', roundId).order('amount', { ascending: false }),
+      // Same order as the server's tie-break: highest amount, then first to reach it.
+      supabase.from('bids').select('participant_id, amount').eq('round_id', roundId)
+        .order('amount', { ascending: false }).order('updated_at', { ascending: true }),
     ])
 
     const bidderIds = new Set((bids ?? []).map(b => b.participant_id))
@@ -57,11 +60,13 @@ export default function AuctionPlay({ onModeChange }: Props) {
     const foldedCount = (allParticipants ?? []).filter(p => p.wallet_balance === 0 && !bidderIds.has(p.id)).length
     const noBidCount = (allParticipants ?? []).length - bidderCount - foldedCount
 
-    // Leading = this participant has the top bid (alone or tied for first)
+    // Leading = first in tie-break order. Matching the top bid after someone
+    // else reached it is a tie this participant would lose.
     const myAmount = bids?.find(b => b.participant_id === participantId)?.amount ?? 0
-    const isLeading = myAmount > 0 && myAmount === highestBid
+    const isLeading = myAmount > 0 && bids?.[0]?.participant_id === participantId
+    const isTiedBehind = myAmount > 0 && myAmount === highestBid && !isLeading
 
-    setRoundStats({ bidderCount, noBidCount: Math.max(0, noBidCount), foldedCount, highestBid, isLeading })
+    setRoundStats({ bidderCount, noBidCount: Math.max(0, noBidCount), foldedCount, highestBid, isLeading, isTiedBehind })
   }, [supabase])
 
   const fetchState = useCallback(async (participantId: string) => {
@@ -219,6 +224,9 @@ export default function AuctionPlay({ onModeChange }: Props) {
                 <p className="text-4xl mb-3">🤷</p>
                 <p className="text-white text-xl font-bold mb-1">הסבב נסגר</p>
                 {myBid && <p className="text-slate-400 text-sm">הגשת הצעה של <span className="text-white font-bold">{myBid.amount} 🪙</span></p>}
+                {myBid && myBid.amount === currentRound!.winning_bid_amount && (
+                  <p className="text-amber-300/90 text-sm mt-1">⏱️ שוויון — הוכרע לטובת מי שהציע את הסכום ראשון</p>
+                )}
                 {!myBid && <p className="text-slate-500 text-sm">לא הגשת הצעה בסבב זה</p>}
               </>
             )}
@@ -262,6 +270,8 @@ export default function AuctionPlay({ onModeChange }: Props) {
                   <span className="text-sm">
                     {roundStats.isLeading
                       ? <span className="text-amber-400 font-bold">👑 אתה/את בראש!</span>
+                      : roundStats.isTiedBehind
+                      ? <span className="text-amber-300 font-bold">⏱️ שוויון — מוביל מי שהציע ראשון</span>
                       : <span className="text-slate-400">הצעה גבוהה</span>}
                   </span>
                   <span className={`font-black tabular-nums text-lg ${roundStats.isLeading ? 'text-amber-400' : 'text-white'}`}>

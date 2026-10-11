@@ -180,9 +180,10 @@ function RoundCard({ summary, prev, showTrend = true }: RoundCardProps) {
       {/* Winner row */}
       {summary.winnerName ? (
         <div className="flex items-center gap-2 bg-amber-500/10 rounded-lg px-3 py-1.5">
-          <span className="text-base">👑</span>
-          <span className="text-xs font-bold text-amber-300 truncate flex-1">
-            {summary.winnerName}
+          <span className="text-base">{summary.winnerCount > 1 ? '🤝' : '👑'}</span>
+          <span className="text-xs font-bold text-amber-300 flex-1 min-w-0">
+            {summary.winnerCount > 1 && <span className="block text-[10px] text-amber-400/80">שוויון · זכייה משותפת</span>}
+            <span className="block truncate">{summary.winnerName}</span>
           </span>
           {summary.winningBid !== null && (
             <span className="text-xs text-amber-400 tabular-nums shrink-0">
@@ -676,6 +677,9 @@ export default function AnalyticsDashboard({ event, gameMode }: Props) {
                 <p className="text-slate-400 text-sm mt-1">
                   מתוך <span className="font-bold text-white">{bidderCount}</span> מציעים
                 </p>
+                {winningBid !== null && currentBids.filter(b => b.amount === winningBid).length > 1 && (
+                  <p className="text-amber-300/90 text-sm">⏱️ שוויון — הוכרע לטובת מי שהציע את הסכום ראשון</p>
+                )}
               </div>
             )}
 

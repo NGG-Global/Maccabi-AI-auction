@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import type { Participant, AuctionRound, Bid } from '@/lib/types'
+import { isRoundWinner } from '@/lib/game/allocation'
 
 interface RoundWithBid { round: AuctionRound; bid: Bid; won: boolean }
 
@@ -38,10 +39,10 @@ export default function ProfileClient() {
       setParticipant(p)
       const { data: bids } = await supabase
         .from('bids')
-        .select('*, round:auction_rounds(*, trait:traits(*))')
+        .select('*, round:auction_rounds(*, trait:traits(*), winners:round_winners(participant_id))')
         .eq('participant_id', participantId)
       const rnd: RoundWithBid[] = (bids ?? [])
-        .map((b: Bid & { round: AuctionRound }) => ({ round: b.round, bid: b, won: b.round.winner_participant_id === participantId }))
+        .map((b: Bid & { round: AuctionRound }) => ({ round: b.round, bid: b, won: isRoundWinner(b.round, participantId) }))
         .filter(r => r.round.status === 'closed')
       setRounds(rnd)
       setLoading(false)

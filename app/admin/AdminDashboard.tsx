@@ -82,6 +82,7 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
       .select('*, participant:participants(*)')
       .eq('round_id', roundId)
       .order('amount', { ascending: false })
+      .order('updated_at', { ascending: true }) // same order as the tie-break: first to reach the amount leads
     setBids((data ?? []) as BidRow[])
   }, [supabase])
 
@@ -206,6 +207,8 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
   }
 
   const leader = bids[0] ?? null
+  // Bids sharing the top amount; the first of them leads (and wins on close).
+  const tiedAtTop = leader ? bids.filter(b => b.amount === leader.amount).length : 0
   const highestBid = leader?.amount ?? 0
   const avgBid = bids.length > 0 ? Math.round(bids.reduce((s, b) => s + b.amount, 0) / bids.length) : 0
   const totalBid = bids.reduce((s, b) => s + b.amount, 0)
@@ -424,6 +427,9 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
                 <p className="text-amber-400 text-4xl font-black">
                   {currentRound.winning_bid_amount?.toLocaleString()} 🪙
                 </p>
+                {tiedAtTop > 1 && (
+                  <p className="text-amber-300/90 text-lg mt-3">⏱️ שוויון — הוכרע לטובת מי שהציע את הסכום ראשון</p>
+                )}
               </div>
             )}
 
@@ -460,6 +466,9 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
                   <p className="text-white text-3xl font-black mb-1 truncate">{leader.participant?.display_name}</p>
                   <p className="text-5xl font-black shimmer-gold">{leader.amount.toLocaleString()}</p>
                   <p className="text-amber-600 text-sm mt-1">מטבעות</p>
+                  {tiedAtTop > 1 && (
+                    <p className="text-amber-300/90 text-xs mt-2">⏱️ שוויון עם עוד {tiedAtTop - 1} — מוביל מי שהציע ראשון</p>
+                  )}
                 </div>
               )}
 
