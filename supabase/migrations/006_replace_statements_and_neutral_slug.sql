@@ -16,6 +16,9 @@
 -- Intended for pre-event use only: re-running it wipes round data and
 -- rewrites the statement list again.
 
+-- Shared NGG Supabase project: this app lives in the `auction` schema (see 000).
+set search_path to auction;
+
 -- 1. Brand-neutral slug (no-op once renamed)
 update events
   set slug = 'leadership-auction'

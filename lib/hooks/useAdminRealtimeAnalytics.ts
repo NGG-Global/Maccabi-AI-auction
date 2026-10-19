@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
+import { DB_SCHEMA } from '@/lib/supabase/schema'
 import type { AuctionRound, Bid, GameMode, Participant } from '@/lib/types'
 import { sortRoundsByTrait, ROUND_WINNERS_SELECT } from '@/lib/game/allocation'
 import {
@@ -316,17 +317,17 @@ export function useAdminRealtimeAnalytics(
       .channel(`admin-analytics-${eventId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'bids' },
+        { event: '*', schema: DB_SCHEMA, table: 'bids' },
         debouncedBids,
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'auction_rounds', filter: `event_id=eq.${eventId}` },
+        { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `event_id=eq.${eventId}` },
         debouncedRounds,
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'participants', filter: `event_id=eq.${eventId}` },
+        { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `event_id=eq.${eventId}` },
         debouncedParticipants,
       )
       .subscribe((status) => {

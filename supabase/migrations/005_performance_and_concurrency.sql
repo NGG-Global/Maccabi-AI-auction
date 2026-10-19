@@ -2,6 +2,9 @@
 -- 005 Performance & Concurrency Fixes
 -- ============================================================
 
+-- Shared NGG Supabase project: this app lives in the `auction` schema (see 000).
+set search_path to auction;
+
 -- 1. Composite index for the most common query pattern:
 --    "find open/closed rounds for this event"
 --    Used by: open-round guard, close-round, refreshRound, analytics hook
@@ -38,6 +41,7 @@ RETURNS TABLE (
   bidder_count     bigint
 )
 LANGUAGE plpgsql
+SET search_path = auction
 AS $$
 DECLARE
   v_event_id       uuid;
@@ -115,6 +119,7 @@ CREATE OR REPLACE FUNCTION open_auction_round(
 )
 RETURNS TABLE (round_id uuid)
 LANGUAGE plpgsql
+SET search_path = auction
 AS $$
 DECLARE
   v_round_id uuid;

@@ -23,6 +23,9 @@
 --
 -- Deploy this migration together with the matching application code.
 
+-- Shared NGG Supabase project: this app lives in the `auction` schema (see 000).
+set search_path to auction;
+
 -- 1. Mode columns ---------------------------------------------------------
 
 ALTER TABLE events ADD COLUMN IF NOT EXISTS game_mode text NOT NULL DEFAULT 'auction';
@@ -59,6 +62,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_one_open_allocation_round_per_trait
 CREATE OR REPLACE FUNCTION set_game_mode(p_event_id uuid, p_mode text)
 RETURNS text
 LANGUAGE plpgsql
+SET search_path = auction
 AS $$
 BEGIN
   IF p_mode IS NULL OR p_mode NOT IN ('auction', 'allocation') THEN
@@ -87,6 +91,7 @@ CREATE OR REPLACE FUNCTION open_auction_round(
 )
 RETURNS TABLE (round_id uuid)
 LANGUAGE plpgsql
+SET search_path = auction
 AS $$
 DECLARE
   v_round_id uuid;
@@ -139,6 +144,7 @@ RETURNS TABLE (
   bidder_count     bigint
 )
 LANGUAGE plpgsql
+SET search_path = auction
 AS $$
 DECLARE
   v_event_id       uuid;
@@ -208,6 +214,7 @@ CREATE OR REPLACE FUNCTION submit_bid(
 )
 RETURNS TABLE (bid_amount integer)
 LANGUAGE plpgsql
+SET search_path = auction
 AS $$
 DECLARE
   v_participant_id uuid;
@@ -286,6 +293,7 @@ $$;
 CREATE OR REPLACE FUNCTION open_allocation(p_event_id uuid)
 RETURNS TABLE (round_count integer)
 LANGUAGE plpgsql
+SET search_path = auction
 AS $$
 DECLARE
   v_mode  text;
@@ -349,6 +357,7 @@ CREATE OR REPLACE FUNCTION submit_allocation(
 )
 RETURNS TABLE (total_allocated integer)
 LANGUAGE plpgsql
+SET search_path = auction
 AS $$
 DECLARE
   v_participant_id uuid;
@@ -467,6 +476,7 @@ RETURNS TABLE (
   total_charged        bigint
 )
 LANGUAGE plpgsql
+SET search_path = auction
 AS $$
 DECLARE
   v_round_ids    uuid[] := '{}';

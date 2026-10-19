@@ -2,6 +2,9 @@
 -- Seed — leadership auction event with 7 auctioned statements
 -- ============================================================
 
+-- Shared NGG Supabase project: this app lives in the `auction` schema (see 000).
+set search_path to auction;
+
 -- Insert event
 insert into events (id, slug, name, status) values
   ('00000000-0000-0000-0000-000000000001', 'leadership-auction', 'מכירה פומבית — תכונות ניהוליות', 'active')

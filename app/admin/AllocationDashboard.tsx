@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/browser'
+import { DB_SCHEMA } from '@/lib/supabase/schema'
 import type { Event, AuctionRound, Trait, GameMode } from '@/lib/types'
 import JoinShare from '@/components/admin/JoinShare'
 import GameModeSwitch from '@/components/admin/GameModeSwitch'
@@ -109,9 +110,9 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
 
     const channel = supabase
       .channel(`admin-allocation-${event.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, throttledFetchBids)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds', filter: `event_id=eq.${event.id}` }, throttledRefreshRounds)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `event_id=eq.${event.id}` }, fetchParticipantCount)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids' }, throttledFetchBids)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `event_id=eq.${event.id}` }, throttledRefreshRounds)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `event_id=eq.${event.id}` }, fetchParticipantCount)
       .subscribe()
 
     return () => {

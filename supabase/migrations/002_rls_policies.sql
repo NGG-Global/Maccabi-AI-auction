@@ -4,6 +4,9 @@
 -- Service-role key bypasses RLS. All admin mutations use service-role.
 -- Anon key used only for participant reads + bid upserts.
 
+-- Shared NGG Supabase project: this app lives in the `auction` schema (see 000).
+set search_path to auction;
+
 alter table events enable row level security;
 alter table participants enable row level security;
 alter table traits enable row level security;

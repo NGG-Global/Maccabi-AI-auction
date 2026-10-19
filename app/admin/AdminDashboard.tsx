@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
+import { DB_SCHEMA } from '@/lib/supabase/schema'
 import type { Event, AuctionRound, Trait, Bid, Participant, GameMode } from '@/lib/types'
 import { TraitQueue } from './TraitQueue'
 import JoinShare from '@/components/admin/JoinShare'
@@ -145,10 +146,10 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
 
     const channel = supabase
       .channel(`admin-controls-${event.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, debouncedFetchBids)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds', filter: `event_id=eq.${event.id}` }, refreshRound)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `event_id=eq.${event.id}` }, fetchParticipantCount)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'traits', filter: `event_id=eq.${event.id}` }, fetchTraits)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids' }, debouncedFetchBids)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `event_id=eq.${event.id}` }, refreshRound)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `event_id=eq.${event.id}` }, fetchParticipantCount)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'traits', filter: `event_id=eq.${event.id}` }, fetchTraits)
       .subscribe()
 
     return () => {
