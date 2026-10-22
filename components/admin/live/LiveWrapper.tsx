@@ -37,13 +37,21 @@ function TabButton({ id, label, active, onClick }: { id: TabId; label: string; a
 /** The projected screen of one room: facilitator controls + live analytics. */
 export default function LiveWrapper({ room, traits, initialRound }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('controls')
+  // The analytics view keeps its own subscriptions and queries; it is
+  // mounted the first time the facilitator opens it and stays mounted after.
+  const [analyticsMounted, setAnalyticsMounted] = useState(false)
   const gameMode = room.game_mode
+
+  function selectTab(id: TabId) {
+    if (id === 'analytics') setAnalyticsMounted(true)
+    setActiveTab(id)
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <nav className="flex items-center gap-1 px-4 py-2 bg-slate-900/80 border-b border-white/10 shrink-0">
-        <TabButton id="controls" label="🎛 בקרה" active={activeTab === 'controls'} onClick={setActiveTab} />
-        <TabButton id="analytics" label="📊 תמונת מצב" active={activeTab === 'analytics'} onClick={setActiveTab} />
+        <TabButton id="controls" label="🎛 בקרה" active={activeTab === 'controls'} onClick={selectTab} />
+        <TabButton id="analytics" label="📊 תמונת מצב" active={activeTab === 'analytics'} onClick={selectTab} />
         <span className="mr-auto text-xs text-slate-600 px-2 truncate">{room.title}</span>
         <Link href={`/admin/rooms/${room.id}`} className="text-xs text-slate-400 hover:text-white px-2">הגדרות</Link>
         <Link href="/admin" className="text-xs text-slate-400 hover:text-white px-2">כל החדרים</Link>
@@ -57,7 +65,7 @@ export default function LiveWrapper({ room, traits, initialRound }: Props) {
         )}
       </div>
       <div className={activeTab === 'analytics' ? 'contents' : 'hidden'}>
-        <AnalyticsDashboard room={room} gameMode={gameMode} />
+        {analyticsMounted && <AnalyticsDashboard room={room} gameMode={gameMode} />}
       </div>
     </div>
   )

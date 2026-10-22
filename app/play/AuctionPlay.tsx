@@ -42,6 +42,7 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
   const [bidSuccess, setBidSuccess] = useState(false)
   const bidSoundRef = useRef<HTMLAudioElement | null>(null)
   const fetchSeqRef = useRef(0)
+  const currentRoundRef = useRef<AuctionRound | null>(null)
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
@@ -49,47 +50,57 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
     bidSoundRef.current.preload = 'auto'
   }, [])
 
+  // One round trip (get_round_stats, migration 012) instead of downloading
+  // every participant of the room on each bid.
   const fetchRoundStats = useCallback(async (roundId: string, roomId: string, participantId: string) => {
-    const [{ data: allParticipants }, { data: bids }] = await Promise.all([
-      supabase.from('participants').select('id, wallet_balance').eq('room_id', roomId),
-      // Same order as the server's tie-break: highest amount, then first to reach it.
-      supabase.from('bids').select('participant_id, amount').eq('round_id', roundId)
-        .order('amount', { ascending: false }).order('updated_at', { ascending: true }),
-    ])
-
-    const bidderIds = new Set((bids ?? []).map(b => b.participant_id))
-    const highestBid = bids?.[0]?.amount ?? 0
-
-    const bidderCount = bidderIds.size
-    const foldedCount = (allParticipants ?? []).filter(p => p.wallet_balance === 0 && !bidderIds.has(p.id)).length
-    const noBidCount = (allParticipants ?? []).length - bidderCount - foldedCount
-
+    const { data } = await supabase.rpc('get_round_stats', {
+      p_room_id: roomId,
+      p_round_id: roundId,
+      p_participant_id: participantId,
+    })
+    const row = data?.[0]
+    if (!row) return
+    const highestBid = row.highest_bid ?? 0
+    const myAmount = row.my_amount ?? 0
     // Leading = first in tie-break order. Matching the top bid after someone
     // else reached it is a tie this participant would lose.
-    const myAmount = bids?.find(b => b.participant_id === participantId)?.amount ?? 0
-    const isLeading = myAmount > 0 && bids?.[0]?.participant_id === participantId
+    const isLeading = myAmount > 0 && row.leader_participant_id === participantId
     const isTiedBehind = myAmount > 0 && myAmount === highestBid && !isLeading
-
-    setRoundStats({ bidderCount, noBidCount: Math.max(0, noBidCount), foldedCount, highestBid, isLeading, isTiedBehind })
+    setRoundStats({
+      bidderCount: row.bidder_count ?? 0,
+      noBidCount: row.no_bid_count ?? 0,
+      foldedCount: row.folded_count ?? 0,
+      highestBid,
+      isLeading,
+      isTiedBehind,
+    })
   }, [supabase])
+
+  // Wallet only (a round closed, or a reset): no need to reload the round.
+  const fetchParticipant = useCallback(async (participantId: string) => {
+    const { data: participant } = await supabase
+      .from('participants').select('*').eq('id', participantId).eq('room_id', room.id).maybeSingle<Participant>()
+    if (participant) setState(prev => ({ ...prev, participant }))
+  }, [supabase, room.id])
 
   const fetchState = useCallback(async (participantId: string) => {
     // Responses can arrive out of order under load; only the latest call may write state.
     const seq = ++fetchSeqRef.current
-    const { data: participant } = await supabase
-      .from('participants').select('*').eq('id', participantId).eq('room_id', room.id).maybeSingle<Participant>()
+    // Participant and latest round in parallel: one round trip instead of two.
+    const [{ data: participant }, { data: rounds }] = await Promise.all([
+      supabase.from('participants').select('*').eq('id', participantId).eq('room_id', room.id).maybeSingle<Participant>(),
+      supabase
+        .from('auction_rounds')
+        .select(ROUND_SELECT)
+        .eq('room_id', room.id)
+        .in('status', ['open', 'closed'])
+        .order('created_at', { ascending: false })
+        .limit(1),
+    ])
     if (!participant) {
       setState(prev => ({ ...prev, loading: false, error: 'המשתתף לא נמצא (ייתכן שהחדר אופס). סרקו את קוד ה-QR והירשמו מחדש.' }))
       return
     }
-
-    const { data: rounds } = await supabase
-      .from('auction_rounds')
-      .select(ROUND_SELECT)
-      .eq('room_id', room.id)
-      .in('status', ['open', 'closed'])
-      .order('created_at', { ascending: false })
-      .limit(1)
 
     const round = (rounds?.[0] ?? null) as AuctionRound | null
 
@@ -101,6 +112,7 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
     }
 
     if (seq !== fetchSeqRef.current) return
+    currentRoundRef.current = round
     setState(prev => ({ ...prev, participant, currentRound: round, myBid, loading: false }))
 
     if (round?.status === 'open') {
@@ -113,26 +125,37 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
   useEffect(() => {
     fetchState(participantId)
 
-    // Throttle — with ~100 phones each refetching on every bid, a burst of bids
-    // would otherwise multiply into thousands of queries. At most one refresh
-    // per 300 ms, and a steady stream of bids cannot postpone it.
-    let refreshTimer: ReturnType<typeof setTimeout> | null = null
-    const scheduleRefresh = () => {
-      if (refreshTimer) return
-      refreshTimer = setTimeout(() => {
-        refreshTimer = null
+    // Each kind of change refreshes only what it affects. With ~100 phones,
+    // a bid elsewhere in the room used to cost every phone a full reload
+    // (3 queries + the participant list); now it is one small RPC, at most
+    // twice a second, and a steady stream of bids cannot postpone it.
+    let statsTimer: ReturnType<typeof setTimeout> | null = null
+    const scheduleStats = () => {
+      if (statsTimer) return
+      statsTimer = setTimeout(() => {
+        statsTimer = null
+        const round = currentRoundRef.current
+        if (round?.status === 'open') fetchRoundStats(round.id, room.id, participantId)
+      }, 500)
+    }
+    let stateTimer: ReturnType<typeof setTimeout> | null = null
+    const scheduleState = () => {
+      if (stateTimer) return
+      stateTimer = setTimeout(() => {
+        stateTimer = null
         fetchState(participantId)
       }, 300)
     }
 
     // Only this room's rounds and bids reach this phone.
     const channel = supabase.channel(`play-${room.id}-${participantId}`)
-      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `room_id=eq.${room.id}` }, scheduleRefresh)
-      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids', filter: `room_id=eq.${room.id}` }, scheduleRefresh)
-      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `id=eq.${participantId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `room_id=eq.${room.id}` }, scheduleState)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids', filter: `room_id=eq.${room.id}` }, scheduleStats)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `id=eq.${participantId}` }, () => fetchParticipant(participantId))
       .subscribe()
     return () => {
-      if (refreshTimer) clearTimeout(refreshTimer)
+      if (statsTimer) clearTimeout(statsTimer)
+      if (stateTimer) clearTimeout(stateTimer)
       supabase.removeChannel(channel)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -170,7 +193,7 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
           bidSoundRef.current.currentTime = 0
           bidSoundRef.current.play().catch(() => {})
         }
-        fetchState(participantId)
+        if (state.currentRound) fetchRoundStats(state.currentRound.id, room.id, participantId)
       }
     } catch { setBidError('שגיאת רשת. נסו שוב.') }
     finally { setBidSubmitting(false) }

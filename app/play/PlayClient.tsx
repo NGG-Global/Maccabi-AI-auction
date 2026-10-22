@@ -38,11 +38,7 @@ export default function PlayClient() {
       const participant = loadParticipant(room.id)
       if (!participant) { setError('לא נמצאו פרטי משתתף לחדר זה. סרקו את קוד ה-QR והירשמו.'); return }
 
-      const { data: row } = await supabase
-        .from('participants').select('id').eq('id', participant.participantId).eq('room_id', room.id).maybeSingle()
-      if (cancelled) return
-      if (!row) { setError('המשתתף לא נמצא (ייתכן שהחדר אופס). סרקו את קוד ה-QR והירשמו מחדש.'); return }
-
+      // The game screen loads (and validates) the participant itself; no extra round trip here.
       setSession({ room, participant })
     })()
     return () => { cancelled = true }

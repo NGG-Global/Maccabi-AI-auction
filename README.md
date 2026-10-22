@@ -70,7 +70,8 @@ Copy `.env.example` to `.env.local` (and set the same values on Vercel):
 ### 2. Database
 
 Run the migrations in order in the Supabase SQL editor (each as one
-transaction), then `supabase/seed.sql`. Migration headers describe what
+transaction), then `supabase/seed.sql`. New deployments need every file;
+an existing project needs only the ones it has not run yet. Migration headers describe what
 they do; `010_rooms.sql` is the multi-room migration and its header
 includes a read-only pre-check query to run first.
 
@@ -114,7 +115,26 @@ DATABASE_URL=postgres://postgres@127.0.0.1:5432/auction_test npm run test:integr
 ```
 
 `scripts/test-db/migrate.sh` creates the Supabase API roles and the Realtime
-publication the migrations expect, applies `000` → `011` and the seed.
+publication the migrations expect, applies every migration and the seed.
+
+## Performance notes
+
+The live event is the hot path: ~100 phones and one projected screen on
+Supabase Realtime. What keeps it light:
+
+- A bid elsewhere in the room costs each phone one small RPC
+  (`get_round_stats`, migration 012), throttled to twice a second, instead
+  of a full reload with the room's participant list. Round changes reload
+  the round; a wallet change reloads only the participant.
+- Realtime subscriptions are filtered by `room_id`, so other rooms never
+  reach a screen.
+- The analytics tab of the projected screen mounts on first use; until then
+  the laptop runs one set of subscriptions, not two.
+- Server pages read Supabase in parallel (`Promise.all`) rather than one
+  query after another.
+- Region matters more than any of the above for server-rendered pages: set
+  the Vercel function region (`vercel.json` → `regions`) to the region of
+  the Supabase project, otherwise every server query crosses an ocean.
 
 ## Security notes
 
