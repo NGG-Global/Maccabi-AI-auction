@@ -11,7 +11,7 @@ export default async function RoomLivePage({ params }: Props) {
   await connection()
   const { id } = await params
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound()
-  const detail = await getRoomDetail(id)
+  const [detail, initialRound] = await Promise.all([getRoomDetail(id), getLatestRound(id)])
   if (!detail) notFound()
 
   if (detail.room.status === 'archived') {
@@ -25,6 +25,5 @@ export default async function RoomLivePage({ params }: Props) {
     )
   }
 
-  const initialRound = await getLatestRound(id)
   return <LiveWrapper room={detail.room} traits={detail.traits} initialRound={initialRound} />
 }

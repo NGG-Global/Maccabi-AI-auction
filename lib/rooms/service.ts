@@ -37,15 +37,18 @@ export async function listRooms(): Promise<RoomListItem[]> {
 
 export async function getRoomDetail(id: string): Promise<RoomDetail | null> {
   const supabase = createServiceRoleClient()
-  const { data } = await supabase.from('room_overview').select('*').eq('id', id).maybeSingle()
+  // Both reads in parallel: one round trip to Supabase instead of two.
+  const [{ data }, { data: traits }] = await Promise.all([
+    supabase.from('room_overview').select('*').eq('id', id).maybeSingle(),
+    supabase
+      .from('traits')
+      .select('*')
+      .eq('room_id', id)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true }),
+  ])
   if (!data) return null
   const r = data as Room & { participant_count: number; round_count: number; trait_count: number }
-  const { data: traits } = await supabase
-    .from('traits')
-    .select('*')
-    .eq('room_id', id)
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: true })
   return {
     room: r,
     traits: (traits ?? []) as Trait[],

@@ -6,7 +6,7 @@
 
 ## 1. תשתית
 
-- [ ] המיגרציות 010 ו-011 הורצו על הפרויקט המשותף (ראו שאילתת הבדיקה המקדימה בכותרת של 010).
+- [ ] המיגרציות 010, 011 ו-012 הורצו על הפרויקט המשותף (ראו שאילתת הבדיקה המקדימה בכותרת של 010).
 - [ ] ה-bucket `auction-logos` קיים (`npm run create-logo-bucket` או בדשבורד של Supabase).
 - [ ] משתני הסביבה `NGG_STAFF_PASSWORD` ו-`NGG_SESSION_SECRET` מוגדרים ב-Vercel, ו-`ADMIN_PASSWORD` הישן הוסר.
 - [ ] הסכמה `auction` מופיעה תחת Data API → Exposed schemas.

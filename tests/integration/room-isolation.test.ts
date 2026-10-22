@@ -115,6 +115,15 @@ describeDb('room isolation (database)', () => {
     expect(bidsA).toEqual([{ amount: 300 }])
   })
 
+  it('reports round stats for one room in a single call', async () => {
+    const [stats] = await rpc<Record<string, number | string | null>>(db,
+      `select * from get_round_stats($1, $2, $3)`, [roomA, ids.roundA, ids.yossi])
+    // Room A: Dana bid 300, Yossi did not; Ruth (room B) is not counted.
+    expect(stats).toMatchObject({ bidder_count: 1, no_bid_count: 1, folded_count: 0, highest_bid: 300, leader_participant_id: ids.dana, my_amount: 0 })
+    const [mine] = await rpc<Record<string, number>>(db, `select my_amount from get_round_stats($1, $2, $3)`, [roomA, ids.roundA, ids.dana])
+    expect(mine.my_amount).toBe(300)
+  })
+
   it("rejects a participant bidding on another room's round, whichever room id is sent", async () => {
     // Ruth (room B) on room A's round, claiming room A
     await expectError(rpc(db, `select * from submit_bid($1, $2, $3, 100)`, [tokens.ruth, roomA, ids.roundA]), 'room_mismatch')
