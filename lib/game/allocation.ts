@@ -1,7 +1,9 @@
 import type { AuctionRound, GameMode } from '@/lib/types'
 
+import { EMBED } from '@/lib/supabase/embeds'
+
 /** PostgREST embed for the allocation winner list (round_winners, migration 009). */
-export const ROUND_WINNERS_SELECT = 'winners:round_winners(participant_id, amount, participant:participants(id, display_name))'
+export const ROUND_WINNERS_SELECT = EMBED.roundWinners
 
 /** Names of everyone who won the round, falling back to the single winner. */
 export function roundWinnerNames(round: AuctionRound): string[] {

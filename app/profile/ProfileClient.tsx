@@ -1,16 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/browser'
-import type { Participant, AuctionRound, Bid } from '@/lib/types'
+import { ROOM_PUBLIC_COLUMNS, type Participant, type AuctionRound, type Bid, type PublicRoom } from '@/lib/types'
 import { isRoundWinner } from '@/lib/game/allocation'
+import { EMBED } from '@/lib/supabase/embeds'
+import { lastRoomSlug, loadParticipant } from '@/lib/participant-session'
+import RoomBrand from '@/components/shared/RoomBrand'
 
 interface RoundWithBid { round: AuctionRound; bid: Bid; won: boolean }
 
 function getArchetype(rounds: RoundWithBid[]): { title: string; desc: string; icon: string } {
   const categorySpend: Record<string, number> = {}
   for (const r of rounds) {
-    const cat = (r.round.trait as any)?.category ?? 'אחר'
+    const cat = r.round.trait?.category ?? 'אחר'
     categorySpend[cat] = (categorySpend[cat] ?? 0) + r.bid.amount
   }
   const top = Object.entries(categorySpend).sort((a, b) => b[1] - a[1])[0]?.[0]
@@ -20,56 +24,72 @@ function getArchetype(rounds: RoundWithBid[]): { title: string; desc: string; ic
     'שיפוט':   { title: 'מקבל החלטות', desc: 'את/ה מצטיין/ת בשיקול דעת בתנאי אי-ודאות.', icon: '⚖️' },
     'למידה':   { title: 'מנהל צמיחה', desc: 'את/ה משקיע/ה בלמידה ובהתפתחות מתמדת.', icon: '🌱' },
   }
-  return archetypes[top ?? ''] ?? { title: 'מנהל מאוזן', desc: 'את/ה מפזר/ת את ההשקעה על פני מגוון תכונות.', icon: '✨' }
+  return archetypes[top ?? ''] ?? { title: 'מנהל מאוזן', desc: 'את/ה מפזר/ת את ההשקעה על פני מגוון היגדים.', icon: '✨' }
 }
 
 export default function ProfileClient() {
+  const supabase = useMemo(() => createClient(), [])
+  const searchParams = useSearchParams()
+  const slug = searchParams.get('room') ?? lastRoomSlug()
+  const [room, setRoom] = useState<PublicRoom | null>(null)
   const [participant, setParticipant] = useState<Participant | null>(null)
   const [rounds, setRounds] = useState<RoundWithBid[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      const participantId = localStorage.getItem('auction_participant_id')
-      if (!participantId) { setError('לא נמצאו פרטי משתתף.'); setLoading(false); return }
-      const { data: p } = await supabase.from('participants').select('*').eq('id', participantId).single<Participant>()
+      if (!slug) { setError('לא נמצא חדר. סרקו את קוד ה-QR מחדש.'); setLoading(false); return }
+      const { data: r } = await supabase.from('rooms').select(ROOM_PUBLIC_COLUMNS).eq('slug', slug).maybeSingle<PublicRoom>()
+      if (!r) { setError('החדר לא נמצא.'); setLoading(false); return }
+      setRoom(r)
+
+      const stored = loadParticipant(r.id)
+      if (!stored) { setError('לא נמצאו פרטי משתתף לחדר זה.'); setLoading(false); return }
+
+      const { data: p } = await supabase
+        .from('participants').select('*').eq('id', stored.participantId).eq('room_id', r.id).maybeSingle<Participant>()
       if (!p) { setError('המשתתף לא נמצא.'); setLoading(false); return }
       setParticipant(p)
+
       const { data: bids } = await supabase
         .from('bids')
-        .select('*, round:auction_rounds(*, trait:traits(*), winners:round_winners(participant_id))')
-        .eq('participant_id', participantId)
-      const rnd: RoundWithBid[] = (bids ?? [])
-        .map((b: Bid & { round: AuctionRound }) => ({ round: b.round, bid: b, won: isRoundWinner(b.round, participantId) }))
-        .filter(r => r.round.status === 'closed')
+        .select(`*, ${EMBED.bidRound}(*, ${EMBED.roundTrait}, ${EMBED.roundWinnerIds})`)
+        .eq('participant_id', stored.participantId)
+        .eq('room_id', r.id)
+      const rnd: RoundWithBid[] = ((bids ?? []) as Array<Bid & { round: AuctionRound }>)
+        .map(b => ({ round: b.round, bid: b, won: isRoundWinner(b.round, stored.participantId) }))
+        .filter(x => x.round?.status === 'closed')
       setRounds(rnd)
       setLoading(false)
     }
     load()
-  }, [supabase])
+  }, [supabase, slug])
 
   if (loading) return (
     <main className="min-h-screen bg-slate-950 flex items-center justify-center">
       <div className="w-12 h-12 border-4 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
     </main>
   )
-  if (error || !participant) return (
+  if (error || !participant || !room) return (
     <main className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
       <div className="glass rounded-3xl p-8 text-center"><p className="text-red-400 text-lg">{error}</p></div>
     </main>
   )
 
-  const totalSpent = 1000 - participant.wallet_balance
+  const totalSpent = Math.max(0, room.starting_coins - participant.wallet_balance)
   const won = rounds.filter(r => r.won)
   const lost = rounds.filter(r => !r.won)
   const archetype = rounds.length > 0 ? getArchetype(rounds) : null
-  const isAllocation = rounds.some(r => r.round.mode === 'allocation')
+  const isAllocation = room.game_mode === 'allocation'
 
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-8">
       <div className="max-w-md mx-auto flex flex-col gap-4">
+
+        <div className="animate-fade-in">
+          <RoomBrand title={room.title} clientName={room.client_name} logoPath={room.logo_path} size="sm" align="center" />
+        </div>
 
         {/* Header */}
         <div className="text-center animate-slide-in-up">
@@ -109,7 +129,7 @@ export default function ProfileClient() {
         {/* Won traits */}
         {won.length > 0 && (
           <div className="animate-slide-in-up" style={{ animationDelay: '200ms' }}>
-            <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-3">{isAllocation ? '🏆 כישורים שזכית בהם' : '🏆 תכונות שרכשת'}</p>
+            <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-3">{isAllocation ? '🏆 היגדים שזכית בהם' : '🏆 היגדים שרכשת'}</p>
             <div className="flex flex-col gap-2">
               {won.map(r => (
                 <div key={r.round.id} className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between">
@@ -133,7 +153,7 @@ export default function ProfileClient() {
             <div className="flex flex-col gap-2">
               {lost.map(r => (
                 <div key={r.round.id} className="glass rounded-2xl p-4 flex items-center justify-between">
-                  <p className="text-slate-300 font-medium">{(r.round.trait as any)?.title}</p>
+                  <p className="text-slate-300 font-medium">{r.round.trait?.title}</p>
                   <span className="text-red-400 font-black text-sm shrink-0 mr-3">{r.bid.amount} 🪙</span>
                 </div>
               ))}

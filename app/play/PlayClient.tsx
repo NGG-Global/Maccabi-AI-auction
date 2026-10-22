@@ -1,66 +1,59 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/browser'
-import type { Event, GameMode } from '@/lib/types'
-import { resolveGameMode } from '@/lib/game/allocation'
+import { ROOM_PUBLIC_COLUMNS, type PublicRoom } from '@/lib/types'
+import { lastRoomSlug, loadParticipant, type StoredParticipant } from '@/lib/participant-session'
 import AuctionPlay from './AuctionPlay'
 import AllocationPlay from './AllocationPlay'
 import { PlaySkeleton, PlayError } from './PlayShell'
 
 interface Session {
-  participantId: string
-  eventId: string
-  mode: GameMode
+  room: PublicRoom
+  participant: StoredParticipant
 }
 
-/** Resolves the participant's event and shows the screen for its game mode. */
+/**
+ * Resolves the room (?room=<slug>, or the last room this phone joined) and
+ * this phone's participant in it, then shows the screen for the game mode.
+ */
 export default function PlayClient() {
   const supabase = useMemo(() => createClient(), [])
-  // Client-only component (ssr: false), so localStorage is available here.
-  const [participantId] = useState(() => localStorage.getItem('auction_participant_id'))
+  const searchParams = useSearchParams()
+  const slug = searchParams.get('room') ?? lastRoomSlug()
   const [session, setSession] = useState<Session | null>(null)
-  const [error, setError] = useState<string | null>(
-    participantId ? null : 'לא נמצא פרטי משתתף. סרקו את קוד ה-QR מחדש.',
-  )
+  const [error, setError] = useState<string | null>(slug ? null : 'לא נמצא חדר. סרקו את קוד ה-QR מחדש.')
 
   useEffect(() => {
-    if (!participantId) return
+    if (!slug) return
     let cancelled = false
     ;(async () => {
-      const { data: participant, error: pErr } = await supabase
-        .from('participants').select('id, event_id').eq('id', participantId).maybeSingle()
+      const { data: room, error: rErr } = await supabase
+        .from('rooms').select(ROOM_PUBLIC_COLUMNS).eq('slug', slug).maybeSingle<PublicRoom>()
       if (cancelled) return
-      if (pErr) { setError('שגיאה בטעינת הנתונים. רעננו את הדף.'); return }
-      if (!participant) { setError('המשתתף לא נמצא. סרקו את קוד ה-QR מחדש.'); return }
+      if (rErr) { setError('שגיאה בטעינת הנתונים. רעננו את הדף.'); return }
+      if (!room) { setError('החדר לא נמצא. סרקו את קוד ה-QR מחדש.'); return }
 
-      // select('*') so this still works before migration 008 adds game_mode.
-      const { data: event } = await supabase
-        .from('events').select('*').eq('id', participant.event_id).maybeSingle<Event>()
+      const participant = loadParticipant(room.id)
+      if (!participant) { setError('לא נמצאו פרטי משתתף לחדר זה. סרקו את קוד ה-QR והירשמו.'); return }
+
+      const { data: row } = await supabase
+        .from('participants').select('id').eq('id', participant.participantId).eq('room_id', room.id).maybeSingle()
       if (cancelled) return
-      setSession({
-        participantId,
-        eventId: participant.event_id,
-        mode: resolveGameMode(event?.game_mode),
-      })
+      if (!row) { setError('המשתתף לא נמצא (ייתכן שהחדר אופס). סרקו את קוד ה-QR והירשמו מחדש.'); return }
+
+      setSession({ room, participant })
     })()
     return () => { cancelled = true }
-  }, [supabase, participantId])
-
-  const handleModeChange = useCallback((mode: GameMode) => {
-    setSession(prev => (prev && prev.mode !== mode ? { ...prev, mode } : prev))
-  }, [])
+  }, [supabase, slug])
 
   if (error) return <PlayError message={error} />
   if (!session) return <PlaySkeleton />
 
-  return session.mode === 'allocation' ? (
-    <AllocationPlay
-      participantId={session.participantId}
-      eventId={session.eventId}
-      onModeChange={handleModeChange}
-    />
+  return session.room.game_mode === 'allocation' ? (
+    <AllocationPlay room={session.room} participantId={session.participant.participantId} sessionToken={session.participant.sessionToken} />
   ) : (
-    <AuctionPlay onModeChange={handleModeChange} />
+    <AuctionPlay room={session.room} participantId={session.participant.participantId} sessionToken={session.participant.sessionToken} />
   )
 }

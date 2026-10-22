@@ -8,11 +8,11 @@ import {
   type CategoryAnalytics,
   type BudgetCheckpoint,
 } from '@/lib/game/analytics'
-import type { Event, GameMode } from '@/lib/types'
+import type { Room, GameMode } from '@/lib/types'
 import type { Bid } from '@/lib/types'
 
 interface Props {
-  event: Event
+  room: Room
   gameMode: GameMode
 }
 
@@ -449,7 +449,7 @@ function AllocationOverviewPanel({ overview, elapsed }: AllocationOverviewPanelP
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function AnalyticsDashboard({ event, gameMode }: Props) {
+export default function AnalyticsDashboard({ room, gameMode }: Props) {
   const isAllocation = gameMode === 'allocation'
   const {
     currentRoundAnalytics,
@@ -460,7 +460,7 @@ export default function AnalyticsDashboard({ event, gameMode }: Props) {
     connectionStatus,
     loading,
     error,
-  } = useAdminRealtimeAnalytics(event.id, gameMode)
+  } = useAdminRealtimeAnalytics(room.id, gameMode, room.starting_coins)
 
   const elapsed = useElapsedTimer(
     isAllocation ? allocationOverview.openedAt : currentRoundAnalytics.openedAt,

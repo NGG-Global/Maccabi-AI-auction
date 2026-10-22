@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import RoomBrand from '@/components/shared/RoomBrand'
+import type { PublicRoom } from '@/lib/types'
 
 // Pieces shared by the auction and allocation participant screens.
 
@@ -36,8 +38,8 @@ export function PlayError({ message }: { message: string }) {
   )
 }
 
-/** Name + wallet bar; the balance flashes when it changes (e.g. when a round closes). */
-export function WalletHeader({ name, balance }: { name: string; balance: number }) {
+/** Room branding + name + wallet bar; the balance flashes when it changes (e.g. when a round closes). */
+export function WalletHeader({ room, name, balance }: { room: PublicRoom; name: string; balance: number }) {
   const prevBalanceRef = useRef<number | null>(null)
   const [walletFlash, setWalletFlash] = useState(false)
 
@@ -52,19 +54,31 @@ export function WalletHeader({ name, balance }: { name: string; balance: number 
   }, [balance])
 
   return (
-    <header className="bg-slate-900 border-b border-white/10 px-5 py-4 flex items-center justify-between">
-      <div>
-        <p className="text-slate-500 text-xs">שלום,</p>
-        <p className="text-white font-bold text-base">{name}</p>
-      </div>
-      <div className={`text-left rounded-2xl px-4 py-2 border transition-colors duration-300 ${
-        walletFlash
-          ? 'bg-amber-500/30 border-amber-400/60 animate-wallet-flash'
-          : 'bg-amber-500/10 border-amber-500/30'
-      }`}>
-        <p className="text-amber-500/70 text-xs">יתרה</p>
-        <p className="text-amber-400 text-2xl font-black tabular-nums">{balance.toLocaleString()} <span className="text-lg">🪙</span></p>
+    <header className="bg-slate-900 border-b border-white/10 px-5 py-3 flex flex-col gap-3">
+      <RoomBrand title={room.title} clientName={room.client_name} logoPath={room.logo_path} size="sm" />
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-slate-500 text-xs">שלום,</p>
+          <p className="text-white font-bold text-base">{name}</p>
+        </div>
+        <div className={`text-left rounded-2xl px-4 py-2 border transition-colors duration-300 ${
+          walletFlash
+            ? 'bg-amber-500/30 border-amber-400/60 animate-wallet-flash'
+            : 'bg-amber-500/10 border-amber-500/30'
+        }`}>
+          <p className="text-amber-500/70 text-xs">יתרה</p>
+          <p className="text-amber-400 text-2xl font-black tabular-nums">{balance.toLocaleString()} <span className="text-lg">🪙</span></p>
+        </div>
       </div>
     </header>
+  )
+}
+
+/** Shown on the phone when the room's live window is closed. */
+export function RoomPausedNotice() {
+  return (
+    <div className="bg-red-500/10 border border-red-500/30 rounded-2xl px-4 py-3 text-center">
+      <p className="text-red-300 text-sm font-semibold">החדר אינו פעיל כרגע. המתינו שהמנחה יפעיל אותו.</p>
+    </div>
   )
 }

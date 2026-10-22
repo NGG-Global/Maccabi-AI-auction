@@ -74,7 +74,7 @@ export interface BudgetCheckpoint {
 }
 
 export interface CumulativeGameAnalytics {
-  totalStartingBudget: number         // registeredCount * 1000
+  totalStartingBudget: number         // registeredCount * room.starting_coins
   totalSpent: number                  // totalStartingBudget - sum(wallet_balance)
   totalRemainingBudget: number        // sum(wallet_balance)
   averageRemainingWallet: number
@@ -172,9 +172,10 @@ export function computeCumulativeAnalytics(
   participants: Participant[],
   closedRounds: AuctionRound[],
   bidAmountsByRound: Record<string, number[]>,
+  startingCoins: number = 1000,
 ): CumulativeGameAnalytics {
   const registeredCount = participants.length
-  const totalStartingBudget = registeredCount * 1000
+  const totalStartingBudget = registeredCount * startingCoins
   const totalRemainingBudget = participants.reduce((s, p) => s + p.wallet_balance, 0)
   const totalSpent = totalStartingBudget - totalRemainingBudget
   const averageRemainingWallet =

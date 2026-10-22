@@ -1,36 +1,24 @@
 import { NextRequest } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
-import { isAdminAuthenticated } from '@/lib/auth/admin'
+import { requireStaff } from '@/lib/auth/staff'
+import { ROOM_ERRORS, badRequest, rpcErrorResponse, unauthorized } from '@/lib/api/respond'
+
+const ERRORS = {
+  ...ROOM_ERRORS,
+  allocation_not_open: { status: 409, error: 'החלוקה אינה פתוחה' },
+}
 
 export async function POST(req: NextRequest) {
-  if (!(await isAdminAuthenticated())) {
-    return Response.json({ error: 'לא מורשה' }, { status: 401 })
-  }
+  if (!(await requireStaff())) return unauthorized()
 
   const body = await req.json().catch(() => null)
-  if (!body?.eventId) {
-    return Response.json({ error: 'חסר מזהה אירוע' }, { status: 400 })
-  }
+  if (!body?.roomId) return badRequest('חסר מזהה חדר')
 
   const supabase = createServiceRoleClient()
-
-  // Single atomic DB call: closes every open allocation round, records each
-  // trait's winners (a tie on the top amount is a shared win), charges every
-  // allocation and writes the ledger.
-  const { data, error } = await supabase.rpc('close_allocation', {
-    p_event_id: body.eventId,
-  })
-
-  if (error) {
-    if (error.message?.includes('allocation_not_open')) {
-      return Response.json({ error: 'החלוקה אינה פתוחה' }, { status: 409 })
-    }
-    if (error.message?.includes('event_not_found')) {
-      return Response.json({ error: 'האירוע לא נמצא' }, { status: 404 })
-    }
-    console.error('close_allocation error:', error)
-    return Response.json({ error: 'שגיאה בסגירת החלוקה' }, { status: 500 })
-  }
+  // One atomic DB call: closes every open allocation round of the room,
+  // records each trait's winners, charges every allocation, writes the ledger.
+  const { data, error } = await supabase.rpc('close_allocation', { p_room_id: body.roomId })
+  if (error) return rpcErrorResponse(error, ERRORS, 'שגיאה בסגירת החלוקה', 'close_allocation')
 
   const result = data?.[0] ?? null
   return Response.json({

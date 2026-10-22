@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import { DB_SCHEMA } from '@/lib/supabase/schema'
-import type { AuctionRound, Participant, GameMode } from '@/lib/types'
+import type { AuctionRound, Participant, PublicRoom } from '@/lib/types'
+import { EMBED } from '@/lib/supabase/embeds'
 import {
   checkAllocationDraft,
   draftToPayload,
@@ -14,10 +15,9 @@ import {
 import { PlaySkeleton, PlayError, WalletHeader } from './PlayShell'
 
 interface Props {
+  room: PublicRoom
   participantId: string
-  eventId: string
-  /** Called when the event turns out to be in the other mode (switched by the facilitator). */
-  onModeChange: (mode: GameMode) => void
+  sessionToken: string
 }
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
@@ -31,7 +31,7 @@ const AUTOSAVE_DELAY_MS = 1200
  * demand) until the facilitator closes the allocation. Participants see
  * only their own split; group results appear on the facilitator screen.
  */
-export default function AllocationPlay({ participantId, eventId, onModeChange }: Props) {
+export default function AllocationPlay({ room, participantId, sessionToken }: Props) {
   const supabase = useMemo(() => createClient(), [])
   const [participant, setParticipant] = useState<Participant | null>(null)
   const [rounds, setRounds] = useState<AuctionRound[]>([])
@@ -75,11 +75,11 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
     const seq = ++fetchSeqRef.current
 
     const [{ data: p, error: pErr }, { data: roundRows, error: rErr }] = await Promise.all([
-      supabase.from('participants').select('*').eq('id', participantId).maybeSingle<Participant>(),
+      supabase.from('participants').select('*').eq('id', participantId).eq('room_id', room.id).maybeSingle<Participant>(),
       supabase
         .from('auction_rounds')
-        .select('*, trait:traits(*), winners:round_winners(participant_id)')
-        .eq('event_id', eventId)
+        .select(`*, ${EMBED.roundTrait}, ${EMBED.roundWinnerIds}`)
+        .eq('room_id', room.id)
         .in('status', ['open', 'closed']),
     ])
     if (seq !== fetchSeqRef.current) return
@@ -89,16 +89,12 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
       return
     }
     if (!p) {
-      setLoadError('המשתתף לא נמצא. סרקו את קוד ה-QR מחדש.')
+      setLoadError('המשתתף לא נמצא (ייתכן שהחדר אופס). סרקו את קוד ה-QR והירשמו מחדש.')
       setLoading(false)
       return
     }
 
     const list = sortRoundsByTrait((roundRows ?? []) as AuctionRound[])
-    if (list.some(r => r.mode === 'auction')) {
-      onModeChange('auction')
-      return
-    }
 
     let mine: Record<string, number> = {}
     if (list.length > 0) {
@@ -123,7 +119,7 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
       for (const r of list) if (r.status === 'open') next[r.id] = mine[r.id] ? String(mine[r.id]) : ''
       setDraft(next)
     }
-  }, [supabase, participantId, eventId, onModeChange])
+  }, [supabase, participantId, room.id])
 
   useEffect(() => {
     fetchState()
@@ -138,10 +134,10 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
       }, 300)
     }
 
-    // Only this participant's own rows and the event's rounds — the phone
+    // Only this participant's own rows and the room's rounds — the phone
     // never needs anyone else's allocation.
     const channel = supabase.channel(`play-allocation-${participantId}`)
-      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `event_id=eq.${eventId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `room_id=eq.${room.id}` }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `id=eq.${participantId}` }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids', filter: `participant_id=eq.${participantId}` }, scheduleRefresh)
       .subscribe()
@@ -149,7 +145,7 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
       if (refreshTimer) clearTimeout(refreshTimer)
       supabase.removeChannel(channel)
     }
-  }, [supabase, participantId, eventId, fetchState])
+  }, [supabase, participantId, room.id, fetchState])
 
   const save = useCallback(async () => {
     // A save requested while one is in flight runs right after it, with the
@@ -172,7 +168,7 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
           const res = await fetch('/api/allocation/submit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionToken: localStorage.getItem('auction_session_token'), allocations: payload }),
+            body: JSON.stringify({ sessionToken, roomId: room.id, allocations: payload }),
           })
           const data = await res.json().catch(() => ({}))
           if (!res.ok) {
@@ -192,7 +188,7 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
     } finally {
       savingRef.current = false
     }
-  }, [fetchState])
+  }, [fetchState, sessionToken, room.id])
 
   // Auto-save shortly after the last change, so nobody loses their split
   // because they forgot to press save before the facilitator closed it.
@@ -231,7 +227,7 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
 
   return (
     <main className="min-h-screen bg-slate-950 flex flex-col">
-      <WalletHeader name={participant.display_name} balance={participant.wallet_balance} />
+      <WalletHeader room={room} name={participant.display_name} balance={participant.wallet_balance} />
 
       <div className={`flex-1 flex flex-col px-4 py-6 gap-4 ${phase === 'open' ? 'pb-48' : ''}`}>
 
@@ -241,9 +237,9 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
             <div className="text-7xl animate-float">🧩</div>
             <div className="text-center">
               <p className="text-white text-2xl font-black mb-2">ממתינים לפתיחת החלוקה</p>
-              <p className="text-slate-500">כל הכישורים ייפתחו יחד</p>
+              <p className="text-slate-500">כל ההיגדים ייפתחו יחד</p>
             </div>
-            <AllocationRules />
+            <AllocationRules coins={room.starting_coins} />
           </div>
         )}
 
@@ -256,10 +252,10 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
                 החלוקה פתוחה
               </span>
               <h2 className="text-2xl font-black text-white mb-1">
-                חלקו {balance.toLocaleString()} מטבעות בין {openRounds.length} הכישורים
+                חלקו {balance.toLocaleString()} מטבעות בין {openRounds.length} ההיגדים
               </h2>
               <p className="text-slate-400 text-sm leading-relaxed">
-                השינויים נשמרים אוטומטית, ואפשר לשנות עד שהמנחה סוגר את החלוקה. ההקצאה הגבוהה ביותר בכל כישור זוכה בו, ובשוויון כל המובילים זוכים יחד.
+                השינויים נשמרים אוטומטית, ואפשר לשנות עד שהמנחה סוגר את החלוקה. ההקצאה הגבוהה ביותר בכל היגד זוכה בו, ובשוויון כל המובילים זוכים יחד.
               </p>
             </div>
 
@@ -316,7 +312,7 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
             })}
 
             <p className="text-center text-slate-500 text-xs leading-relaxed px-2">
-              בסגירת החלוקה כל המטבעות שהקצית יורדים מהיתרה — גם בכישורים שלא זכית בהם. מטבעות שלא חולקו נשארים אצלך.
+              בסגירת החלוקה כל המטבעות שהקצית יורדים מהיתרה — גם בהיגדים שלא זכית בהם. מטבעות שלא חולקו נשארים אצלך.
             </p>
           </div>
         )}
@@ -332,7 +328,7 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
               <p className="text-5xl mb-3">{wonRounds.length > 0 ? '🏆' : '🧩'}</p>
               <p className={`text-2xl font-black mb-1 ${wonRounds.length > 0 ? 'text-amber-400' : 'text-white'}`}>
                 {wonRounds.length > 0
-                  ? `זכית ב-${wonRounds.length} ${wonRounds.length === 1 ? 'כישור' : 'כישורים'}!`
+                  ? `זכית ב-${wonRounds.length} ${wonRounds.length === 1 ? 'היגד' : 'היגדים'}!`
                   : 'החלוקה נסגרה'}
               </p>
               <p className="text-slate-400 text-sm">
@@ -374,7 +370,7 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
             )}
 
             <p className="text-center text-slate-600 text-xs">
-              <a href="/profile" className="underline hover:text-slate-400 transition-colors">צפה בפרופיל שלך</a>
+              <a href={`/profile?room=${encodeURIComponent(room.slug)}`} className="underline hover:text-slate-400 transition-colors">צפה בפרופיל שלך</a>
             </p>
           </div>
         )}
@@ -418,15 +414,15 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
   )
 }
 
-function AllocationRules() {
+function AllocationRules({ coins }: { coins: number }) {
   return (
     <div className="glass rounded-3xl p-5 w-full max-w-sm">
       <div className="flex flex-col gap-3">
         {[
-          { icon: '🪙', text: 'לכל משתתף 1,000 מטבעות' },
-          { icon: '🧩', text: 'כל הכישורים פתוחים יחד — מחלקים את המטבעות ביניהם' },
+          { icon: '🪙', text: `לכל משתתף ${coins.toLocaleString()} מטבעות` },
+          { icon: '🧩', text: 'כל ההיגדים פתוחים יחד — מחלקים את המטבעות ביניהם' },
           { icon: '✏️', text: 'אפשר לשנות את החלוקה עד שהמנחה סוגר אותה' },
-          { icon: '🏆', text: 'ההקצאה הגבוהה ביותר בכל כישור זוכה בו; בשוויון כל המובילים זוכים יחד' },
+          { icon: '🏆', text: 'ההקצאה הגבוהה ביותר בכל היגד זוכה בו; בשוויון כל המובילים זוכים יחד' },
         ].map(r => (
           <div key={r.icon} className="flex items-start gap-3">
             <span className="text-xl shrink-0">{r.icon}</span>
