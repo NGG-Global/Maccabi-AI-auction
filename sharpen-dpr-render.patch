@@ -1,0 +1,332 @@
+From 70153f5176c788fd96cde5caeeee9d21390fe674 Mon Sep 17 00:00:00 2001
+From: Claude <claude@nggconsult.com>
+Date: Thu, 22 Oct 2026 17:33:38 +0000
+Subject: [PATCH] Draw the frame at device resolution
+
+The canvas rendered at the 720-wide design box and the browser stretched it to the
+screen: a 1.5x upscale of every outline and letter on a 2.75x phone, the softness
+docs/VISUAL_AUDIT.md recorded as a deliberate, unmeasured decision.
+
+renderScale (config/design.ts) now works out that upscale from the device pixel ratio
+and the parent's size, clamped to [1, RENDER_SCALE_MAX], and createGameConfig hands the
+Scale Manager the design box multiplied by it, so one logical pixel lands on one device
+pixel. Every scene lays out from s and the Viewport and follows on its own; the particle
+presets in ui/feedback.ts were the one thing sized outside s and are scaled as each
+emitter is made.
+
+RENDER_SCALE_MAX is the single constant to tune from a handset. 1 restores the previous
+behaviour exactly. Fill cost is not yet measured on a mid-range Android.
+---
+ CLAUDE.md                 |  3 ++-
+ docs/VISUAL_AUDIT.md      | 43 ++++++++++++++----------------
+ src/config/design.ts      | 51 +++++++++++++++++++++++++++++++++++
+ src/config/game.ts        | 30 ++++++++++++++++++---
+ src/ui/feedback.ts        | 28 ++++++++++++++++++++
+ tests/renderScale.test.ts | 56 +++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 184 insertions(+), 27 deletions(-)
+ create mode 100644 tests/renderScale.test.ts
+
+diff --git a/CLAUDE.md b/CLAUDE.md
+index fe46356..7bd8581 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -388,7 +388,8 @@ counts the stroke into a line and draws half a stroke in, and the old stroke-wid
+ every left-aligned headline a stroke right of the body text under it. **A centred caption
+ that wraps goes through `balanceWrap`** (`ui/type.ts`), so no word is left alone on its last
+ line; hand-broken copy ("Make it\nstick.") keeps its breaks, because those are the voice. See
+-`docs/VISUAL_AUDIT.md`, which also records why the canvas still renders at its logical size.
++`docs/VISUAL_AUDIT.md`, which also records how the canvas is drawn at device resolution
++(`renderScale` and `RENDER_SCALE_MAX` in `config/design.ts`).
+ 
+ **A dressed letter only takes an outline its own fill can carry.** `typeStroke` returns
+ `null` below `OUTLINE_CONTRAST`, and `ui/type.ts` then draws no stroke and lifts the letter
+diff --git a/docs/VISUAL_AUDIT.md b/docs/VISUAL_AUDIT.md
+index 037a678..b854ec3 100644
+--- a/docs/VISUAL_AUDIT.md
++++ b/docs/VISUAL_AUDIT.md
+@@ -54,32 +54,29 @@ the screen, never a crash.
+   result) are the act behind the plaque. Dimming it would also dim the coda's last picture.
+   Left alone, but noted.
+ 
+-## Not changed: render resolution
++## Render resolution
+ 
+-**The game renders at its logical size, and the browser stretches the canvas to the
+-screen.** On a 393 CSS-pixel phone at 2.75× the canvas is 720×1559 against 1,081×2,338
+-device pixels: a 1.5× upscale of every letter, outline and edge. Text and strokes are
++**The game used to render at its logical size, and the browser stretched the canvas to the
++screen.** On a 393 CSS-pixel phone at 2.75× the canvas was 720×1559 against 1,081×2,338
++device pixels: a 1.5× upscale of every letter, outline and edge. Text and strokes were
+ readable but visibly soft next to a native app.
+ 
+-This is a recorded decision, not an oversight. `config/design.ts` chose the 720-wide box for
+-half the fill rate of 1080p, and Phaser 4.2 has no resolution or device-pixel-ratio
+-option. Making it sharp means rendering a larger logical frame, about
+-`devicePixelRatio × min(cssWidth / 720, cssHeight / 1280)` times the design box (~1.5 on
+-that phone), and capping it. Because every scene lays out from
+-`s = min(safe.width / 720, safe.height / 1150)` and the viewport, most of the game would
+-follow on its own.
+-
+-The parts that would not follow are anything sized in raw pixels rather than through `s`:
+-
+-- particle presets;
+-- the material tiles' scale;
+-- the second camera's viewport in Settings;
+-- each act's own scale formula.
+-
+-The cost is about 2.25× the pixels filled per frame on that phone.
+-
+-It needs a measured decision on a mid-range handset. It is the one change here that could
+-lose frames, so it was not made inside an audit.
++**It now draws the design box larger by that ratio.** `renderScale` in `config/design.ts`
++takes the device pixel ratio and the parent's size, works out the upscale the compositor
++would otherwise apply (`devicePixelRatio × min(cssWidth / 720, cssHeight / 1280)`), and
++`createGameConfig` hands the Scale Manager the design box multiplied by it, so one logical
++pixel lands on one device pixel. The scale is settled once at boot and is never below 1.
++Because every scene lays out from `s = min(safe.width / 720, safe.height / 1150)` and the
++Viewport, the game follows on its own. The one thing sized outside `s` was the particle
++presets in `ui/feedback.ts` — speeds, gravity and chip sizes written against the 720 box —
++and those are scaled once as each emitter is made (`scalePreset`). The band camera in
++Settings and the material tiles already went through `s`.
++
++**`RENDER_SCALE_MAX` is the one number to tune on a handset.** It is 1.5: sharp on a 2.75×
++phone at about 2.25× the fill of the old frame; a 3× flagship stops there rather than
++paying for 3×. Setting it to 1 gives the previous behaviour back exactly. The fill cost has
++not been measured on a mid-range Android yet — that measurement, on the DJ and trombone
++stages (the heaviest), is what should decide whether the cap stays at 1.5 or comes down.
+ 
+ ## Not verified
+ 
+diff --git a/src/config/design.ts b/src/config/design.ts
+index 9530f29..ca44df5 100644
+--- a/src/config/design.ts
++++ b/src/config/design.ts
+@@ -25,6 +25,57 @@ export const DESIGN_HEIGHT = 1280;
+ /** Design-space aspect ratio (width / height), ~0.5625. */
+ export const DESIGN_ASPECT = DESIGN_WIDTH / DESIGN_HEIGHT;
+ 
++/**
++ * Render scale: how many logical units the design box is drawn with per design unit.
++ *
++ * The canvas backing store tracks the logical game size, and the browser stretches it
++ * to the screen. At scale 1 a 393 CSS-pixel phone at 2.75x draws 720 logical pixels
++ * across 1,081 device pixels: a 1.5x upscale of every outline, letter and edge, which
++ * is the softness `docs/VISUAL_AUDIT.md` records against a native app. Drawing the
++ * design box larger by exactly that ratio lands one logical pixel on one device pixel.
++ *
++ * Every scene lays out from `s = min(safe.width / 720, safe.height / 1150)` and the
++ * Viewport, so a larger logical frame scales the whole game on its own. The only things
++ * sized outside `s` are the particle presets in `ui/feedback.ts`, which read
++ * {@link renderScale} directly.
++ *
++ * The cap is the one number to tune from a handset. 1.5 makes a 2.75x phone sharp at
++ * about 2.25x the fill of scale 1; a 3x flagship stops there rather than paying for 3x.
++ * Set it to 1 to get the previous behaviour back exactly.
++ */
++export const RENDER_SCALE_MAX = 1.5;
++
++/**
++ * The render scale for a device: the upscale the compositor would otherwise apply,
++ * from device pixels per CSS pixel and how far the parent is from the design box,
++ * clamped to [1, {@link RENDER_SCALE_MAX}]. Pure, so it is testable without a browser.
++ *
++ * Under `Phaser.Scale.EXPAND` the parent's smaller axis against the design box sets the
++ * zoom, so that axis is what the device pixel ratio is applied to. A desktop window or a
++ * tablet wider than the box never goes below 1: the frame is never drawn smaller than
++ * the design box.
++ */
++export function renderScale(devicePixelRatio: number, parentWidth: number, parentHeight: number, max = RENDER_SCALE_MAX): number {
++  if (!(devicePixelRatio > 0) || !(parentWidth > 0) || !(parentHeight > 0)) return 1;
++  const zoom = Math.min(parentWidth / DESIGN_WIDTH, parentHeight / DESIGN_HEIGHT);
++  const upscale = devicePixelRatio * zoom;
++  // Two decimals: a fractional scale is fine (the frame is rounded by `autoRound`), but
++  // a long tail would only show up as a different number in every bug report.
++  return Math.min(max, Math.max(1, Math.round(upscale * 100) / 100));
++}
++
++let activeRenderScale = 1;
++
++/** Records the scale the running game was built with; `createGameConfig` sets it once. */
++export function setRenderScale(scale: number): void {
++  activeRenderScale = scale;
++}
++
++/** The scale the running game was built with, for the few sizes that do not go through `s`. */
++export function currentRenderScale(): number {
++  return activeRenderScale;
++}
++
+ /**
+  * Layout metrics in design units. Scene code scales these through the
+  * Viewport rather than using raw pixel numbers inline.
+diff --git a/src/config/game.ts b/src/config/game.ts
+index 9b1469e..1714e89 100644
+--- a/src/config/game.ts
++++ b/src/config/game.ts
+@@ -1,6 +1,6 @@
+ import Phaser from 'phaser';
+ 
+-import { DESIGN_HEIGHT, DESIGN_WIDTH } from '@/config/design';
++import { DESIGN_HEIGHT, DESIGN_WIDTH, renderScale, setRenderScale } from '@/config/design';
+ import { PALETTE } from '@/config/theme';
+ import { getGameRootId } from '@/core/shell';
+ import { BootScene } from '@/scenes/BootScene';
+@@ -23,7 +23,31 @@ import { EndlessScene } from '@/scenes/EndlessScene';
+  * the reasoning so the settings are not "cargo-culted" forward on the next
+  * change.
+  */
++/**
++ * The parent's size in CSS pixels, read once so the render scale is settled before the
++ * Scale Manager exists. `#game-root` is fixed to the dynamic viewport by `index.html`;
++ * before layout, or outside a browser, the window stands in for it.
++ */
++function parentSize(): { width: number; height: number } {
++  if (typeof document === 'undefined' || typeof window === 'undefined') return { width: DESIGN_WIDTH, height: DESIGN_HEIGHT };
++  const root = document.getElementById(getGameRootId());
++  const width = root?.clientWidth || window.innerWidth;
++  const height = root?.clientHeight || window.innerHeight;
++  return { width, height };
++}
++
+ export function createGameConfig(): Phaser.Types.Core.GameConfig {
++  /*
++   * The logical frame is the design box drawn larger by the render scale, so on a
++   * handset one logical pixel lands on one device pixel instead of being stretched
++   * across one and a half. Settled once, here: a rotation or a resize keeps the scale
++   * the game was built with, because every baked layer and text texture was rastered
++   * at it, and the game is portrait-locked. See `RENDER_SCALE_MAX` in `config/design.ts`.
++   */
++  const parent = parentSize();
++  const scale = renderScale(typeof window === 'undefined' ? 1 : window.devicePixelRatio, parent.width, parent.height);
++  setRenderScale(scale);
++
+   return {
+     /**
+      * WebGL where available, 2D canvas otherwise. Every Android WebView worth
+@@ -54,8 +78,8 @@ export function createGameConfig(): Phaser.Types.Core.GameConfig {
+       mode: Phaser.Scale.EXPAND,
+       autoCenter: Phaser.Scale.CENTER_BOTH,
+ 
+-      width: DESIGN_WIDTH,
+-      height: DESIGN_HEIGHT,
++      width: Math.round(DESIGN_WIDTH * scale),
++      height: Math.round(DESIGN_HEIGHT * scale),
+ 
+       /*
+        * `min` / `max` are deliberately not set.
+diff --git a/src/ui/feedback.ts b/src/ui/feedback.ts
+index ba67df9..0a411e1 100644
+--- a/src/ui/feedback.ts
++++ b/src/ui/feedback.ts
+@@ -1,4 +1,5 @@
+ import type Phaser from 'phaser';
++import { currentRenderScale } from '@/config/design';
+ import { STYLE } from '@/config/style';
+ 
+ /**
+@@ -125,6 +126,32 @@ const PRESET_TEXTURE: Readonly<Record<Preset, string>> = {
+   splinters: FxKey.splinter, droplets: FxKey.droplet, rings: FxKey.ring, flakes: FxKey.flake,
+ };
+ 
++type Range = number | { min: number; max: number } | { start: number; end: number };
++
++/** A preset value in logical units per design unit, scaled; `undefined` stays unset. */
++function scaled(value: Range | undefined, by: number): Range | undefined {
++  if (value === undefined) return undefined;
++  if (typeof value === 'number') return value * by;
++  if ('min' in value) return { min: value.min * by, max: value.max * by };
++  return { start: value.start * by, end: value.end * by };
++}
++
++/**
++ * The presets are written in design units: a spark's speed, the pull of gravity and the
++ * size of a chip were all tuned against the 720-wide box. The frame is drawn larger
++ * than that by the render scale (`config/design.ts`), and nothing here goes through a
++ * scene's `s`, so the lengths are scaled once, as the emitter is made. Lifespans and
++ * angles are not lengths and stay as written.
++ */
++function scalePreset(config: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig, by: number): void {
++  if (by === 1) return;
++  const c = config as Record<string, unknown>;
++  for (const key of ['speed', 'gravityY', 'gravityX', 'scale'] as const) {
++    const value = scaled(c[key] as Range | undefined, by);
++    if (value !== undefined) c[key] = value;
++  }
++}
++
+ export class Feedback {
+   private readonly emitters = new Map<Preset, Emitter>();
+   /** With a `parent`, emitters live in that container and burst in its local space. */
+@@ -179,6 +206,7 @@ export class Feedback {
+           lifespan: { min: 420, max: 760 }, scale: { start: 0.8, end: 0.55 }, alpha: { start: 1, end: 0.1 } });
+         break;
+     }
++    scalePreset(config, currentRenderScale());
+     const texture = PRESET_TEXTURE[preset];
+     const emitter = this.scene.add.particles(0, 0, texture, config).setDepth(this.depth);
+     this.parent?.add(emitter);
+diff --git a/tests/renderScale.test.ts b/tests/renderScale.test.ts
+new file mode 100644
+index 0000000..670fa5e
+--- /dev/null
++++ b/tests/renderScale.test.ts
+@@ -0,0 +1,56 @@
++import { readFileSync } from 'node:fs';
++import { afterEach, describe, expect, it } from 'vitest';
++
++import { DESIGN_HEIGHT, DESIGN_WIDTH, RENDER_SCALE_MAX, currentRenderScale, renderScale, setRenderScale } from '../src/config/design';
++
++afterEach(() => setRenderScale(1));
++
++describe('the render scale', () => {
++  it('is the upscale the compositor would otherwise apply, on the axis that pins the zoom', () => {
++    // The audit's phone: 393x851 CSS at 2.75x. Width pins the zoom (393/720 < 851/1280),
++    // so the frame is drawn 2.75 * 393/720 = 1.50x: one logical pixel per device pixel.
++    expect(renderScale(2.75, 393, 851)).toBe(1.5);
++    // A 16:9 phone at 2x: 2 * 375/720 = 1.04.
++    expect(renderScale(2, 375, 667)).toBe(1.04);
++    // A 4:3 tablet at 2x: height pins (1024/1280 < 768/720), 2 * 0.8 = 1.6, capped.
++    expect(renderScale(2, 768, 1024)).toBe(RENDER_SCALE_MAX);
++  });
++
++  it('never draws the frame smaller than the design box, and never past the cap', () => {
++    // A desktop window at 1x, taller than wide: 1 * min(500/720, 900/1280) < 1.
++    expect(renderScale(1, 500, 900)).toBe(1);
++    // A 3x flagship: 3 * 412/720 = 1.72, held at the cap.
++    expect(renderScale(3, 412, 915)).toBe(RENDER_SCALE_MAX);
++    // The cap is the one number to tune; 1 gives the previous behaviour back.
++    expect(renderScale(3, 412, 915, 1)).toBe(1);
++    expect(renderScale(3, 412, 915, 2)).toBe(1.72);
++  });
++
++  it('falls back to 1 on anything it cannot read', () => {
++    expect(renderScale(0, 393, 851)).toBe(1);
++    expect(renderScale(NaN, 393, 851)).toBe(1);
++    expect(renderScale(2, 0, 851)).toBe(1);
++    expect(renderScale(2, 393, -1)).toBe(1);
++  });
++
++  it('is recorded once for the sizes that do not go through a scene scale', () => {
++    expect(currentRenderScale()).toBe(1);
++    setRenderScale(1.5);
++    expect(currentRenderScale()).toBe(1.5);
++  });
++
++  it('is what the game config draws the design box with', () => {
++    const config = readFileSync('src/config/game.ts', 'utf8');
++    expect(config).toContain('width: Math.round(DESIGN_WIDTH * scale)');
++    expect(config).toContain('height: Math.round(DESIGN_HEIGHT * scale)');
++    expect(config).toContain('setRenderScale(scale)');
++    expect(DESIGN_WIDTH).toBe(720);
++    expect(DESIGN_HEIGHT).toBe(1280);
++  });
++
++  it('scales the particle presets, which are the one thing sized outside a scene scale', () => {
++    const feedback = readFileSync('src/ui/feedback.ts', 'utf8');
++    expect(feedback).toContain('scalePreset(config, currentRenderScale())');
++    for (const key of ["'speed'", "'gravityY'", "'gravityX'", "'scale'"]) expect(feedback).toContain(key);
++  });
++});
+-- 
+2.43.0
+
