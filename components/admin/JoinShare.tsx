@@ -17,7 +17,7 @@ const BUTTON_CLASS =
  */
 export default function JoinShare({ slug }: Props) {
   const joinUrl = useMemo(
-    () => `${window.location.origin}/join?event=${encodeURIComponent(slug)}`,
+    () => `${window.location.origin}/join?room=${encodeURIComponent(slug)}`,
     [slug],
   )
   const [qrSrc, setQrSrc] = useState<string | null>(null)

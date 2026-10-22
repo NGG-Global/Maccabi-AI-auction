@@ -3,31 +3,32 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import { DB_SCHEMA } from '@/lib/supabase/schema'
-import type { Event, AuctionRound, Trait, Bid, Participant, GameMode } from '@/lib/types'
+import type { Room, AuctionRound, Trait, Bid, Participant } from '@/lib/types'
+import { EMBED, ROUND_SELECT } from '@/lib/supabase/embeds'
+import { useRoundTimer } from '@/lib/hooks/useRoundTimer'
 import { TraitQueue } from './TraitQueue'
 import JoinShare from '@/components/admin/JoinShare'
-import GameModeSwitch from '@/components/admin/GameModeSwitch'
 import ResetControl from '@/components/admin/ResetControl'
+import RoomBrand from '@/components/shared/RoomBrand'
+import LiveWindowBadge from './LiveWindowBadge'
 
 interface Props {
-  event: Event
+  room: Room
   traits: Trait[]
   initialRound: AuctionRound | null
-  onModeChange: (mode: GameMode) => void
 }
 
 interface BidRow extends Bid {
   participant: Participant
 }
 
-export default function AdminDashboard({ event, traits, initialRound, onModeChange }: Props) {
+export default function AuctionDashboard({ room, traits, initialRound }: Props) {
   const [currentRound, setCurrentRound] = useState<AuctionRound | null>(initialRound)
   const [bids, setBids] = useState<BidRow[]>([])
   const [participantCount, setParticipantCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [confirmClose, setConfirmClose] = useState(false)
-  const [elapsed, setElapsed] = useState('0:00')
   const [roundNumber, setRoundNumber] = useState(0)
   const supabase = useMemo(() => createClient(), [])
   // Keep a ref to currentRound so realtime callbacks always see the latest value
@@ -60,27 +61,17 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
     })
   }, [localTraits])
 
-  /* ── timer ── */
-  useEffect(() => {
-    if (!currentRound?.opened_at || currentRound.status !== 'open') {
-      setElapsed('0:00')
-      return
-    }
-    const tick = () => {
-      const diff = Date.now() - new Date(currentRound.opened_at!).getTime()
-      const m = Math.floor(diff / 60000)
-      const s = Math.floor((diff % 60000) / 1000)
-      setElapsed(`${m}:${s.toString().padStart(2, '0')}`)
-    }
-    tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
-  }, [currentRound?.opened_at, currentRound?.status])
+  /* ── timer: elapsed, plus a countdown when the room sets a round length ── */
+  const timer = useRoundTimer(
+    currentRound?.opened_at ?? null,
+    currentRound?.status === 'open',
+    room.default_round_seconds,
+  )
 
   const fetchBids = useCallback(async (roundId: string) => {
     const { data } = await supabase
       .from('bids')
-      .select('*, participant:participants(*)')
+      .select(`*, ${EMBED.bidParticipant}`)
       .eq('round_id', roundId)
       .order('amount', { ascending: false })
       .order('updated_at', { ascending: true }) // same order as the tie-break: first to reach the amount leads
@@ -91,24 +82,24 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
     const { count } = await supabase
       .from('participants')
       .select('*', { count: 'exact', head: true })
-      .eq('event_id', event.id)
+      .eq('room_id', room.id)
     setParticipantCount(count ?? 0)
-  }, [supabase, event.id])
+  }, [supabase, room.id])
 
   const fetchRoundNumber = useCallback(async () => {
     const { count } = await supabase
       .from('auction_rounds')
       .select('*', { count: 'exact', head: true })
-      .eq('event_id', event.id)
+      .eq('room_id', room.id)
       .in('status', ['open', 'closed'])
     setRoundNumber(count ?? 0)
-  }, [supabase, event.id])
+  }, [supabase, room.id])
 
   const refreshRound = useCallback(async () => {
     const { data: rounds } = await supabase
       .from('auction_rounds')
-      .select('*, trait:traits(*), winner:participants!auction_rounds_winner_participant_id_fkey(*)')
-      .eq('event_id', event.id)
+      .select(ROUND_SELECT)
+      .eq('room_id', room.id)
       .in('status', ['open', 'closed'])
       .order('created_at', { ascending: false })
       .limit(1)
@@ -118,12 +109,12 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
     if (round) fetchBids(round.id)
     else setBids([])
     fetchRoundNumber()
-  }, [supabase, event.id, fetchBids, fetchRoundNumber])
+  }, [supabase, room.id, fetchBids, fetchRoundNumber])
 
   const fetchTraits = useCallback(async () => {
-    const { data } = await supabase.from('traits').select('*').eq('event_id', event.id).order('sort_order')
+    const { data } = await supabase.from('traits').select('*').eq('room_id', room.id).order('sort_order')
     if (data) setLocalTraits(data as Trait[])
-  }, [supabase, event.id])
+  }, [supabase, room.id])
 
   useEffect(() => {
     fetchParticipantCount()
@@ -145,11 +136,11 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
     }
 
     const channel = supabase
-      .channel(`admin-controls-${event.id}`)
-      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids' }, debouncedFetchBids)
-      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `event_id=eq.${event.id}` }, refreshRound)
-      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `event_id=eq.${event.id}` }, fetchParticipantCount)
-      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'traits', filter: `event_id=eq.${event.id}` }, fetchTraits)
+      .channel(`admin-controls-${room.id}`)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids', filter: `room_id=eq.${room.id}` }, debouncedFetchBids)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `room_id=eq.${room.id}` }, refreshRound)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `room_id=eq.${room.id}` }, fetchParticipantCount)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'traits', filter: `room_id=eq.${room.id}` }, fetchTraits)
       .subscribe()
 
     return () => {
@@ -171,7 +162,7 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
       const res = await fetch('/api/admin/open-round', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventId: event.id, traitId: nextTrait.id }),
+        body: JSON.stringify({ roomId: room.id, traitId: nextTrait.id }),
       })
       const data = await res.json()
       if (!res.ok) { showMsg('error', data.error ?? 'שגיאה'); return }
@@ -189,7 +180,7 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
       const res = await fetch('/api/admin/close-round', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roundId: currentRound.id }),
+        body: JSON.stringify({ roomId: room.id, roundId: currentRound.id }),
       })
       const data = await res.json()
       if (!res.ok) { showMsg('error', data.error ?? 'שגיאה'); return }
@@ -200,7 +191,7 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
   }
 
   async function handleAfterReset() {
-    showMsg('success', 'האירוע אופס')
+    showMsg('success', 'החדר אופס')
     setCurrentRound(null)
     setBids([])
     await refreshRound()
@@ -222,9 +213,10 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
       {/* ── Left: Admin Controls ────────────────────────────── */}
       <aside className="w-72 shrink-0 bg-slate-900 border-l border-white/10 flex flex-col gap-4 p-5 overflow-y-auto">
 
-        {/* Event name */}
-        <div className="text-center pb-3 border-b border-white/10">
-          <p className="text-slate-400 text-xs truncate">{event.name}</p>
+        {/* Room */}
+        <div className="pb-3 border-b border-white/10 flex flex-col gap-2">
+          <p className="text-slate-400 text-xs truncate text-center">{room.title}</p>
+          <LiveWindowBadge roomId={room.id} activeUntil={room.active_until ?? null} status={room.status} />
         </div>
 
         {/* Status */}
@@ -235,14 +227,6 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
         }`}>
           {isOpen ? '🟢 סבב פתוח' : isClosed ? '🟡 סבב נסגר' : '⚪ ממתין'}
         </div>
-
-        {/* Game mode — editable only before the first round */}
-        <GameModeSwitch
-          eventId={event.id}
-          mode="auction"
-          locked={roundNumber > 0 || !!currentRound}
-          onChange={onModeChange}
-        />
 
         {/* Toast */}
         {message && (
@@ -323,7 +307,7 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
         {/* Reset */}
         <div className="mt-auto pt-4 border-t border-white/10">
           <ResetControl
-            eventId={event.id}
+            roomId={room.id}
             disabled={loading}
             onReset={handleAfterReset}
             onError={text => showMsg('error', text)}
@@ -353,14 +337,20 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
             )}
           </div>
 
-          <h1 className="text-slate-300 font-semibold text-lg">{event.name}</h1>
+          <RoomBrand title={room.title} clientName={room.client_name} logoPath={room.logo_path} />
 
           <div className="flex items-center gap-4 text-sm text-slate-400">
             {isOpen && (
-              <span className="tabular-nums font-mono text-amber-400 font-bold">{elapsed}</span>
+              timer.remaining !== null ? (
+                <span className={`tabular-nums font-mono font-bold text-lg ${timer.overtime ? 'text-red-400 animate-pulse' : 'text-amber-400'}`}>
+                  {timer.overtime ? 'הזמן נגמר' : `⏳ ${timer.remaining}`}
+                </span>
+              ) : (
+                <span className="tabular-nums font-mono text-amber-400 font-bold">{timer.elapsed}</span>
+              )
             )}
             <span>{participantCount} משתתפים</span>
-            <JoinShare slug={event.slug} />
+            <JoinShare slug={room.slug} />
           </div>
         </header>
 
@@ -376,7 +366,7 @@ export default function AdminDashboard({ event, traits, initialRound, onModeChan
                 <div className="text-8xl animate-float">🏆</div>
                 <div className="text-center">
                   <p className="text-4xl font-black text-white mb-2">ממתינים לסבב הבא</p>
-                  <p className="text-slate-500 text-lg">בחרו תכונה ולחצו על &quot;פתח סבב&quot;</p>
+                  <p className="text-slate-500 text-lg">בחרו היגד ולחצו על &quot;פתח סבב&quot;</p>
                 </div>
                 <div className="bg-slate-800/50 rounded-2xl px-8 py-4 border border-white/10">
                   <p className="text-slate-400 text-2xl font-bold">{participantCount} <span className="text-slate-500 text-lg font-normal">משתתפים רשומים</span></p>

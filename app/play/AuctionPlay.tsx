@@ -3,7 +3,9 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import { DB_SCHEMA } from '@/lib/supabase/schema'
-import type { AuctionRound, Participant, Bid, GameMode } from '@/lib/types'
+import type { AuctionRound, Participant, Bid, PublicRoom } from '@/lib/types'
+import { ROUND_SELECT } from '@/lib/supabase/embeds'
+import { useRoundTimer } from '@/lib/hooks/useRoundTimer'
 import { PlaySkeleton, PlayError, WalletHeader } from './PlayShell'
 
 interface GameState {
@@ -26,11 +28,12 @@ interface RoundStats {
 const EMPTY_STATS: RoundStats = { bidderCount: 0, noBidCount: 0, foldedCount: 0, highestBid: 0, isLeading: false, isTiedBehind: false }
 
 interface Props {
-  /** Called when the event turns out to be in the other mode (switched by the facilitator). */
-  onModeChange: (mode: GameMode) => void
+  room: PublicRoom
+  participantId: string
+  sessionToken: string
 }
 
-export default function AuctionPlay({ onModeChange }: Props) {
+export default function AuctionPlay({ room, participantId, sessionToken }: Props) {
   const [state, setState] = useState<GameState>({ participant: null, currentRound: null, myBid: null, loading: true, error: null })
   const [roundStats, setRoundStats] = useState<RoundStats>(EMPTY_STATS)
   const [bidInput, setBidInput] = useState('')
@@ -46,9 +49,9 @@ export default function AuctionPlay({ onModeChange }: Props) {
     bidSoundRef.current.preload = 'auto'
   }, [])
 
-  const fetchRoundStats = useCallback(async (roundId: string, eventId: string, participantId: string) => {
+  const fetchRoundStats = useCallback(async (roundId: string, roomId: string, participantId: string) => {
     const [{ data: allParticipants }, { data: bids }] = await Promise.all([
-      supabase.from('participants').select('id, wallet_balance').eq('event_id', eventId),
+      supabase.from('participants').select('id, wallet_balance').eq('room_id', roomId),
       // Same order as the server's tie-break: highest amount, then first to reach it.
       supabase.from('bids').select('participant_id, amount').eq('round_id', roundId)
         .order('amount', { ascending: false }).order('updated_at', { ascending: true }),
@@ -74,22 +77,21 @@ export default function AuctionPlay({ onModeChange }: Props) {
     // Responses can arrive out of order under load; only the latest call may write state.
     const seq = ++fetchSeqRef.current
     const { data: participant } = await supabase
-      .from('participants').select('*').eq('id', participantId).single<Participant>()
-    if (!participant) return
+      .from('participants').select('*').eq('id', participantId).eq('room_id', room.id).maybeSingle<Participant>()
+    if (!participant) {
+      setState(prev => ({ ...prev, loading: false, error: 'המשתתף לא נמצא (ייתכן שהחדר אופס). סרקו את קוד ה-QR והירשמו מחדש.' }))
+      return
+    }
 
     const { data: rounds } = await supabase
       .from('auction_rounds')
-      .select('*, trait:traits(*), winner:participants!auction_rounds_winner_participant_id_fkey(*)')
-      .eq('event_id', participant.event_id)
+      .select(ROUND_SELECT)
+      .eq('room_id', room.id)
       .in('status', ['open', 'closed'])
       .order('created_at', { ascending: false })
       .limit(1)
 
     const round = (rounds?.[0] ?? null) as AuctionRound | null
-    if (round?.mode === 'allocation') {
-      onModeChange('allocation')
-      return
-    }
 
     let myBid: Bid | null = null
     if (round) {
@@ -102,18 +104,13 @@ export default function AuctionPlay({ onModeChange }: Props) {
     setState(prev => ({ ...prev, participant, currentRound: round, myBid, loading: false }))
 
     if (round?.status === 'open') {
-      fetchRoundStats(round.id, participant.event_id, participantId)
+      fetchRoundStats(round.id, room.id, participantId)
     } else {
       setRoundStats(EMPTY_STATS)
     }
-  }, [supabase, fetchRoundStats, onModeChange])
+  }, [supabase, fetchRoundStats, room.id])
 
   useEffect(() => {
-    const participantId = localStorage.getItem('auction_participant_id')
-    if (!participantId) {
-      setState(prev => ({ ...prev, loading: false, error: 'לא נמצא פרטי משתתף. סרקו את קוד ה-QR מחדש.' }))
-      return
-    }
     fetchState(participantId)
 
     // Throttle — with ~100 phones each refetching on every bid, a burst of bids
@@ -128,9 +125,10 @@ export default function AuctionPlay({ onModeChange }: Props) {
       }, 300)
     }
 
-    const channel = supabase.channel('play-realtime')
-      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds' }, scheduleRefresh)
-      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids' }, scheduleRefresh)
+    // Only this room's rounds and bids reach this phone.
+    const channel = supabase.channel(`play-${room.id}-${participantId}`)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `room_id=eq.${room.id}` }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids', filter: `room_id=eq.${room.id}` }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `id=eq.${participantId}` }, scheduleRefresh)
       .subscribe()
     return () => {
@@ -147,11 +145,10 @@ export default function AuctionPlay({ onModeChange }: Props) {
     setBidError(null)
     setBidSuccess(false)
     setBidInput('')
-    const sessionToken = localStorage.getItem('auction_session_token')
     try {
       const res = await fetch('/api/bid/submit', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken, roundId: state.currentRound?.id, amount }),
+        body: JSON.stringify({ sessionToken, roomId: room.id, roundId: state.currentRound?.id, amount }),
       })
       const data = await res.json()
       if (!res.ok) { setBidError(data.error ?? 'שגיאה') }
@@ -160,6 +157,7 @@ export default function AuctionPlay({ onModeChange }: Props) {
           ...prev,
           myBid: {
             id: 'optimistic',
+            room_id: room.id,
             round_id: state.currentRound?.id ?? '',
             participant_id: prev.participant?.id ?? '',
             amount,
@@ -172,14 +170,14 @@ export default function AuctionPlay({ onModeChange }: Props) {
           bidSoundRef.current.currentTime = 0
           bidSoundRef.current.play().catch(() => {})
         }
-        const id = localStorage.getItem('auction_participant_id')
-        if (id) fetchState(id)
+        fetchState(participantId)
       }
     } catch { setBidError('שגיאת רשת. נסו שוב.') }
     finally { setBidSubmitting(false) }
   }
 
   const { participant, currentRound, myBid, loading, error } = state
+  const timer = useRoundTimer(currentRound?.opened_at ?? null, currentRound?.status === 'open', room.default_round_seconds)
 
   if (loading) return <PlaySkeleton />
 
@@ -192,7 +190,7 @@ export default function AuctionPlay({ onModeChange }: Props) {
   return (
     <main className="min-h-screen bg-slate-950 flex flex-col">
 
-      <WalletHeader name={participant.display_name} balance={participant.wallet_balance} />
+      <WalletHeader room={room} name={participant.display_name} balance={participant.wallet_balance} />
 
       <div className="flex-1 flex flex-col px-4 py-6 gap-4">
 
@@ -218,7 +216,7 @@ export default function AuctionPlay({ onModeChange }: Props) {
               <>
                 <p className="text-5xl mb-3">🏆</p>
                 <p className="text-amber-400 text-2xl font-black mb-1">זכית!</p>
-                <p className="text-slate-300 text-sm">בתכונה: <span className="text-white font-bold">{currentRound!.trait?.title}</span></p>
+                <p className="text-slate-300 text-sm">בהיגד: <span className="text-white font-bold">{currentRound!.trait?.title}</span></p>
               </>
             ) : (
               <>
@@ -243,6 +241,11 @@ export default function AuctionPlay({ onModeChange }: Props) {
               <span className="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mb-3">
                 <span className="w-2 h-2 bg-blue-400 rounded-full animate-live-dot" />
                 סבב פתוח
+                {timer.remaining !== null && (
+                  <span className={`mr-auto tabular-nums font-mono text-sm ${timer.overtime ? 'text-red-400' : 'text-amber-400'}`}>
+                    {timer.overtime ? 'הזמן נגמר' : `⏳ ${timer.remaining}`}
+                  </span>
+                )}
               </span>
               <h2 className={`text-3xl font-black text-white ${currentRound!.trait?.description ? 'mb-2' : ''}`}>{currentRound!.trait?.title}</h2>
               {currentRound!.trait?.description && (
@@ -341,7 +344,7 @@ export default function AuctionPlay({ onModeChange }: Props) {
 
             {/* Profile link hint */}
             <p className="text-center text-slate-600 text-xs">
-              <a href="/profile" className="underline hover:text-slate-400 transition-colors">צפה בפרופיל שלך</a>
+              <a href={`/profile?room=${encodeURIComponent(room.slug)}`} className="underline hover:text-slate-400 transition-colors">צפה בפרופיל שלך</a>
             </p>
           </div>
         )}

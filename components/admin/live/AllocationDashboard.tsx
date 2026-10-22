@@ -3,16 +3,17 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import { DB_SCHEMA } from '@/lib/supabase/schema'
-import type { Event, AuctionRound, Trait, GameMode } from '@/lib/types'
+import type { Room, AuctionRound, Trait } from '@/lib/types'
+import { ROUND_SELECT } from '@/lib/supabase/embeds'
 import JoinShare from '@/components/admin/JoinShare'
-import GameModeSwitch from '@/components/admin/GameModeSwitch'
 import ResetControl from '@/components/admin/ResetControl'
-import { summarizeAllocation, sortRoundsByTrait, ROUND_WINNERS_SELECT, type AllocationBidRow } from '@/lib/game/allocation'
+import RoomBrand from '@/components/shared/RoomBrand'
+import LiveWindowBadge from './LiveWindowBadge'
+import { summarizeAllocation, sortRoundsByTrait, type AllocationBidRow } from '@/lib/game/allocation'
 
 interface Props {
-  event: Event
+  room: Room
   traits: Trait[]
-  onModeChange: (mode: GameMode) => void
 }
 
 interface BidRow extends AllocationBidRow {
@@ -26,7 +27,7 @@ type Phase = 'waiting' | 'open' | 'closed'
  * While the allocation is open the room only sees participation, not
  * amounts; the per-trait results are revealed when it closes.
  */
-export default function AllocationDashboard({ event, traits, onModeChange }: Props) {
+export default function AllocationDashboard({ room, traits }: Props) {
   const supabase = useMemo(() => createClient(), [])
   const [rounds, setRounds] = useState<AuctionRound[]>([])
   const [bids, setBids] = useState<BidRow[]>([])
@@ -69,21 +70,21 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
     const { count } = await supabase
       .from('participants')
       .select('*', { count: 'exact', head: true })
-      .eq('event_id', event.id)
+      .eq('room_id', room.id)
     setParticipantCount(count ?? 0)
-  }, [supabase, event.id])
+  }, [supabase, room.id])
 
   const refreshRounds = useCallback(async () => {
     const { data } = await supabase
       .from('auction_rounds')
-      .select(`*, trait:traits(*), ${ROUND_WINNERS_SELECT}`)
-      .eq('event_id', event.id)
+      .select(ROUND_SELECT)
+      .eq('room_id', room.id)
       .in('status', ['open', 'closed'])
     const list = sortRoundsByTrait((data ?? []) as AuctionRound[])
     roundIdsRef.current = list.map(r => r.id)
     setRounds(list)
     await fetchBids(roundIdsRef.current)
-  }, [supabase, event.id, fetchBids])
+  }, [supabase, room.id, fetchBids])
 
   useEffect(() => {
     refreshRounds()
@@ -109,10 +110,10 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
     }
 
     const channel = supabase
-      .channel(`admin-allocation-${event.id}`)
-      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids' }, throttledFetchBids)
-      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `event_id=eq.${event.id}` }, throttledRefreshRounds)
-      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `event_id=eq.${event.id}` }, fetchParticipantCount)
+      .channel(`admin-allocation-${room.id}`)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids', filter: `room_id=eq.${room.id}` }, throttledFetchBids)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `room_id=eq.${room.id}` }, throttledRefreshRounds)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `room_id=eq.${room.id}` }, fetchParticipantCount)
       .subscribe()
 
     return () => {
@@ -133,7 +134,7 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
       const res = await fetch('/api/admin/open-allocation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventId: event.id }),
+        body: JSON.stringify({ roomId: room.id }),
       })
       const data = await res.json()
       if (!res.ok) { showMsg('error', data.error ?? 'שגיאה'); return }
@@ -150,7 +151,7 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
       const res = await fetch('/api/admin/close-allocation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventId: event.id }),
+        body: JSON.stringify({ roomId: room.id }),
       })
       const data = await res.json()
       if (!res.ok) { showMsg('error', data.error ?? 'שגיאה'); return }
@@ -164,7 +165,7 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
   }
 
   async function handleAfterReset() {
-    showMsg('success', 'האירוע אופס')
+    showMsg('success', 'החדר אופס')
     await refreshRounds()
     await fetchParticipantCount()
   }
@@ -184,8 +185,9 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
       {/* ── Admin controls ───────────────────────────────────── */}
       <aside className="w-72 shrink-0 bg-slate-900 border-l border-white/10 flex flex-col gap-4 p-5 overflow-y-auto">
 
-        <div className="text-center pb-3 border-b border-white/10">
-          <p className="text-slate-400 text-xs truncate">{event.name}</p>
+        <div className="pb-3 border-b border-white/10 flex flex-col gap-2">
+          <p className="text-slate-400 text-xs truncate text-center">{room.title}</p>
+          <LiveWindowBadge roomId={room.id} activeUntil={room.active_until ?? null} status={room.status} />
         </div>
 
         <div className={`rounded-xl px-4 py-3 text-center text-sm font-bold ${
@@ -195,13 +197,6 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
         }`}>
           {phase === 'open' ? '🟢 החלוקה פתוחה' : phase === 'closed' ? '🟡 החלוקה נסגרה' : '⚪ ממתין לפתיחה'}
         </div>
-
-        <GameModeSwitch
-          eventId={event.id}
-          mode="allocation"
-          locked={rounds.length > 0}
-          onChange={onModeChange}
-        />
 
         {message && (
           <div className={`rounded-xl px-4 py-3 text-sm font-medium animate-slide-in-up text-center ${
@@ -287,7 +282,7 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
 
         <div className="mt-auto pt-4 border-t border-white/10">
           <ResetControl
-            eventId={event.id}
+            roomId={room.id}
             disabled={loading}
             onReset={handleAfterReset}
             onError={text => showMsg('error', text)}
@@ -311,14 +306,14 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
             <span className="text-slate-400 text-sm">חלוקת תקציב</span>
           </div>
 
-          <h1 className="text-slate-300 font-semibold text-lg">{event.name}</h1>
+          <RoomBrand title={room.title} clientName={room.client_name} logoPath={room.logo_path} />
 
           <div className="flex items-center gap-4 text-sm text-slate-400">
             {phase === 'open' && (
               <span className="tabular-nums font-mono text-amber-400 font-bold">{elapsed}</span>
             )}
             <span>{participantCount} משתתפים</span>
-            <JoinShare slug={event.slug} />
+            <JoinShare slug={room.slug} />
           </div>
         </header>
 
@@ -331,7 +326,7 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
               <div className="text-center max-w-2xl">
                 <p className="text-4xl font-black text-white mb-3">חלוקת תקציב</p>
                 <p className="text-slate-400 text-xl leading-relaxed">
-                  כל הכישורים ייפתחו יחד. לכל משתתף 1,000 מטבעות לחלק ביניהם לפי מה שחשוב לו.
+                  כל ההיגדים ייפתחו יחד. לכל משתתף {room.starting_coins.toLocaleString()} מטבעות לחלק ביניהם לפי מה שחשוב לו.
                 </p>
               </div>
               <div className="flex flex-wrap justify-center gap-2 max-w-3xl">
@@ -352,7 +347,7 @@ export default function AllocationDashboard({ event, traits, onModeChange }: Pro
                 <span className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-blue-500/20 text-blue-400">
                   החלוקה פתוחה
                 </span>
-                <h2 className="text-5xl font-black text-white mt-4 mb-2">חלקו את 1,000 המטבעות שלכם</h2>
+                <h2 className="text-5xl font-black text-white mt-4 mb-2">חלקו את {room.starting_coins.toLocaleString()} המטבעות שלכם</h2>
                 <p className="text-slate-400 text-lg">אפשר לשנות את החלוקה עד שהחלוקה נסגרת. התוצאות ייחשפו בסגירה.</p>
               </div>
 

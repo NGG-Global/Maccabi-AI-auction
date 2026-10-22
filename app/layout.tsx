@@ -9,8 +9,8 @@ const heebo = Heebo({
 })
 
 export const metadata: Metadata = {
-  title: 'מכירה פומבית — תכונות ניהוליות',
-  description: 'משחק פתיחה לסדנת מנהיגות',
+  title: 'מכירה פומבית — היגדים ניהוליים',
+  description: 'משחק פתיחה לסדנאות מנהיגות של NGG',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

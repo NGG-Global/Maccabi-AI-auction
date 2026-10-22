@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import { DB_SCHEMA } from '@/lib/supabase/schema'
 import type { AuctionRound, Bid, GameMode, Participant } from '@/lib/types'
-import { sortRoundsByTrait, ROUND_WINNERS_SELECT } from '@/lib/game/allocation'
+import { sortRoundsByTrait } from '@/lib/game/allocation'
+import { EMBED, ROUND_SELECT } from '@/lib/supabase/embeds'
 import {
   computeCurrentRoundAnalytics,
   computeCumulativeAnalytics,
@@ -78,8 +79,9 @@ function emptyCumulative(): CumulativeGameAnalytics {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useAdminRealtimeAnalytics(
-  eventId: string,
+  roomId: string,
   gameMode: GameMode = 'auction',
+  startingCoins: number = 1000,
 ): AdminRealtimeAnalyticsResult {
   // Single, stable Supabase client instance
   const supabase = useMemo(() => createClient(), [])
@@ -121,7 +123,7 @@ export function useAdminRealtimeAnalytics(
     const { data, error: err } = await supabase
       .from('participants')
       .select('*')
-      .eq('event_id', eventId)
+      .eq('room_id', roomId)
 
     if (!mountedRef.current) return
     if (err) {
@@ -129,7 +131,7 @@ export function useAdminRealtimeAnalytics(
       return
     }
     setParticipants((data ?? []) as Participant[])
-  }, [supabase, eventId])
+  }, [supabase, roomId])
 
   const fetchCurrentRoundBids = useCallback(async (roundId: string | null | undefined) => {
     if (!roundId) {
@@ -138,7 +140,7 @@ export function useAdminRealtimeAnalytics(
     }
     const { data, error: err } = await supabase
       .from('bids')
-      .select('*, participant:participants(id, display_name)')
+      .select(`*, ${EMBED.bidParticipant}`)
       .eq('round_id', roundId)
       .order('amount', { ascending: false })
       .order('updated_at', { ascending: true }) // same order as the tie-break: first to reach the amount leads
@@ -197,8 +199,8 @@ export function useAdminRealtimeAnalytics(
   const fetchAllocationRounds = useCallback(async () => {
     const { data, error: err } = await supabase
       .from('auction_rounds')
-      .select(`*, trait:traits(*), ${ROUND_WINNERS_SELECT}`)
-      .eq('event_id', eventId)
+      .select(ROUND_SELECT)
+      .eq('room_id', roomId)
       .in('status', ['open', 'closed'])
 
     if (!mountedRef.current) return
@@ -218,7 +220,7 @@ export function useAdminRealtimeAnalytics(
       fetchAllocationBids(allocationRoundIdsRef.current),
       fetchClosedRoundBids(closed.map(r => r.id)),
     ])
-  }, [supabase, eventId, fetchAllocationBids, fetchClosedRoundBids])
+  }, [supabase, roomId, fetchAllocationBids, fetchClosedRoundBids])
 
   const fetchRoundsAndBids = useCallback(async () => {
     if (gameMode === 'allocation') {
@@ -229,8 +231,8 @@ export function useAdminRealtimeAnalytics(
     // Fetch the most recent open or closed round (with trait + winner joined)
     const { data: recentRounds, error: recentErr } = await supabase
       .from('auction_rounds')
-      .select('*, trait:traits(*), winner:participants!auction_rounds_winner_participant_id_fkey(*)')
-      .eq('event_id', eventId)
+      .select(ROUND_SELECT)
+      .eq('room_id', roomId)
       .in('status', ['open', 'closed'])
       .order('created_at', { ascending: false })
       .limit(1)
@@ -248,8 +250,8 @@ export function useAdminRealtimeAnalytics(
     // Fetch all closed rounds for cumulative analytics
     const { data: allClosed, error: closedErr } = await supabase
       .from('auction_rounds')
-      .select('*, trait:traits(*), winner:participants!auction_rounds_winner_participant_id_fkey(*)')
-      .eq('event_id', eventId)
+      .select(ROUND_SELECT)
+      .eq('room_id', roomId)
       .eq('status', 'closed')
       .order('closed_at', { ascending: true })
 
@@ -267,7 +269,7 @@ export function useAdminRealtimeAnalytics(
       fetchCurrentRoundBids(latestRound?.id),
       fetchClosedRoundBids(closed.map(r => r.id)),
     ])
-  }, [supabase, eventId, gameMode, fetchAllocationRounds, fetchCurrentRoundBids, fetchClosedRoundBids])
+  }, [supabase, roomId, gameMode, fetchAllocationRounds, fetchCurrentRoundBids, fetchClosedRoundBids])
 
   const fetchAll = useCallback(async () => {
     await Promise.all([fetchParticipants(), fetchRoundsAndBids()])
@@ -310,24 +312,23 @@ export function useAdminRealtimeAnalytics(
       }, 250)
     }
 
-    // Scope bid subscription to the current event's rounds only.
-    // Supabase Realtime v2 supports column-level filters which dramatically
-    // reduce broadcast volume — only events for this event reach this client.
+    // Every subscription is filtered to this room (bids carry room_id since
+    // migration 010), so other rooms' traffic never reaches this screen.
     const channel = supabase
-      .channel(`admin-analytics-${eventId}`)
+      .channel(`admin-analytics-${roomId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: DB_SCHEMA, table: 'bids' },
+        { event: '*', schema: DB_SCHEMA, table: 'bids', filter: `room_id=eq.${roomId}` },
         debouncedBids,
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `event_id=eq.${eventId}` },
+        { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `room_id=eq.${roomId}` },
         debouncedRounds,
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `event_id=eq.${eventId}` },
+        { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `room_id=eq.${roomId}` },
         debouncedParticipants,
       )
       .subscribe((status) => {
@@ -361,8 +362,8 @@ export function useAdminRealtimeAnalytics(
   )
 
   const cumulativeAnalytics = useMemo(
-    () => computeCumulativeAnalytics(participants, closedRounds, bidAmountsByRound),
-    [participants, closedRounds, bidAmountsByRound],
+    () => computeCumulativeAnalytics(participants, closedRounds, bidAmountsByRound, startingCoins),
+    [participants, closedRounds, bidAmountsByRound, startingCoins],
   )
 
   const discussionInsight = useMemo(
