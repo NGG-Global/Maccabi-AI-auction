@@ -4,7 +4,10 @@
 -- Without this, postgres_changes subscriptions connect but receive
 -- zero events. Run this migration against your Supabase project.
 
-alter publication supabase_realtime add table public.participants;
-alter publication supabase_realtime add table public.bids;
-alter publication supabase_realtime add table public.auction_rounds;
-alter publication supabase_realtime add table public.traits;
+-- Shared NGG Supabase project: this app lives in the `auction` schema (see 000).
+set search_path to auction;
+
+alter publication supabase_realtime add table auction.participants;
+alter publication supabase_realtime add table auction.bids;
+alter publication supabase_realtime add table auction.auction_rounds;
+alter publication supabase_realtime add table auction.traits;

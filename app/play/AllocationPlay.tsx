@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
+import { DB_SCHEMA } from '@/lib/supabase/schema'
 import type { AuctionRound, Participant, GameMode } from '@/lib/types'
 import {
   checkAllocationDraft,
@@ -140,9 +141,9 @@ export default function AllocationPlay({ participantId, eventId, onModeChange }:
     // Only this participant's own rows and the event's rounds — the phone
     // never needs anyone else's allocation.
     const channel = supabase.channel(`play-allocation-${participantId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds', filter: `event_id=eq.${eventId}` }, scheduleRefresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `id=eq.${participantId}` }, scheduleRefresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bids', filter: `participant_id=eq.${participantId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds', filter: `event_id=eq.${eventId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `id=eq.${participantId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids', filter: `participant_id=eq.${participantId}` }, scheduleRefresh)
       .subscribe()
     return () => {
       if (refreshTimer) clearTimeout(refreshTimer)

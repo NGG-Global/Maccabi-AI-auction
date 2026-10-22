@@ -24,6 +24,9 @@
 -- the new code reads tokens from `participant_sessions` and calls
 -- `submit_bid`.
 
+-- Shared NGG Supabase project: this app lives in the `auction` schema (see 000).
+set search_path to auction;
+
 -- 1. Session tokens ------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS participant_sessions (
@@ -41,7 +44,7 @@ DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.columns
-    WHERE  table_schema = 'public'
+    WHERE  table_schema = 'auction'
       AND  table_name   = 'participants'
       AND  column_name  = 'session_token'
   ) THEN
@@ -70,6 +73,7 @@ CREATE OR REPLACE FUNCTION submit_bid(
 )
 RETURNS TABLE (bid_amount integer)
 LANGUAGE plpgsql
+SET search_path = auction
 AS $$
 DECLARE
   v_participant_id uuid;

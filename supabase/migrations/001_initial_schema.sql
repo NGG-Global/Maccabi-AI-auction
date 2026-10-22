@@ -2,6 +2,9 @@
 -- 001 Initial Schema — AI Auction Game
 -- ============================================================
 
+-- Shared NGG Supabase project: this app lives in the `auction` schema (see 000).
+set search_path to auction;
+
 -- Events
 create table if not exists events (
   id uuid primary key default gen_random_uuid(),

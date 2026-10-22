@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { DB_SCHEMA } from './schema'
 
 /** Anon-key client that respects RLS. Use in Server Components and Route Handlers. */
 export async function createClient() {
@@ -9,6 +10,7 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      db: { schema: DB_SCHEMA },
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -31,6 +33,7 @@ export async function createClient() {
 export function createServiceRoleClient() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { db: { schema: DB_SCHEMA } }
   )
 }

@@ -17,6 +17,9 @@
 -- Additive on top of 008, so it applies whether or not 008 already ran.
 -- Deploy together with the matching application code.
 
+-- Shared NGG Supabase project: this app lives in the `auction` schema (see 000).
+set search_path to auction;
+
 -- 1. Winner list ------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS round_winners (
@@ -50,6 +53,7 @@ RETURNS TABLE (
   tied_traits          integer
 )
 LANGUAGE plpgsql
+SET search_path = auction
 AS $$
 DECLARE
   v_round_ids    uuid[] := '{}';

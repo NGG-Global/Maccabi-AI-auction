@@ -43,8 +43,16 @@ DB functions (migrations 008–009): `set_game_mode`, `open_allocation`, `submit
 - Next.js 16 App Router (see AGENTS.md — read node_modules/next/dist/docs before coding)
 - TypeScript
 - Tailwind CSS v4
-- Supabase Postgres + Realtime
+- Supabase Postgres + Realtime — the shared NGG Supabase project, schema `auction` (see below)
 - Vercel
+
+## Database schema
+
+The NGG apps share one Supabase project, each in its own Postgres schema; this app's is `auction` (`supabase/migrations/000_app_schema.sql`).
+
+- Every Supabase client passes `db: { schema: DB_SCHEMA }` (`lib/supabase/schema.ts`), and every Realtime `postgres_changes` subscription uses `schema: DB_SCHEMA`.
+- A new migration starts with `set search_path to auction;`, and every function it creates carries `SET search_path = auction`.
+- Never create objects in `public`, and never add triggers to `auth.users` — that table is shared by all the apps.
 
 ## UI language
 

@@ -5,6 +5,9 @@
 -- replaces the 8 traits for the maccabi-2024 event.
 -- Safe to run before the live session — reset is expected.
 
+-- Shared NGG Supabase project: this app lives in the `auction` schema (see 000).
+set search_path to auction;
+
 -- 1. Remove round-related data in dependency order
 delete from wallet_transactions
   where event_id = (select id from events where slug = 'maccabi-2024');

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/browser'
+import { DB_SCHEMA } from '@/lib/supabase/schema'
 import type { AuctionRound, Participant, Bid, GameMode } from '@/lib/types'
 import { PlaySkeleton, PlayError, WalletHeader } from './PlayShell'
 
@@ -128,9 +129,9 @@ export default function AuctionPlay({ onModeChange }: Props) {
     }
 
     const channel = supabase.channel('play-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_rounds' }, scheduleRefresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, scheduleRefresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `id=eq.${participantId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'auction_rounds' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `id=eq.${participantId}` }, scheduleRefresh)
       .subscribe()
     return () => {
       if (refreshTimer) clearTimeout(refreshTimer)
