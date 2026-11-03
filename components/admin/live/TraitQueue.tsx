@@ -18,6 +18,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Trait } from '@/lib/types'
+import { lotNo } from '@/components/evening/units'
 
 interface Props {
   queue: Trait[]
@@ -36,55 +37,41 @@ function SortableItem({ trait, index, disabled }: { trait: Trait; index: number;
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-colors select-none ${
+      className={`flex select-none items-center gap-2 rounded-[10px] border px-2.5 py-2 text-[14px] transition-colors ${
         isDragging
-          ? 'opacity-40 scale-95 bg-slate-700 border border-white/20 shadow-xl z-50'
+          ? 'z-50 border-velvet-4 bg-velvet-3 opacity-60 shadow-[var(--shadow-menu)]'
           : index === 0
-          ? 'bg-amber-500/15 border border-amber-500/40'
-          : 'bg-slate-800/60 border border-transparent hover:border-white/10'
+          ? 'border-[rgba(255,90,54,.45)] bg-[rgba(255,90,54,.1)]'
+          : 'border-transparent bg-velvet-1 hover:border-velvet-3'
       }`}
     >
-      {/* Drag handle */}
       <button
+        type="button"
         {...attributes}
         {...listeners}
         tabIndex={-1}
-        className={`flex flex-col gap-[3px] shrink-0 touch-none p-0.5 rounded ${
-          disabled ? 'opacity-20 cursor-default' : 'cursor-grab active:cursor-grabbing opacity-40 hover:opacity-80'
+        className={`flex shrink-0 touch-none flex-col gap-[3px] rounded p-0.5 ${
+          disabled ? 'cursor-default opacity-20' : 'cursor-grab opacity-50 hover:opacity-90 active:cursor-grabbing'
         }`}
-        aria-label="גרור לסידור מחדש"
+        aria-label="גרירה לסידור מחדש"
       >
         {[0, 1, 2].map(i => (
           <span key={i} className="flex gap-[3px]">
-            <span className="w-[3px] h-[3px] rounded-full bg-current" />
-            <span className="w-[3px] h-[3px] rounded-full bg-current" />
+            <span className="h-[3px] w-[3px] rounded-full bg-current" />
+            <span className="h-[3px] w-[3px] rounded-full bg-current" />
           </span>
         ))}
       </button>
-
-      {/* Position indicator */}
-      <span className={`text-xs font-black shrink-0 w-5 text-center ${
-        index === 0 ? 'text-amber-400' : 'text-slate-600'
-      }`}>
-        {index === 0 ? '▶' : index + 1}
+      <span className={`num w-6 shrink-0 text-center text-[13px] ${index === 0 ? 'text-vermilion' : 'text-ivory-mute'}`}>
+        {lotNo(index + 1)}
       </span>
-
-      {/* Title */}
-      <span className={`flex-1 font-medium truncate text-sm ${
-        index === 0 ? 'text-amber-200' : 'text-slate-300'
-      }`}>
-        {trait.title}
-      </span>
-
-      {index === 0 && (
-        <span className="text-[9px] font-black uppercase tracking-widest text-amber-500 shrink-0 bg-amber-500/10 px-1.5 py-0.5 rounded">
-          הבא
-        </span>
-      )}
+      <span className={`flex-1 truncate font-medium ${index === 0 ? 'text-ivory' : 'text-ivory-dim'}`}>{trait.title}</span>
+      {index === 0 && <span className="shrink-0 text-[11px] font-bold text-vermilion">הבא</span>}
     </div>
   )
 }
 
+/** The order of the lots still to be opened: drag to reorder while no round is open. */
 export function TraitQueue({ queue, usedTraits, disabled, onReorder }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -101,16 +88,14 @@ export function TraitQueue({ queue, usedTraits, disabled, onReorder }: Props) {
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">תור תכונות</p>
-        {queue.length > 0 && (
-          <span className="text-[10px] text-slate-600">{queue.length} נותרו</span>
-        )}
+      <div className="mb-2 flex items-center justify-between">
+        <p className="m-0 text-[13px] font-semibold text-ivory-mute">סדר הפריטים הבאים</p>
+        {queue.length > 0 && <span className="text-[12px] text-ivory-mute">{queue.length} נותרו</span>}
       </div>
 
       {queue.length === 0 ? (
-        <div className="px-3 py-5 text-center text-slate-600 text-xs bg-slate-800/20 rounded-xl border border-dashed border-slate-700">
-          כל התכונות שימשו 🎉
+        <div className="rounded-[10px] border border-dashed border-velvet-4 px-3 py-4 text-center text-[13px] text-ivory-mute">
+          כל הפריטים נמכרו
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -126,12 +111,12 @@ export function TraitQueue({ queue, usedTraits, disabled, onReorder }: Props) {
 
       {usedTraits.length > 0 && (
         <div className="mt-3">
-          <p className="text-[10px] text-slate-700 uppercase tracking-wide mb-1.5">שימשו</p>
+          <p className="m-0 mb-1.5 text-[12px] text-ivory-mute">נמכרו</p>
           <div className="flex flex-col gap-1">
             {usedTraits.map(t => (
-              <div key={t.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-slate-700 bg-slate-800/20">
-                <span className="shrink-0">✓</span>
-                <span className="line-through truncate">{t.title}</span>
+              <div key={t.id} className="flex items-center gap-2 rounded-[8px] px-2.5 py-1.5 text-[13px] text-ivory-mute">
+                <span className="shrink-0 text-vermilion">·</span>
+                <span className="truncate line-through decoration-velvet-4">{t.title}</span>
               </div>
             ))}
           </div>

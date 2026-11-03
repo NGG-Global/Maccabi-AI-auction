@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import LiveWrapper from '@/components/admin/live/LiveWrapper'
 import { getLatestRound, getRoomDetail } from '@/lib/rooms/service'
+import { Notice } from '@/components/evening/ui'
 
 interface Props { params: Promise<{ id: string }> }
 
@@ -16,10 +17,10 @@ export default async function RoomLivePage({ params }: Props) {
 
   if (detail.room.status === 'archived') {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-950">
-        <div className="glass rounded-2xl p-8 text-center">
-          <p className="text-xl text-slate-300 mb-3">החדר בארכיון ואינו ניתן להפעלה.</p>
-          <Link href="/admin" className="text-amber-400 underline text-sm">חזרה לרשימת החדרים</Link>
+      <main className="flex min-h-screen items-center justify-center bg-velvet-1 px-4" dir="rtl">
+        <div className="flex w-full max-w-md flex-col gap-4 rounded-[20px] border border-velvet-3 bg-velvet-2 p-6 text-center">
+          <Notice>הסשן בארכיון ואינו ניתן להפעלה.</Notice>
+          <Link href="/admin" className="text-[15px] font-semibold text-ivory-dim underline decoration-velvet-4 underline-offset-4 hover:text-ivory">חזרה לרשימת הסשנים</Link>
         </div>
       </main>
     )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { Room, AuctionRound, Trait } from '@/lib/types'
@@ -20,26 +20,26 @@ type TabId = 'controls' | 'analytics'
 function TabButton({ id, label, active, onClick }: { id: TabId; label: string; active: boolean; onClick: (id: TabId) => void }) {
   return (
     <button
+      type="button"
+      role="tab"
+      aria-selected={active}
       onClick={() => onClick(id)}
-      className={`
-        px-4 py-2 text-sm font-semibold rounded-lg transition-all relative
-        ${active
-          ? 'text-white after:absolute after:bottom-0 after:right-0 after:left-0 after:h-0.5 after:bg-amber-400 after:rounded-full'
-          : 'text-slate-400 hover:text-slate-200'
-        }
-      `}
+      className={`rounded-full px-4 py-1.5 text-[14px] font-semibold transition-colors ${
+        active ? 'bg-ivory text-velvet-0' : 'text-ivory-dim hover:text-ivory'
+      }`}
     >
       {label}
     </button>
   )
 }
 
-/** The projected screen of one room: facilitator controls + live analytics. */
+/** The projected screen of one room: the stage, plus the facilitator's analytics view. */
 export default function LiveWrapper({ room, traits, initialRound }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('controls')
   // The analytics view keeps its own subscriptions and queries; it is
   // mounted the first time the facilitator opens it and stays mounted after.
   const [analyticsMounted, setAnalyticsMounted] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
   const gameMode = room.game_mode
 
   function selectTab(id: TabId) {
@@ -47,14 +47,31 @@ export default function LiveWrapper({ room, traits, initialRound }: Props) {
     setActiveTab(id)
   }
 
+  useEffect(() => {
+    const sync = () => setFullscreen(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', sync)
+    return () => document.removeEventListener('fullscreenchange', sync)
+  }, [])
+
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+    else document.documentElement.requestFullscreen?.().catch(() => {})
+  }, [])
+
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
-      <nav className="flex items-center gap-1 px-4 py-2 bg-slate-900/80 border-b border-white/10 shrink-0">
-        <TabButton id="controls" label="🎛 בקרה" active={activeTab === 'controls'} onClick={selectTab} />
-        <TabButton id="analytics" label="📊 תמונת מצב" active={activeTab === 'analytics'} onClick={selectTab} />
-        <span className="mr-auto text-xs text-slate-600 px-2 truncate">{room.title}</span>
-        <Link href={`/admin/rooms/${room.id}`} className="text-xs text-slate-400 hover:text-white px-2">הגדרות</Link>
-        <Link href="/admin" className="text-xs text-slate-400 hover:text-white px-2">כל החדרים</Link>
+    <div className="flex h-screen flex-col bg-velvet-0" dir="rtl">
+      <nav className="flex h-11 shrink-0 items-center gap-2 border-b border-velvet-3 bg-velvet-0 px-3" aria-label="מסך המנחה">
+        <span className="ml-2 font-display text-[18px] font-black text-ivory">ערב מכירה</span>
+        <div className="flex gap-1 rounded-full border border-velvet-3 bg-velvet-1 p-0.5" role="tablist">
+          <TabButton id="controls" label="המופע בחדר" active={activeTab === 'controls'} onClick={selectTab} />
+          <TabButton id="analytics" label="תמונת מצב" active={activeTab === 'analytics'} onClick={selectTab} />
+        </div>
+        <span className="mr-auto truncate px-2 text-[13px] text-ivory-mute">{room.title}</span>
+        <button type="button" onClick={toggleFullscreen} className="rounded-full border border-velvet-3 px-3 py-1 text-[13px] font-semibold text-ivory-dim hover:text-ivory">
+          {fullscreen ? 'יציאה ממסך מלא' : 'מסך מלא'}
+        </button>
+        <Link href={`/admin/rooms/${room.id}`} className="px-2 text-[13px] font-semibold text-ivory-dim hover:text-ivory">הגדרות</Link>
+        <Link href="/admin" className="px-2 text-[13px] font-semibold text-ivory-dim hover:text-ivory">הסשנים</Link>
       </nav>
 
       <div className={activeTab === 'controls' ? 'contents' : 'hidden'}>

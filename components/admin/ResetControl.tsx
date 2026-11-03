@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Button } from '@/components/evening/ui'
 
 interface Props {
   roomId: string
@@ -35,36 +36,21 @@ export default function ResetControl({ roomId, disabled, onReset, onError }: Pro
 
   if (!confirming) {
     return (
-      <button
-        onClick={() => setConfirming(true)}
-        disabled={disabled || busy}
-        className="w-full bg-transparent hover:bg-red-900/30 border border-red-900/50 text-red-500 hover:text-red-400 rounded-xl py-2.5 text-xs font-medium transition-all"
-      >
-        {busy ? '...' : '🔄 איפוס החדר'}
-      </button>
+      <Button variant="danger" size="sm" onClick={() => setConfirming(true)} disabled={disabled || busy} className="w-full">
+        {busy ? 'מאפסים…' : 'איפוס הסשן'}
+      </Button>
     )
   }
 
   return (
-    <div className="flex flex-col gap-2 animate-scale-in bg-red-950/40 border border-red-700/50 rounded-xl p-3">
-      <p className="text-red-400 text-xs font-bold text-center">⚠️ איפוס החדר הזה בלבד</p>
-      <p className="text-slate-400 text-[11px] text-center leading-relaxed">
-        ימחקו כל המשתתפים, ההצעות והסבבים של החדר. ההגדרות וההיגדים נשמרים. פעולה זו אינה הפיכה.
+    <div className="ev-rise flex flex-col gap-2 rounded-[12px] border border-[rgba(255,157,130,.4)] bg-[rgba(255,157,130,.06)] p-3">
+      <p className="m-0 text-[14px] font-bold text-error">איפוס הסשן</p>
+      <p className="m-0 text-[13px] leading-relaxed text-ivory-dim">
+        מוחק את המשתתפים וההצעות של הסשן הזה בלבד. ההגדרות והפריטים נשמרים. אי אפשר לבטל.
       </p>
-      <div className="flex gap-2 mt-1">
-        <button
-          onClick={() => setConfirming(false)}
-          className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-lg py-2 text-xs font-medium transition-all"
-        >
-          ביטול
-        </button>
-        <button
-          onClick={handleReset}
-          disabled={disabled || busy}
-          className="flex-1 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg py-2 text-xs font-bold transition-all"
-        >
-          אשר איפוס
-        </button>
+      <div className="mt-1 flex gap-2">
+        <Button size="sm" onClick={() => setConfirming(false)} className="flex-1">ביטול</Button>
+        <Button variant="primary" size="sm" onClick={handleReset} disabled={disabled || busy} className="flex-1">אישור האיפוס</Button>
       </div>
     </div>
   )

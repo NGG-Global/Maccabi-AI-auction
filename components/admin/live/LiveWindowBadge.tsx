@@ -3,11 +3,18 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { RoomStatus } from '@/lib/types'
+import StatusPill from '@/components/evening/StatusPill'
+import { Button, ErrorText } from '@/components/evening/ui'
 
 interface Props {
   roomId: string
   status: RoomStatus
   activeUntil: string | null
+}
+
+function hhmm(ms: number): string {
+  const d = new Date(ms)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 /**
@@ -51,46 +58,37 @@ export default function LiveWindowBadge({ roomId, status, activeUntil }: Props) 
   }
 
   return (
-    <div className={`rounded-xl px-3 py-2 text-xs flex flex-col gap-1.5 border ${
-      live ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'
-    }`}>
+    <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
-        <span className={`font-bold ${live ? 'text-green-400' : 'text-red-400'}`}>
-          {live
-            ? `🟢 חדר פעיל · נותרו ${hours > 0 ? `${hours} שע׳ ו-` : ''}${minutes} דק׳`
-            : status === 'archived' ? '📦 בארכיון' : status === 'ended' ? '⏹ החדר הסתיים' : '🔴 החדר אינו פעיל'}
-        </span>
+        {live && until ? (
+          <StatusPill kind="live">חי · עד {hhmm(until)}</StatusPill>
+        ) : status === 'archived' ? (
+          <StatusPill kind="archived">בארכיון</StatusPill>
+        ) : status === 'ended' ? (
+          <StatusPill kind="ended">הסתיים</StatusPill>
+        ) : (
+          <StatusPill kind="expired">לא פעיל</StatusPill>
+        )}
+        {live && (
+          <span className="text-[12px] text-ivory-mute">
+            נשארו {hours > 0 ? `${hours} שע׳ ו־` : ''}{minutes} דק׳
+          </span>
+        )}
       </div>
       {status !== 'archived' && (
-        <div className="flex gap-1.5">
-          <button
-            onClick={() => setStatus('active')}
-            disabled={busy}
-            className="flex-1 bg-green-700/70 hover:bg-green-600 disabled:opacity-40 text-white rounded-lg py-1.5 font-bold transition-all"
-          >
-            {live ? 'הארך ל-12 שעות' : 'הפעל חדר (12 שעות)'}
-          </button>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => setStatus('active')} disabled={busy} className="flex-1">
+            {live ? 'הארכה ל־12 שעות' : 'הפעלה ל־12 שעות'}
+          </Button>
           {live && !confirmEnd && (
-            <button
-              onClick={() => setConfirmEnd(true)}
-              disabled={busy}
-              className="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-slate-200 rounded-lg px-3 py-1.5 font-medium transition-all"
-            >
-              סיים
-            </button>
+            <Button size="sm" onClick={() => setConfirmEnd(true)} disabled={busy}>סיום</Button>
           )}
           {live && confirmEnd && (
-            <button
-              onClick={() => setStatus('ended')}
-              disabled={busy}
-              className="bg-red-700 hover:bg-red-600 disabled:opacity-40 text-white rounded-lg px-3 py-1.5 font-bold transition-all"
-            >
-              אשר סיום
-            </button>
+            <Button variant="primary" size="sm" onClick={() => setStatus('ended')} disabled={busy}>אישור הסיום</Button>
           )}
         </div>
       )}
-      {error && <p className="text-red-400">{error}</p>}
+      {error && <ErrorText>{error}</ErrorText>}
     </div>
   )
 }
