@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { Button } from '@/components/evening/ui'
 
 export default function StaffHeader({ email }: { email: string }) {
   const router = useRouter()
@@ -19,17 +20,14 @@ export default function StaffHeader({ email }: { email: string }) {
   }
 
   return (
-    <header className="flex items-center justify-between gap-4 px-6 py-3 bg-slate-900/80 border-b border-white/10">
-      <Link href="/admin" className="text-white font-black text-lg">🏷️ חדרי מכירה פומבית · NGG</Link>
-      <div className="flex items-center gap-3 text-sm">
-        <span className="text-slate-400 hidden sm:inline">{email}</span>
-        <button
-          onClick={logout}
-          disabled={busy}
-          className="rounded-lg border border-white/10 bg-slate-800/60 hover:bg-slate-700 px-3 py-1.5 text-slate-200 font-semibold transition-colors disabled:opacity-50"
-        >
-          התנתקות
-        </button>
+    <header className="flex items-center justify-between gap-4 px-6 py-3">
+      <Link href="/admin" className="flex items-baseline gap-3 no-underline">
+        <b className="font-display text-[26px] font-black tracking-[-.01em] text-ivory">ערב מכירה</b>
+        <span className="hidden text-[14px] text-ivory-mute sm:inline">ניהול הסשנים · NGG</span>
+      </Link>
+      <div className="flex items-center gap-3 text-[14px]">
+        <span className="hidden text-ivory-mute sm:inline" dir="ltr">{email}</span>
+        <Button size="sm" onClick={logout} disabled={busy}>התנתקות</Button>
       </div>
     </header>
   )

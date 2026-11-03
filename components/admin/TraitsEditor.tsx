@@ -18,6 +18,8 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { TRAIT_CATEGORIES, type TraitCategory } from '@/lib/types'
+import { Button, FIELD, FIELD_BAD } from '@/components/evening/ui'
+import { lotNo } from '@/components/evening/units'
 
 /** A statement row as edited in the form (key is a client-side id for React/dnd). */
 export interface TraitDraft {
@@ -31,6 +33,8 @@ export interface TraitDraft {
 interface Props {
   traits: TraitDraft[]
   disabled: boolean
+  /** Keys of rows that failed validation on the last save. */
+  invalidKeys?: ReadonlySet<string>
   onChange: (traits: TraitDraft[]) => void
 }
 
@@ -38,92 +42,95 @@ export function newTraitDraft(): TraitDraft {
   return { key: `new-${Math.random().toString(36).slice(2, 10)}`, title: '', description: '', category: '' }
 }
 
+const OP = 'flex h-9 w-9 items-center justify-center rounded-[9px] text-ivory-mute transition-colors hover:bg-velvet-3 hover:text-ivory disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ivory-mute'
+
 function Row({
-  trait, index, disabled, onChange, onRemove, canRemove,
+  trait, index, count, disabled, bad, onChange, onRemove, onMove,
 }: {
   trait: TraitDraft
   index: number
+  count: number
   disabled: boolean
+  bad: boolean
   onChange: (t: TraitDraft) => void
   onRemove: () => void
-  canRemove: boolean
+  onMove: (delta: -1 | 1) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: trait.key, disabled })
 
   return (
-    <div
+    <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`rounded-xl border p-3 flex flex-col gap-2 ${
-        isDragging ? 'opacity-50 bg-slate-700 border-white/20 shadow-xl' : 'bg-slate-800/60 border-white/10'
+      className={`grid grid-cols-[28px_minmax(0,1fr)] items-center gap-2.5 rounded-[14px] border bg-velvet-1 px-2.5 py-2 min-[700px]:grid-cols-[34px_minmax(0,1fr)_150px_auto] ${
+        isDragging ? 'z-10 border-velvet-4 opacity-60 shadow-[var(--shadow-menu)]' : 'border-velvet-3'
       }`}
     >
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          tabIndex={-1}
-          aria-label="גרור לסידור מחדש"
-          className={`flex flex-col gap-[3px] shrink-0 touch-none p-1 rounded ${
-            disabled ? 'opacity-20 cursor-default' : 'cursor-grab active:cursor-grabbing opacity-40 hover:opacity-80'
-          }`}
-        >
-          {[0, 1, 2].map(i => (
-            <span key={i} className="flex gap-[3px]">
-              <span className="w-[3px] h-[3px] rounded-full bg-current" />
-              <span className="w-[3px] h-[3px] rounded-full bg-current" />
-            </span>
-          ))}
-        </button>
-        <span className="text-xs font-black text-slate-500 w-5 text-center shrink-0">{index + 1}</span>
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        tabIndex={-1}
+        aria-label={`גרירת פריט ${index + 1} לסידור מחדש`}
+        className={`num flex h-9 touch-none items-center justify-center rounded text-[18px] text-ivory-mute ${disabled ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`}
+      >
+        {lotNo(index + 1)}
+      </button>
+      <label className="min-w-0">
+        <span className="sr-only">טקסט פריט {index + 1}</span>
         <input
           type="text"
           value={trait.title}
           onChange={e => onChange({ ...trait, title: e.target.value })}
-          placeholder="טקסט ההיגד"
+          placeholder="למשל: הקשבה"
           maxLength={120}
-          required
           disabled={disabled}
-          className="flex-1 min-w-0 bg-slate-900 border border-slate-700 focus:border-amber-500 rounded-lg px-3 py-2 text-white text-sm focus:outline-none disabled:opacity-60"
+          aria-invalid={bad || undefined}
+          className={`${FIELD} ${bad ? FIELD_BAD : ''}`}
         />
+      </label>
+      <label className="col-start-2 min-[700px]:col-start-auto">
+        <span className="sr-only">קטגוריה של פריט {index + 1}</span>
         <select
           value={trait.category}
           onChange={e => onChange({ ...trait, category: e.target.value as TraitCategory })}
-          required
           disabled={disabled}
-          className={`bg-slate-900 border rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-amber-500 disabled:opacity-60 ${
-            trait.category ? 'border-slate-700 text-white' : 'border-amber-500/60 text-amber-300'
-          }`}
+          aria-invalid={(bad && !trait.category) || undefined}
+          className={`${FIELD} ${!trait.category ? 'text-ivory-mute' : ''} ${bad && !trait.category ? FIELD_BAD : ''}`}
         >
-          <option value="" disabled>קטגוריה *</option>
+          <option value="" disabled>קטגוריה</option>
           {TRAIT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        <button
-          type="button"
-          onClick={onRemove}
-          disabled={disabled || !canRemove}
-          aria-label="הסרת היגד"
-          className="text-slate-500 hover:text-red-400 disabled:opacity-30 px-1.5 text-lg leading-none"
-        >
-          ×
+      </label>
+      <span className="col-start-2 flex justify-end gap-0.5 min-[700px]:col-start-auto">
+        <button type="button" onClick={() => onMove(-1)} disabled={disabled || index === 0} aria-label={`הזזת פריט ${index + 1} למעלה`} className={OP}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 10l4-4 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
-      </div>
-      <input
-        type="text"
-        value={trait.description}
-        onChange={e => onChange({ ...trait, description: e.target.value })}
-        placeholder="תיאור קצר (לא חובה)"
-        maxLength={500}
-        disabled={disabled}
-        className="w-full bg-slate-900/60 border border-slate-800 focus:border-slate-600 rounded-lg px-3 py-1.5 text-slate-300 text-xs focus:outline-none disabled:opacity-60"
-      />
-    </div>
+        <button type="button" onClick={() => onMove(1)} disabled={disabled || index === count - 1} aria-label={`הזזת פריט ${index + 1} למטה`} className={OP}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+        <button type="button" onClick={onRemove} disabled={disabled || count <= 1} aria-label={`הסרת פריט ${index + 1}`} className={OP}>
+          <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 5h12M7 5V3.5h4V5M5 5l.8 10h6.4L13 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+      </span>
+      <label className="col-span-full">
+        <span className="sr-only">תיאור קצר של פריט {index + 1}</span>
+        <input
+          type="text"
+          value={trait.description}
+          onChange={e => onChange({ ...trait, description: e.target.value })}
+          placeholder="תיאור קצר (לא חובה)"
+          maxLength={500}
+          disabled={disabled}
+          className={`${FIELD} h-9 text-[14px] text-ivory-dim`}
+        />
+      </label>
+    </li>
   )
 }
 
-/** Statement list editor: add, edit, remove and drag to reorder. Every statement needs a category. */
-export default function TraitsEditor({ traits, disabled, onChange }: Props) {
+/** Statement list editor: add, edit, move, remove and drag to reorder. Every statement needs a category. */
+export default function TraitsEditor({ traits, disabled, invalidKeys, onChange }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -138,32 +145,38 @@ export default function TraitsEditor({ traits, disabled, onChange }: Props) {
     onChange(arrayMove(traits, from, to))
   }
 
+  function move(index: number, delta: -1 | 1) {
+    const to = index + delta
+    if (to < 0 || to >= traits.length) return
+    onChange(arrayMove(traits, index, to))
+  }
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={traits.map(t => t.key)} strategy={verticalListSortingStrategy}>
-          {traits.map((t, i) => (
-            <Row
-              key={t.key}
-              trait={t}
-              index={i}
-              disabled={disabled}
-              canRemove={traits.length > 1}
-              onChange={next => onChange(traits.map(x => (x.key === t.key ? next : x)))}
-              onRemove={() => onChange(traits.filter(x => x.key !== t.key))}
-            />
-          ))}
+          <ol className="m-0 flex list-none flex-col gap-2 p-0">
+            {traits.map((t, i) => (
+              <Row
+                key={t.key}
+                trait={t}
+                index={i}
+                count={traits.length}
+                disabled={disabled}
+                bad={invalidKeys?.has(t.key) ?? false}
+                onChange={next => onChange(traits.map(x => (x.key === t.key ? next : x)))}
+                onRemove={() => onChange(traits.filter(x => x.key !== t.key))}
+                onMove={delta => move(i, delta)}
+              />
+            ))}
+          </ol>
         </SortableContext>
       </DndContext>
       {!disabled && (
-        <button
-          type="button"
-          onClick={() => onChange([...traits, newTraitDraft()])}
-          disabled={traits.length >= 50}
-          className="self-start text-sm text-amber-400 hover:text-amber-300 font-semibold px-1 py-1 disabled:opacity-40"
-        >
-          + הוספת היגד
-        </button>
+        <Button onClick={() => onChange([...traits, newTraitDraft()])} disabled={traits.length >= 50} className="w-full">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5v14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" /></svg>
+          הוספת פריט
+        </Button>
       )}
     </div>
   )

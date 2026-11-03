@@ -3,40 +3,72 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import type { RoomListItem, RoomStatus } from '@/lib/types'
+import type { RoomListItem } from '@/lib/types'
+import { logoPublicUrl } from '@/lib/storage/logo'
+import StatusPill from '@/components/evening/StatusPill'
+import CoinIcon from '@/components/evening/CoinIcon'
+import { Button, LinkButton, Notice, Toast } from '@/components/evening/ui'
+import { UNIT_LABEL, fmt } from '@/components/evening/units'
 
-const STATUS_LABEL: Record<RoomStatus, string> = {
-  draft: 'טיוטה',
-  active: 'פעיל',
-  ended: 'הסתיים',
-  archived: 'ארכיון',
-}
+type Filter = 'all' | 'live' | 'draft' | 'ended' | 'archived'
 
-const STATUS_CLASS: Record<RoomStatus, string> = {
-  draft: 'bg-slate-700 text-slate-200',
-  active: 'bg-green-500/20 text-green-300 border border-green-500/40',
-  ended: 'bg-amber-500/15 text-amber-300 border border-amber-500/30',
-  archived: 'bg-slate-800 text-slate-500',
-}
+const FILTERS: Array<[Filter, string]> = [
+  ['all', 'הכל'],
+  ['live', 'חיים עכשיו'],
+  ['draft', 'טיוטות'],
+  ['ended', 'הסתיימו'],
+  ['archived', 'ארכיון'],
+]
 
 const MODE_LABEL = { auction: 'מכירה פומבית', allocation: 'חלוקת תקציב' }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+function hhmm(iso: string): string {
+  const d = new Date(iso)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+function ddmm(iso: string): string {
+  return new Date(iso).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' })
+}
+
+function matches(room: RoomListItem, filter: Filter): boolean {
+  switch (filter) {
+    case 'all': return room.status !== 'archived'
+    case 'live': return room.is_live
+    case 'draft': return room.status === 'draft'
+    case 'ended': return room.status === 'ended' || (room.status === 'active' && !room.is_live)
+    case 'archived': return room.status === 'archived'
+  }
+}
+
+function Status({ room }: { room: RoomListItem }) {
+  if (room.is_live && room.active_until) return <StatusPill kind="live">חי · עד {hhmm(room.active_until)}</StatusPill>
+  if (room.status === 'ended') return <StatusPill kind="ended">הסתיים · {ddmm(room.updated_at ?? room.created_at)}</StatusPill>
+  if (room.status === 'archived') return <StatusPill kind="archived">בארכיון</StatusPill>
+  if (room.status === 'active') return <StatusPill kind="expired">חלון ההפעלה הסתיים</StatusPill>
+  return <StatusPill kind="draft">טיוטה</StatusPill>
 }
 
 export default function RoomsList({ rooms }: { rooms: RoomListItem[] }) {
   const router = useRouter()
-  const [filter, setFilter] = useState<'open' | 'archived'>('open')
+  const [filter, setFilter] = useState<Filter>('all')
+  const [query, setQuery] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+  const [menuFor, setMenuFor] = useState<string | null>(null)
 
-  const visible = rooms.filter(r => (filter === 'archived' ? r.status === 'archived' : r.status !== 'archived'))
+  const q = query.trim()
+  const visible = rooms.filter(r => matches(r, filter) && (!q || `${r.title} ${r.client_name ?? ''} ${r.slug}`.includes(q)))
+
+  function say(text: string) {
+    setToast(text)
+    setTimeout(() => setToast(null), 2600)
+  }
 
   async function call(id: string, path: string, init: RequestInit, onOk?: (data: Record<string, unknown>) => void) {
     setBusyId(id)
     setError(null)
+    setMenuFor(null)
     try {
       const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...init })
       const data = await res.json().catch(() => ({}))
@@ -49,6 +81,7 @@ export default function RoomsList({ rooms }: { rooms: RoomListItem[] }) {
 
   const duplicate = (id: string) =>
     call(id, `/api/admin/rooms/${id}/duplicate`, { method: 'POST', body: '{}' }, data => {
+      say('נוצר עותק כטיוטה. אפשר לערוך אותו לפני ההפעלה.')
       if (typeof data.roomId === 'string') router.push(`/admin/rooms/${data.roomId}`)
     })
   const activate = (id: string) =>
@@ -56,129 +89,165 @@ export default function RoomsList({ rooms }: { rooms: RoomListItem[] }) {
       router.push(`/admin/rooms/${id}/live`)
     })
   const archive = (id: string) =>
-    call(id, `/api/admin/rooms/${id}/status`, { method: 'POST', body: JSON.stringify({ status: 'archived' }) })
-  const remove = (id: string) => {
-    setConfirmDelete(null)
-    return call(id, `/api/admin/rooms/${id}`, { method: 'DELETE' })
-  }
+    call(id, `/api/admin/rooms/${id}/status`, { method: 'POST', body: JSON.stringify({ status: 'archived' }) }, () => {
+      say('הסשן הועבר לארכיון. אפשר למצוא אותו תחת "ארכיון".')
+    })
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex gap-1 bg-slate-900 rounded-xl p-1">
-          {([['open', 'חדרים'], ['archived', 'ארכיון']] as const).map(([key, label]) => (
+    <div className="flex flex-col gap-[22px]" onClick={() => { if (menuFor) setMenuFor(null) }}>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="m-0 font-display text-[46px] font-black leading-[1.05] tracking-[-.01em] text-ivory">הסשנים</h1>
+          <p className="m-0 mt-2 max-w-[62ch] text-[16px] leading-[1.5] text-ivory-dim">
+            כל צוות NGG רואה את כל הסשנים. כל סשן הוא מכירה נפרדת, עם מסך מוקרן וקישור הצטרפות משלו.
+          </p>
+        </div>
+        <LinkButton href="/admin/rooms/new" variant="primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5v14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" /></svg>
+          סשן חדש
+        </LinkButton>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex gap-[3px] rounded-[12px] border border-velvet-3 bg-velvet-1 p-[3px]" role="radiogroup" aria-label="סינון לפי מצב">
+          {FILTERS.map(([key, label]) => (
             <button
               key={key}
+              type="button"
+              role="radio"
+              aria-checked={filter === key}
               onClick={() => setFilter(key)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                filter === key ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'
+              className={`h-[38px] whitespace-nowrap rounded-[9px] px-[14px] text-[14px] font-semibold transition-colors ${
+                filter === key ? 'bg-ivory text-velvet-0' : 'text-ivory-dim hover:text-ivory'
               }`}
             >
               {label}
             </button>
           ))}
         </div>
-        <Link
-          href="/admin/rooms/new"
-          className="bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-xl px-5 py-2.5 font-black transition-all active:scale-95"
-        >
-          + חדר חדש
-        </Link>
+        <label className="relative flex w-[min(320px,100%)] items-center">
+          <span className="sr-only">חיפוש סשן</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="pointer-events-none absolute right-[14px] text-ivory-mute">
+            <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="2" /><path d="M16 16l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <input
+            type="search"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="חיפוש לפי שם או לקוח"
+            className="h-11 w-full rounded-[12px] border border-velvet-4 bg-velvet-1 pl-[14px] pr-[42px] text-[15px] text-ivory placeholder:text-ivory-mute focus:border-vermilion focus:shadow-[0_0_0_3px_rgba(255,90,54,.22)] focus:outline-none"
+          />
+        </label>
       </div>
 
-      {error && (
-        <div className="bg-red-500/15 border border-red-500/30 text-red-300 rounded-xl px-4 py-3 text-sm">{error}</div>
-      )}
+      {error && <Notice tone="error">{error}</Notice>}
 
       {visible.length === 0 ? (
-        <div className="glass rounded-3xl p-12 text-center">
-          <p className="text-5xl mb-4">🏷️</p>
-          <p className="text-slate-300 text-lg font-bold mb-1">
-            {filter === 'archived' ? 'אין חדרים בארכיון' : 'עדיין אין חדרים'}
-          </p>
-          {filter === 'open' && <p className="text-slate-500 text-sm">צרו חדר חדש כדי להתחיל.</p>}
-        </div>
+        <p className="m-0 rounded-[16px] border border-dashed border-velvet-4 p-10 text-center text-[15px] text-ivory-mute">
+          {rooms.filter(r => r.status !== 'archived').length === 0 && filter === 'all'
+            ? 'עדיין אין סשנים. צרו סשן חדש כדי להתחיל.'
+            : filter === 'archived' && !q
+            ? 'אין סשנים בארכיון.'
+            : 'אין סשנים שמתאימים לחיפוש. נסו מילה אחרת או בחרו "הכל".'}
+        </p>
       ) : (
-        <div className="glass rounded-2xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-white/5 text-slate-400 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="text-right px-4 py-3 font-semibold">חדר</th>
-                <th className="text-right px-4 py-3 font-semibold">סטטוס</th>
-                <th className="text-right px-4 py-3 font-semibold hidden md:table-cell">סוג</th>
-                <th className="text-right px-4 py-3 font-semibold hidden lg:table-cell">משתתפים</th>
-                <th className="text-right px-4 py-3 font-semibold hidden lg:table-cell">נוצר</th>
-                <th className="text-right px-4 py-3 font-semibold hidden xl:table-cell">יוצר</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map(room => {
-                const busy = busyId === room.id
-                return (
-                  <tr key={room.id} className="border-t border-white/5 hover:bg-white/[0.03]">
-                    <td className="px-4 py-3">
-                      <Link href={`/admin/rooms/${room.id}`} className="text-white font-bold hover:text-amber-300">{room.title}</Link>
-                      <p className="text-slate-500 text-xs">
-                        {room.client_name && <span>{room.client_name} · </span>}
-                        <span dir="ltr">/join?room={room.slug}</span>
-                      </p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${STATUS_CLASS[room.status]}`}>
-                        {room.is_live ? '🟢 חי' : STATUS_LABEL[room.status]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-300 hidden md:table-cell">{MODE_LABEL[room.game_mode]}</td>
-                    <td className="px-4 py-3 text-slate-300 tabular-nums hidden lg:table-cell">
-                      {room.participant_count} · {room.round_count} סבבים
-                    </td>
-                    <td className="px-4 py-3 text-slate-400 tabular-nums hidden lg:table-cell">{formatDate(room.created_at)}</td>
-                    <td className="px-4 py-3 text-slate-500 text-xs hidden xl:table-cell" dir="ltr">{room.created_by_email ?? '—'}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                        {room.status !== 'archived' && (
-                          room.is_live ? (
-                            <Link href={`/admin/rooms/${room.id}/live`} className="bg-green-600 hover:bg-green-500 text-white rounded-lg px-3 py-1.5 text-xs font-bold">
-                              מסך חי
-                            </Link>
-                          ) : (
-                            <button onClick={() => activate(room.id)} disabled={busy} className="bg-green-700/80 hover:bg-green-600 disabled:opacity-40 text-white rounded-lg px-3 py-1.5 text-xs font-bold">
-                              הפעל
-                            </button>
-                          )
-                        )}
-                        <Link href={`/admin/rooms/${room.id}`} className="bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold">
-                          {room.status === 'archived' ? 'צפייה' : 'עריכה'}
-                        </Link>
-                        <button onClick={() => duplicate(room.id)} disabled={busy} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold">
-                          שכפול
-                        </button>
-                        {(room.status === 'draft' || room.status === 'ended') && (
-                          <button onClick={() => archive(room.id)} disabled={busy} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-400 rounded-lg px-3 py-1.5 text-xs font-semibold">
-                            ארכיון
-                          </button>
-                        )}
-                        {room.status === 'draft' && !room.locked && !room.activated_at && (
-                          confirmDelete === room.id ? (
-                            <button onClick={() => remove(room.id)} disabled={busy} className="bg-red-700 hover:bg-red-600 text-white rounded-lg px-3 py-1.5 text-xs font-bold">
-                              אשר מחיקה
-                            </button>
-                          ) : (
-                            <button onClick={() => setConfirmDelete(room.id)} disabled={busy} className="text-red-400 hover:text-red-300 rounded-lg px-2 py-1.5 text-xs font-semibold">
-                              מחיקה
-                            </button>
-                          )
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+        <div className="flex flex-col gap-[10px]" role="table" aria-label="רשימת הסשנים">
+          <div className="hidden grid-cols-[minmax(0,2.6fr)_120px_150px_70px_90px_170px_250px] items-center gap-4 px-5 text-[13px] font-semibold text-ivory-mute min-[1100px]:grid" role="row">
+            <span role="columnheader">סשן</span>
+            <span role="columnheader">סוג משחק</span>
+            <span role="columnheader">תקציב למשתתף</span>
+            <span role="columnheader">פריטים</span>
+            <span role="columnheader">משתתפים</span>
+            <span role="columnheader">מצב</span>
+            <span role="columnheader"><span className="sr-only">פעולות</span></span>
+          </div>
+          {visible.map(room => {
+            const busy = busyId === room.id
+            const logo = logoPublicUrl(room.logo_path)
+            const archived = room.status === 'archived'
+            return (
+              <div
+                key={room.id}
+                role="row"
+                className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 rounded-[16px] border px-5 py-4 [grid-template-areas:'name_stat'_'meta_meta'_'act_act'] min-[1100px]:grid-cols-[minmax(0,2.6fr)_120px_150px_70px_90px_170px_250px] min-[1100px]:[grid-template-areas:none] ${
+                  room.is_live ? 'border-[rgba(255,90,54,.4)] bg-[linear-gradient(90deg,#211519,#2a1a1d)]' : 'border-velvet-3 bg-velvet-2'
+                }`}
+              >
+                <div className="flex min-w-0 items-center gap-[14px] [grid-area:name] min-[1100px]:[grid-area:auto]" role="cell">
+                  <span aria-hidden="true" className="hidden h-10 w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-[8px] border-[1.5px] border-dashed border-velvet-4 text-[10px] text-ivory-mute min-[1100px]:flex">
+                    {logo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={logo} alt="" className="h-full w-full bg-ivory object-contain p-0.5" />
+                    ) : 'לוגו'}
+                  </span>
+                  <div className="min-w-0">
+                    <Link href={`/admin/rooms/${room.id}`} className="block truncate font-display text-[21px] font-bold leading-[1.2] text-ivory hover:text-[#ffd2c4]">{room.title}</Link>
+                    <span className="mt-0.5 block truncate text-[14px] text-ivory-mute">{room.client_name || 'ללא לקוח'}</span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-x-[18px] gap-y-1.5 [grid-area:meta] min-[1100px]:contents" role="presentation">
+                  <span className="text-[15px] text-ivory-dim" role="cell">{MODE_LABEL[room.game_mode]}</span>
+                  <span className="inline-flex items-center gap-1.5 font-display text-[19px] font-black text-ivory" role="cell">
+                    <CoinIcon size={20} /><span className="num">{fmt(room.starting_coins)}</span><small className="font-sans text-[13px] font-medium text-ivory-mute">{UNIT_LABEL}</small>
+                  </span>
+                  <span className="text-[15px] text-ivory-dim" role="cell"><span className="text-[13px] min-[1100px]:hidden">פריטים </span><span className="num font-display text-[20px] text-ivory">{room.trait_count}</span></span>
+                  <span className="text-[15px] text-ivory-dim" role="cell"><span className="text-[13px] min-[1100px]:hidden">משתתפים </span><span className="num font-display text-[20px] text-ivory">{room.participant_count}</span></span>
+                </div>
+                <div className="[grid-area:stat] min-[1100px]:[grid-area:auto]" role="cell"><Status room={room} /></div>
+                <div className="relative flex items-center gap-2 [grid-area:act] min-[1100px]:justify-end min-[1100px]:[grid-area:auto]" role="cell" onClick={e => e.stopPropagation()}>
+                  {archived ? (
+                    <LinkButton size="sm" href={`/admin/rooms/${room.id}`}>צפייה</LinkButton>
+                  ) : room.is_live ? (
+                    <>
+                      <LinkButton size="sm" variant="primary" href={`/admin/rooms/${room.id}/live`}>מסך מוקרן</LinkButton>
+                      <LinkButton size="sm" href={`/admin/rooms/${room.id}`}>עריכה</LinkButton>
+                    </>
+                  ) : room.status === 'ended' ? (
+                    <>
+                      <LinkButton size="sm" href={`/admin/rooms/${room.id}/live`}>תוצאות</LinkButton>
+                      <LinkButton size="sm" href={`/admin/rooms/${room.id}`}>עריכה</LinkButton>
+                    </>
+                  ) : room.status === 'active' ? (
+                    <>
+                      <Button size="sm" variant="primary" onClick={() => activate(room.id)} disabled={busy}>הפעלה מחדש</Button>
+                      <LinkButton size="sm" href={`/admin/rooms/${room.id}`}>עריכה</LinkButton>
+                    </>
+                  ) : (
+                    <LinkButton size="sm" variant="primary" href={`/admin/rooms/${room.id}`}>השלמה והפעלה</LinkButton>
+                  )}
+                  {!archived && (
+                    <>
+                      <button
+                        type="button"
+                        aria-label="פעולות נוספות"
+                        aria-haspopup="menu"
+                        aria-expanded={menuFor === room.id}
+                        onClick={() => setMenuFor(menuFor === room.id ? null : room.id)}
+                        disabled={busy}
+                        className={`flex h-[38px] w-[38px] items-center justify-center rounded-[10px] border text-ivory-dim transition-colors ${menuFor === room.id ? 'border-ivory-mute text-ivory' : 'border-velvet-4 hover:text-ivory'}`}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>
+                      </button>
+                      {menuFor === room.id && (
+                        <div role="menu" className="ev-rise absolute left-0 top-11 z-10 min-w-[190px] rounded-[12px] border border-velvet-4 bg-velvet-2 p-1.5 shadow-[var(--shadow-menu)]">
+                          <button type="button" role="menuitem" onClick={() => duplicate(room.id)} className="block w-full rounded-[8px] px-3 py-2.5 text-start text-[14px] text-ivory hover:bg-velvet-3">שכפול לסשן חדש</button>
+                          {(room.status === 'draft' || room.status === 'ended') && (
+                            <button type="button" role="menuitem" onClick={() => archive(room.id)} className="block w-full rounded-[8px] px-3 py-2.5 text-start text-[14px] text-ivory hover:bg-velvet-3">העברה לארכיון</button>
+                          )}
+                          {room.status === 'active' && (
+                            <span className="block px-3 py-2 text-[12px] text-ivory-mute">סשן פעיל אפשר להעביר לארכיון אחרי סיומו.</span>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
+      {toast && <Toast>{toast}</Toast>}
     </div>
   )
 }
