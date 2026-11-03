@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { loadParticipant, saveParticipant } from '@/lib/participant-session'
+import { CTA, ErrorText, FIELD, btnClass } from '@/components/evening/ui'
 
 interface Props { roomId: string; roomSlug: string }
 
@@ -40,28 +41,28 @@ export default function JoinForm({ roomId, roomSlug }: Props) {
         <button
           type="button"
           onClick={() => router.push(`/play?room=${encodeURIComponent(roomSlug)}`)}
-          className="w-full bg-green-600 hover:bg-green-500 text-white rounded-2xl py-3 text-base font-black transition-all active:scale-95"
+          className={btnClass('secondary', 'md', 'h-14 w-full text-[17px]')}
         >
-          כבר נרשמת מהטלפון הזה — חזרה למשחק
+          כבר נרשמתם מהטלפון הזה. חזרה למכירה
         </button>
       )}
-      <input
-        type="text"
-        value={name}
-        onChange={e => setName(e.target.value)}
-        placeholder="השם שלך"
-        maxLength={40}
-        required
-        disabled={loading}
-        className="w-full bg-slate-800 border-2 border-slate-700 focus:border-amber-500 rounded-2xl px-5 py-4 text-xl font-bold text-center text-white focus:outline-none transition-colors placeholder:text-slate-600 disabled:opacity-50"
-      />
-      {error && <p className="text-red-400 text-sm text-center animate-slide-in-up">{error}</p>}
-      <button
-        type="submit"
-        disabled={loading || !name.trim()}
-        className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-30 text-slate-900 rounded-2xl py-4 text-xl font-black transition-all active:scale-95 shadow-lg shadow-amber-500/20"
-      >
-        {loading ? 'נרשם...' : alreadyJoined ? 'הרשמה בשם אחר' : 'כניסה למשחק 🚀'}
+      <label className="flex flex-col gap-2 text-[14px] font-semibold text-ivory-dim">
+        השם שלכם
+        <input
+          type="text"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="כפי שיופיע על המסך"
+          maxLength={40}
+          required
+          disabled={loading}
+          autoComplete="name"
+          className={`${FIELD} h-14 text-center text-[20px] font-semibold`}
+        />
+      </label>
+      {error && <ErrorText>{error}</ErrorText>}
+      <button type="submit" disabled={loading || !name.trim()} className={CTA}>
+        {loading ? 'נרשמים…' : alreadyJoined ? 'הרשמה בשם אחר' : 'כניסה למכירה'}
       </button>
     </form>
   )
