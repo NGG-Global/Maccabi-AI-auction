@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import QRCode from 'qrcode'
 import { Button, btnClass } from '@/components/evening/ui'
 
@@ -40,7 +41,7 @@ export function JoinQrCard({ slug, className }: { slug: string; className?: stri
           <span className="text-[24px] font-semibold text-ink-soft">טוענים את הקוד…</span>
         )}
       </div>
-      <span className="text-[22px] text-ink-soft" dir="ltr">{shortUrl}</span>
+      <span className="w-full max-w-[432px] break-all text-center text-[22px] leading-[1.3] text-ink-soft" dir="ltr">{shortUrl}</span>
     </div>
   )
 }
@@ -100,7 +101,7 @@ export default function JoinShare({ slug }: Props) {
         <span className="truncate text-[12px] text-ivory-mute" dir="ltr">{joinUrl}</span>
       </div>
 
-      {showQr && (
+      {showQr && createPortal(
         <div
           className="ev-fade fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto bg-velvet-0/95 px-8 py-[3vh]"
           onClick={() => setShowQr(false)}
@@ -117,14 +118,15 @@ export default function JoinShare({ slug }: Props) {
               ) : (
                 <div className="flex h-[min(52vh,80vw)] w-[min(52vh,80vw)] items-center justify-center text-2xl text-ink-soft">טוענים את הקוד…</div>
               )}
-              <p dir="ltr" className="m-0 break-all text-[min(1.6rem,3.4vh)] font-semibold text-ink-soft">{joinUrl.replace(/^https?:\/\//, '')}</p>
+              <p dir="ltr" className="m-0 max-w-[min(52vh,80vw)] break-all text-center text-[min(1.6rem,3.4vh)] font-semibold text-ink-soft">{joinUrl.replace(/^https?:\/\//, '')}</p>
             </div>
             <div className="mt-[3vh] flex gap-4">
               <button type="button" onClick={copyLink} className={btnClass('primary', 'md', 'h-14 px-8 text-[18px]')}>{copyLabel}</button>
               <button type="button" onClick={() => setShowQr(false)} className={btnClass('secondary', 'md', 'h-14 px-8 text-[18px]')}>סגירה</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   )

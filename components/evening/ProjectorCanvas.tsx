@@ -35,7 +35,7 @@ export default function ProjectorCanvas({ children, className }: Props) {
     <div ref={frameRef} className={`relative h-full w-full overflow-hidden bg-velvet-0 ${className ?? ''}`}>
       <div
         className="stage-atmos absolute top-0 left-0 origin-top-left text-ivory shadow-[var(--shadow-stage)]"
-        style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${fit.scale})`, left: fit.left, top: fit.top }}
+        style={{ position: 'absolute', width: STAGE_W, height: STAGE_H, transform: `scale(${fit.scale})`, left: fit.left, top: fit.top }}
         dir="rtl"
       >
         {children}
