@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
     p_game_mode: input.game_mode,
     p_starting_coins: input.starting_coins,
     p_default_round_seconds: input.default_round_seconds,
+    p_bid_step: input.bid_step,
     p_created_by_email: staff.email,
     p_traits: input.traits ?? [],
   })

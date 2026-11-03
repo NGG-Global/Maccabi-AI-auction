@@ -19,7 +19,7 @@ import Stepper from '@/components/evening/Stepper'
 import CoinIcon from '@/components/evening/CoinIcon'
 import ParticipantMark from '@/components/evening/ParticipantMark'
 import { CTA, btnClass } from '@/components/evening/ui'
-import { ALLOCATION_STEP as STEP, UNIT_LABEL, fmt, lotNo } from '@/components/evening/units'
+import { UNIT_LABEL, defaultBidStep, fmt, lotNo } from '@/components/evening/units'
 
 interface Props {
   room: PublicRoom
@@ -58,6 +58,7 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
   const savingRef = useRef(false)
   const pendingSaveRef = useRef(false)
 
+  const STEP = room.bid_step ?? defaultBidStep('allocation', room.starting_coins)
   const openRounds = useMemo(() => rounds.filter(r => r.status === 'open'), [rounds])
   const phase: 'waiting' | 'open' | 'closed' =
     openRounds.length > 0 ? 'open' : rounds.length > 0 ? 'closed' : 'waiting'
@@ -329,8 +330,8 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
                   onUp={() => step(r.id, STEP)}
                   downDisabled={!has}
                   upDisabled={check.remaining < STEP}
-                  downLabel={`הורדת ${STEP} ${UNIT_LABEL} מ${title}`}
-                  upLabel={`הוספת ${STEP} ${UNIT_LABEL} ל${title}`}
+                  downLabel={`הורדת ${fmt(STEP)} ${UNIT_LABEL} מ${title}`}
+                  upLabel={`הוספת ${fmt(STEP)} ${UNIT_LABEL} ל${title}`}
                   className="w-[190px] shrink-0"
                 />
               </div>

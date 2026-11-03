@@ -14,7 +14,7 @@ import Stepper from '@/components/evening/Stepper'
 import SoldStamp from '@/components/evening/SoldStamp'
 import CountdownLine from '@/components/evening/CountdownLine'
 import { CTA, ErrorText } from '@/components/evening/ui'
-import { AUCTION_STEP, UNIT_LABEL, fmt, lotNo } from '@/components/evening/units'
+import { UNIT_LABEL, defaultBidStep, fmt, lotNo } from '@/components/evening/units'
 
 interface GameState {
   participant: Participant | null
@@ -210,10 +210,11 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
 
   const balance = participant?.wallet_balance ?? 0
   const highest = roundStats.highestBid
+  const step = room.bid_step ?? defaultBidStep('auction', room.starting_coins)
   // The amount to send: free text, moved by the stepper, never below the
   // lowest raise that would lead. An empty input shows the suggested raise.
   const minAmount = Math.max(highest + 1, (myBid?.amount ?? 0) + 1, 1)
-  const suggested = Math.min(balance, Math.max(minAmount, highest + AUCTION_STEP))
+  const suggested = Math.min(balance, Math.max(minAmount, highest + step))
   const amount = bidInput === '' ? suggested : parseInt(bidInput, 10) || 0
 
   async function handleBidSubmit(e: React.FormEvent) {
@@ -285,12 +286,12 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
         inputValue={fmt(bidInput === '' ? suggested : amount)}
         onInput={raw => { setBidInput(raw); setBidSuccess(false) }}
         inputLabel="סכום ההצעה"
-        onDown={() => setBidInput(String(Math.max(minAmount, amount - AUCTION_STEP)))}
-        onUp={() => setBidInput(String(Math.min(balance, amount + AUCTION_STEP)))}
-        downDisabled={roundStats.isLeading || amount - AUCTION_STEP < minAmount}
-        upDisabled={roundStats.isLeading || amount + AUCTION_STEP > balance}
-        downLabel={`הורדה ב־${AUCTION_STEP} ${UNIT_LABEL}`}
-        upLabel={`העלאה ב־${AUCTION_STEP} ${UNIT_LABEL}`}
+        onDown={() => setBidInput(String(Math.max(minAmount, amount - step)))}
+        onUp={() => setBidInput(String(Math.min(balance, amount + step)))}
+        downDisabled={roundStats.isLeading || amount - step < minAmount}
+        upDisabled={roundStats.isLeading || amount + step > balance}
+        downLabel={`הורדה ב־${fmt(step)} ${UNIT_LABEL}`}
+        upLabel={`העלאה ב־${fmt(step)} ${UNIT_LABEL}`}
         caption="ההצעה שלך"
       />
       {bidError && <ErrorText>{bidError}</ErrorText>}

@@ -1,17 +1,16 @@
 /**
- * Budget wording and steps for the "Evening Sale" UI.
+ * Budget wording for the "Evening Sale" UI.
  *
- * A per-room unit (coins | ₪) and a per-click step are phase 6 of the
- * redesign and need a schema change, so until then every room shows
- * "מטבעות" and the steps below are presentational constants.
+ * The step per click is a room setting (`rooms.bid_step`, migration 013).
+ * A per-room unit (coins | ₪) is still pending a decision, so every room
+ * shows "מטבעות".
  */
 export const UNIT_LABEL = 'מטבעות'
 
-/** Allocation steppers: the value the old UI already used. */
-export const ALLOCATION_STEP = 50
-
-/** Auction steppers: the amount is still free text, the buttons move it by this much. */
-export const AUCTION_STEP = 10
+/** The step a room gets when none was set: 10 in auction mode, 50 in allocation mode. */
+export function defaultBidStep(mode: 'auction' | 'allocation', coins: number): number {
+  return Math.min(mode === 'allocation' ? 50 : 10, Math.max(1, Math.floor(coins / 2)))
+}
 
 /** en-US grouping; always rendered inside a `.num` (LTR, tabular) span. */
 export function fmt(n: number): string {

@@ -9,7 +9,7 @@ import LogoUploader from './LogoUploader'
 import CoinIcon from '@/components/evening/CoinIcon'
 import WalletBar from '@/components/evening/WalletBar'
 import { Button, Card, CardTitle, ErrorText, FIELD, FIELD_BAD, Hint, LinkButton, Notice, Toast } from '@/components/evening/ui'
-import { UNIT_LABEL, fmt, lotNo } from '@/components/evening/units'
+import { UNIT_LABEL, defaultBidStep, fmt, lotNo } from '@/components/evening/units'
 
 interface Props {
   /** null when creating a new room */
@@ -32,6 +32,8 @@ const DEFAULT_TRAITS: Array<Pick<TraitDraft, 'title' | 'category'>> = [
   { title: 'לייצר בסיס להחלטה', category: 'שיפוט' },
 ]
 
+const STEP_OPTIONS = [1, 5, 10, 20, 25, 50, 100, 250, 500, 1000]
+
 const TIMER_OPTIONS: Array<[number, string]> = [
   [0, 'ללא ספירה לאחור'],
   [30, '30 שניות'],
@@ -49,7 +51,7 @@ function toDrafts(traits: Trait[]): TraitDraft[] {
   return DEFAULT_TRAITS.map(t => ({ ...newTraitDraft(), ...t, description: '' }))
 }
 
-type FieldKey = 'title' | 'slug' | 'coins' | 'timer' | 'traits'
+type FieldKey = 'title' | 'slug' | 'coins' | 'step' | 'timer' | 'traits'
 
 function Field({ label, htmlFor, hint, error, errorId, children, className = '' }: {
   label: string; htmlFor: string; hint?: string; error?: string; errorId?: string; children: React.ReactNode; className?: string
@@ -76,6 +78,9 @@ export default function RoomForm({ room, traits, locked, isLive, participantCoun
   const [gameMode, setGameMode] = useState<GameMode>(room?.game_mode ?? 'auction')
   const [startingCoins, setStartingCoins] = useState(fmt(room?.starting_coins ?? 1000))
   const [roundSeconds, setRoundSeconds] = useState(room?.default_round_seconds ? String(room.default_round_seconds) : '')
+  // The step per click. Until the facilitator picks one, a new room follows the mode's default.
+  const [stepInput, setStepInput] = useState(room ? String(room.bid_step ?? defaultBidStep(room.game_mode, room.starting_coins)) : '')
+  const [stepTouched, setStepTouched] = useState(room !== null)
   const [traitDrafts, setTraitDrafts] = useState<TraitDraft[]>(() => toDrafts(traits))
   const [logoPath, setLogoPath] = useState<string | null>(room?.logo_path ?? null)
 
@@ -104,6 +109,8 @@ export default function RoomForm({ room, traits, locked, isLive, participantCoun
     [slug],
   )
   const timerValue = roundSeconds.trim() === '' ? 0 : Number(roundSeconds)
+  const step = stepTouched && stepInput.trim() !== '' ? Number(stepInput.replace(/[^\d]/g, '')) || 0 : defaultBidStep(gameMode, coins)
+  const stepOptions = STEP_OPTIONS.includes(step) ? STEP_OPTIONS : [...STEP_OPTIONS, step].sort((a, b) => a - b)
   const timerOptions = TIMER_OPTIONS.some(([v]) => v === timerValue) ? TIMER_OPTIONS : [...TIMER_OPTIONS, [timerValue, `${timerValue} שניות`] as [number, string]]
 
   function clearError(key: FieldKey) {
@@ -126,6 +133,7 @@ export default function RoomForm({ room, traits, locked, isLive, participantCoun
     if (!slug) { next.slug = 'חסרה כתובת לסשן. היא תופיע בקישור ההצטרפות.'; order.push('slug') }
     else if (!isValidSlug(slug)) { next.slug = 'הכתובת צריכה להכיל 3 עד 60 אותיות לטיניות קטנות, ספרות או מקפים.'; order.push('slug') }
     if (!Number.isInteger(coins) || coins < 1 || coins > 1_000_000) { next.coins = 'התקציב צריך להיות מספר שלם בין 1 ל־1,000,000.'; order.push('coins') }
+    if (!Number.isInteger(step) || step < 1 || step * 2 > coins) { next.step = 'הקפיצה צריכה להיות לפחות 1 ולכל היותר חצי מהתקציב.'; order.push('step') }
     if (gameMode === 'auction' && timerValue !== 0 && (timerValue < 10 || timerValue > 3600)) { next.timer = 'משך הסבב צריך להיות בין 10 ל־3,600 שניות.'; order.push('timer') }
     const bad = new Set<string>()
     if (!gameLocked) {
@@ -152,6 +160,7 @@ export default function RoomForm({ room, traits, locked, isLive, participantCoun
       game_mode: gameMode,
       starting_coins: coins,
       default_round_seconds: gameMode === 'auction' && timerValue > 0 ? timerValue : null,
+      bid_step: step,
       // Statements are sent only while they may change; the server refuses them otherwise.
       traits: gameLocked
         ? null
@@ -226,8 +235,8 @@ export default function RoomForm({ room, traits, locked, isLive, participantCoun
   }
 
   const ruleLine = gameMode === 'auction'
-    ? `כל משתתף מקבל ${fmt(coins)} ${UNIT_LABEL}. בכל סבב מוצג פריט אחד, ההצעה הגבוהה זוכה, ורק הזוכה משלם.`
-    : `כל משתתף מחלק ${fmt(coins)} ${UNIT_LABEL} בין ${filledCount || 'כל'} הפריטים. כל אחד משלם את מה שהקצה.`
+    ? `כל משתתף מקבל ${fmt(coins)} ${UNIT_LABEL}. בכל סבב מוצג פריט אחד, ההצעות עולות בקפיצות של ${fmt(step)}, ורק הזוכה משלם.`
+    : `כל משתתף מחלק ${fmt(coins)} ${UNIT_LABEL} בין ${filledCount || 'כל'} הפריטים, בקפיצות של ${fmt(step)}. כל אחד משלם את מה שהקצה.`
   const firstTitle = traitDrafts.find(t => t.title.trim())?.title.trim() ?? ''
   const previewTitle = title.trim() || 'שם הסשן'
 
@@ -299,7 +308,7 @@ export default function RoomForm({ room, traits, locked, isLive, participantCoun
 
         <Card>
           <CardTitle>תקציב ומטבעות</CardTitle>
-          <div className="grid grid-cols-1 gap-4 min-[700px]:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 min-[700px]:grid-cols-3">
             <div data-field="coins">
               <Field label="תקציב לכל משתתף" htmlFor="f-coins" hint={`היחידה היא ${UNIT_LABEL}.`} error={errors.coins} errorId="e-coins">
                 <div className="relative">
@@ -317,6 +326,20 @@ export default function RoomForm({ room, traits, locked, isLive, participantCoun
                     className={`${FIELD} num pl-11 text-[20px] ${errors.coins ? FIELD_BAD : ''}`}
                   />
                 </div>
+              </Field>
+            </div>
+            <div data-field="step">
+              <Field label="קפיצה בכל לחיצה" htmlFor="f-step" hint="כמה מוסיף או מוריד כל לחיצה על − ו־+ בטלפון." error={errors.step} errorId="e-step">
+                <select
+                  id="f-step"
+                  value={String(step)}
+                  onChange={e => { setStepTouched(true); setStepInput(e.target.value); clearError('step') }}
+                  disabled={gameLocked}
+                  aria-invalid={!!errors.step || undefined}
+                  className={`${FIELD} ${errors.step ? FIELD_BAD : ''}`}
+                >
+                  {stepOptions.map(v => <option key={v} value={String(v)}>{fmt(v)}</option>)}
+                </select>
               </Field>
             </div>
             {gameMode === 'auction' && (

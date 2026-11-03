@@ -45,9 +45,10 @@ from the form state).
 
 ## Differences from the kit, with reasons
 
-- **Auction step on the phone.** The schema has no per-room step. The amount is
-  still free text (tap the number to type); the −/+ buttons move it by
-  `AUCTION_STEP = 10` (`components/evening/units.ts`). Allocation keeps the existing 50.
+- **Step per click** is a room setting since migration 013 (`rooms.bid_step`,
+  "קפיצה בכל לחיצה" in the editor; 10 in auction mode and 50 in allocation mode
+  by default, never more than half the budget). The auction amount stays free
+  text as well: tap the number to type.
 - **Leader name on the phone.** `get_round_stats` returns only the leader's id, so
   the phone reads that participant's display name once per new leader (a small
   read scoped by `room_id`, cached per id).
@@ -70,12 +71,16 @@ from the form state).
   all in `lib/hooks/useAdminRealtimeAnalytics.ts` (do-not-touch). Every file in the
   redesign is clean.
 
-## Needs a decision (phase 6, not started)
+## Phase 6
 
-A budget unit per room (`coins` | `ils`) and a step per click require a
-migration (`rooms.budget_unit`, `rooms.bid_step`), the API (`parseRoomInput`,
-`create_room` / `update_room`), and the form's "יחידה" and "קפיצה בכל לחיצה"
-fields. Until approved every room shows "מטבעות" and uses the steps above.
+- **Step per click: done** (migration 013). `create_room` and `update_room` take
+  `p_bid_step` as a trailing optional parameter: NULL means the mode's default on
+  create and "keep the current step" on update. Apply the migration to the shared
+  NGG project before deploying this branch; the phones read `bid_step` with the
+  other public room columns.
+- **Budget unit per room (`coins` | `ils`): still needs a decision.** It would add
+  `rooms.budget_unit`, the "יחידה" field and the unit label everywhere. Until then
+  every room shows "מטבעות".
 
 ## Verification done
 

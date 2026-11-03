@@ -49,5 +49,6 @@ export const ROOM_ERRORS: Record<string, ErrorMapping> = {
   invalid_mode:          { status: 400, error: 'סוג משחק לא תקין' },
   invalid_coins:         { status: 400, error: 'מספר המטבעות ההתחלתי חייב להיות בין 1 ל-1,000,000' },
   invalid_round_seconds: { status: 400, error: 'משך הסבב חייב להיות בין 10 ל-3,600 שניות' },
+  invalid_step:          { status: 400, error: 'הקפיצה בכל לחיצה חייבת להיות לפחות 1 ולכל היותר חצי מהתקציב' },
   invalid_traits:        { status: 400, error: 'רשימת ההיגדים אינה תקינה: לכל היגד נדרשים טקסט (2 עד 120 תווים) וקטגוריה' },
 }
