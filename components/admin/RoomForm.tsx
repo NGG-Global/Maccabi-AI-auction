@@ -74,7 +74,7 @@ export default function RoomForm({ room, traits, locked, isLive, participantCoun
   const [slug, setSlug] = useState(room?.slug ?? '')
   const [slugTouched, setSlugTouched] = useState(!isNew)
   const [gameMode, setGameMode] = useState<GameMode>(room?.game_mode ?? 'auction')
-  const [startingCoins, setStartingCoins] = useState(String(room?.starting_coins ?? 1000))
+  const [startingCoins, setStartingCoins] = useState(fmt(room?.starting_coins ?? 1000))
   const [roundSeconds, setRoundSeconds] = useState(room?.default_round_seconds ? String(room.default_round_seconds) : '')
   const [traitDrafts, setTraitDrafts] = useState<TraitDraft[]>(() => toDrafts(traits))
   const [logoPath, setLogoPath] = useState<string | null>(room?.logo_path ?? null)
@@ -368,24 +368,24 @@ export default function RoomForm({ room, traits, locked, isLive, participantCoun
       <aside className="flex flex-col gap-[18px] min-[1100px]:sticky min-[1100px]:top-[18px] min-[1100px]:order-none max-[1099px]:order-first" aria-label="תצוגה מקדימה">
         <div>
           <p className="m-0 mb-2 text-[13px] font-semibold text-ivory-mute">כך זה ייראה במסך המוקרן</p>
-          <div className="stage-atmos relative flex aspect-video flex-col justify-between overflow-hidden rounded-[14px] px-[6%] py-[5%] shadow-[0_20px_50px_rgba(0,0,0,.5),0_0_0_1px_var(--color-velvet-3)] [container-type:inline-size]" aria-hidden="true">
-            <div className="flex justify-between gap-3 text-[clamp(10px,2.6cqw,14px)] text-ivory-dim">
+          <div className="stage-atmos relative flex aspect-video flex-col justify-between overflow-hidden rounded-[14px] px-[6%] py-[5%] shadow-[0_20px_50px_rgba(0,0,0,.5),0_0_0_1px_var(--color-velvet-3)]" aria-hidden="true">
+            <div className="flex justify-between gap-3 text-[13px] text-ivory-dim">
               <b className="truncate font-display text-ivory">{previewTitle}</b>
               <span className="shrink-0">{gameMode === 'auction' ? `פריט 01 מתוך ${lotNo(Math.max(filledCount, 1))}` : clientName || ''}</span>
             </div>
-            <p className={`m-0 font-display text-[clamp(18px,6.5cqw,36px)] font-black leading-[1.05] [text-wrap:balance] ${gameMode === 'auction' && !firstTitle ? 'font-bold text-ivory-mute' : 'text-ivory'}`}>
+            <p className={`m-0 font-display text-[30px] font-black leading-[1.05] [text-wrap:balance] ${gameMode === 'auction' && !firstTitle ? 'font-bold text-ivory-mute' : 'text-ivory'}`}>
               {gameMode === 'auction' ? (firstTitle || 'הפריט הראשון יופיע כאן') : 'המכירה פתוחה'}
             </p>
             <div className="flex items-end justify-between gap-3">
               {gameMode === 'auction' ? (
                 <>
-                  <span className="num font-display text-[clamp(28px,11cqw,60px)] leading-[.85] text-vermilion">0</span>
-                  <span className="text-[clamp(10px,2.6cqw,14px)] text-ivory-dim">{UNIT_LABEL} · ההצעה הגבוהה</span>
+                  <span className="num font-display text-[56px] leading-[.85] text-vermilion">0</span>
+                  <span className="text-[13px] text-ivory-dim">{UNIT_LABEL} · ההצעה הגבוהה</span>
                 </>
               ) : (
                 <>
-                  <span className="text-[clamp(10px,2.6cqw,14px)] text-ivory-dim"><span className="num">{fmt(coins)}</span> {UNIT_LABEL} לכל אחד, {filledCount} {filledCount === 1 ? 'פריט' : 'פריטים'}</span>
-                  <span className="num font-display text-[clamp(22px,8cqw,44px)] leading-[.85] text-vermilion">0</span>
+                  <span className="text-[13px] text-ivory-dim"><span className="num">{fmt(coins)}</span> {UNIT_LABEL} לכל אחד, {filledCount} {filledCount === 1 ? 'פריט' : 'פריטים'}</span>
+                  <span className="num font-display text-[44px] leading-[.85] text-vermilion">0</span>
                 </>
               )}
             </div>

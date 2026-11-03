@@ -54,7 +54,6 @@ body {
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-button, input, select, textarea { font: inherit; color: inherit; }
 ::selection { background: var(--color-vermilion); color: var(--color-velvet-0); }
 :focus-visible { outline: 3px solid var(--color-vermilion); outline-offset: 3px; border-radius: 6px; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -92,8 +91,8 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 }
 
 /* ── digit roller (NumberRoller) ───────────────────────── */
-.roller { display: inline-flex; direction: ltr; line-height: 1; font-variant-numeric: tabular-nums lining-nums; overflow: hidden; vertical-align: bottom; unicode-bidi: isolate; }
-.roller .d { display: inline-block; height: 1em; overflow: hidden; position: relative; }
+.roller { display: inline-flex; flex-shrink: 0; direction: ltr; line-height: 1; font-variant-numeric: tabular-nums lining-nums; overflow: hidden; vertical-align: bottom; unicode-bidi: isolate; }
+.roller .d { display: inline-block; flex: none; height: 1em; overflow: hidden; position: relative; }
 .roller .strip { display: flex; flex-direction: column; transition: transform .7s var(--ease-out-expo); will-change: transform; }
 .roller .strip span, .roller .sep { height: 1em; line-height: 1; display: block; }
 .roller .sep { display: inline-block; }

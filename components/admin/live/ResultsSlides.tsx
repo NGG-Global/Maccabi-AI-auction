@@ -34,7 +34,7 @@ export function WinnersBoard({ results, replayKey = 0 }: WinnersProps) {
             style={{ animationDelay: `${i * 90}ms` }}
           >
             <div className="flex h-32 shrink-0 flex-col justify-between bg-velvet-2 px-[22px] pb-[14px] pt-3 text-ivory">
-              <span className="num text-[24px] tracking-[.06em] text-ivory-mute">{lotNo(i + 1)}</span>
+              <span className="num self-start text-[24px] tracking-[.06em] text-ivory-mute">{lotNo(i + 1)}</span>
               <span className="font-display text-[38px] font-bold leading-[1.06]">{r.traitTitle}</span>
             </div>
             <div className="h-2 shrink-0 bg-vermilion" />
@@ -164,10 +164,10 @@ function ValuesReveal({ ranked }: { ranked: AllocationTraitResult[] }) {
               i % 2 === 0 ? 'bg-[rgba(255,255,255,.035)]' : ''
             } ${stage.rows > i ? 'opacity-100' : 'translate-y-2.5 opacity-0'}`}
           >
-            <span className="num px-6 text-ivory-mute" role="cell">{i + 4}</span>
+            <span className="px-6 text-ivory-mute" role="cell"><span className="num">{i + 4}</span></span>
             <span className="truncate px-6 font-semibold text-ivory" role="cell">{item.traitTitle}</span>
-            <span className="num px-6 text-ivory" role="cell">{fmt(item.totalAllocated)}</span>
-            <span className="num px-6 text-ivory" role="cell">{item.supporterCount}</span>
+            <span className="px-6 text-ivory" role="cell"><span className="num">{fmt(item.totalAllocated)}</span></span>
+            <span className="px-6 text-ivory" role="cell"><span className="num">{item.supporterCount}</span></span>
           </div>
         ))}
       </div>

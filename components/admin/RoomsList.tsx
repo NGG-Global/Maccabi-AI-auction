@@ -109,7 +109,7 @@ export default function RoomsList({ rooms }: { rooms: RoomListItem[] }) {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex gap-[3px] rounded-[12px] border border-velvet-3 bg-velvet-1 p-[3px]" role="radiogroup" aria-label="סינון לפי מצב">
+        <div className="flex max-w-full gap-[3px] overflow-x-auto rounded-[12px] border border-velvet-3 bg-velvet-1 p-[3px]" role="radiogroup" aria-label="סינון לפי מצב">
           {FILTERS.map(([key, label]) => (
             <button
               key={key}

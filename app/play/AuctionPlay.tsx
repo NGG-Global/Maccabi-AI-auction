@@ -282,7 +282,7 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
     <form onSubmit={handleBidSubmit} className="flex flex-col gap-3">
       <Stepper
         value={isNaN(amount) ? 0 : amount}
-        inputValue={bidInput === '' ? String(suggested) : bidInput}
+        inputValue={fmt(bidInput === '' ? suggested : amount)}
         onInput={raw => { setBidInput(raw); setBidSuccess(false) }}
         inputLabel="סכום ההצעה"
         onDown={() => setBidInput(String(Math.max(minAmount, amount - AUCTION_STEP)))}

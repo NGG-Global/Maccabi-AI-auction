@@ -58,7 +58,7 @@ export default function Stepper({
               value={inputValue}
               onChange={e => onInput(e.target.value.replace(/[^\d]/g, ''))}
               aria-label={inputLabel}
-              className={`num w-[6ch] bg-transparent text-center outline-none focus-visible:outline-none focus-visible:underline focus-visible:decoration-vermilion focus-visible:decoration-4 ${size === 'lg' ? 'text-[44px]' : 'text-[24px]'} leading-none`}
+              className={`num w-[6ch] bg-transparent text-center outline-none focus-visible:outline-none focus-visible:underline focus-visible:decoration-vermilion focus-visible:decoration-4 ${size === 'lg' ? 'h-14 text-[44px]' : 'h-[52px] text-[24px]'} leading-none`}
             />
           ) : (
             <b className={`num ${size === 'lg' ? 'text-[44px]' : 'text-[24px]'} leading-none`}>{value.toLocaleString('en-US')}</b>

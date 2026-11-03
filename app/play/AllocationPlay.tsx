@@ -322,7 +322,7 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
                   size="sm"
                   coin={false}
                   value={amount}
-                  inputValue={raw}
+                  inputValue={raw ? fmt(amount) : ''}
                   onInput={v => setAmount(r.id, v)}
                   inputLabel={`${UNIT_LABEL} עבור ${title}`}
                   onDown={() => step(r.id, -STEP)}

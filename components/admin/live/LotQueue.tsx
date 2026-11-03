@@ -28,7 +28,7 @@ export default function LotQueue({ lots, action }: Props) {
                 live ? 'border-ivory bg-ivory' : 'border-velvet-3 bg-velvet-2'
               }`}
             >
-              <span className={`num text-[24px] ${live ? 'text-velvet-0' : 'text-ivory-mute'}`}>{lotNo(i + 1)}</span>
+              <span className={`num self-start text-[24px] ${live ? 'text-velvet-0' : 'text-ivory-mute'}`}>{lotNo(i + 1)}</span>
               <span className={`truncate text-[19px] font-semibold ${live ? 'text-velvet-0' : 'text-ivory-dim'}`}>{lot.title}</span>
               {lot.state === 'sold' && (
                 <span className="absolute left-3 top-2.5">
