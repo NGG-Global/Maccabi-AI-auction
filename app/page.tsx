@@ -4,7 +4,7 @@ import CoinIcon from '@/components/evening/CoinIcon'
 // Participants arrive through the QR code (/join?room=<slug>); staff through /admin.
 export default function Home() {
   return (
-    <main className="stage-atmos flex min-h-screen items-center justify-center px-4">
+    <main className="stage-atmos relative flex min-h-screen items-center justify-center px-4">
       <div className="ev-rise flex w-full max-w-sm flex-col items-center gap-5 rounded-[22px] border border-velvet-3 bg-velvet-2 p-8 text-center">
         <CoinIcon size={48} />
         <h1 className="m-0 font-display text-[40px] font-black leading-none text-ivory">ערב מכירה</h1>

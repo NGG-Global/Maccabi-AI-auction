@@ -9,6 +9,7 @@ import JoinShare from '@/components/admin/JoinShare'
 import ResetControl from '@/components/admin/ResetControl'
 import LiveWindowBadge from './LiveWindowBadge'
 import LiveFrame, { DrawerSection, type LiveMessage } from './LiveFrame'
+import type { LiveShellProps } from './LiveWrapper'
 import StageMeta from './StageMeta'
 import StageButton, { StageConfirm } from './StageButton'
 import LobbyScene from './LobbyScene'
@@ -18,7 +19,7 @@ import { Button } from '@/components/evening/ui'
 import { UNIT_LABEL, fmt } from '@/components/evening/units'
 import { summarizeAllocation, sortRoundsByTrait, type AllocationBidRow } from '@/lib/game/allocation'
 
-interface Props {
+interface Props extends LiveShellProps {
   room: Room
   traits: Trait[]
 }
@@ -38,7 +39,7 @@ type Slide = 'winners' | 'values'
  * amounts; the per-trait results are revealed when it closes, on two
  * slides: "הזוכים" and "מה הקבוצה מעריכה".
  */
-export default function AllocationDashboard({ room, traits }: Props) {
+export default function AllocationDashboard({ room, traits, drawerOpen, onDrawerClose }: Props) {
   const supabase = useMemo(() => createClient(), [])
   const [rounds, setRounds] = useState<AuctionRound[]>([])
   const [bids, setBids] = useState<BidRow[]>([])
@@ -240,7 +241,7 @@ export default function AllocationDashboard({ room, traits }: Props) {
   )
 
   return (
-    <LiveFrame drawer={drawer} message={message} busy={loading}>
+    <LiveFrame drawer={drawer} drawerOpen={drawerOpen} onDrawerClose={onDrawerClose} message={message} busy={loading}>
       <div className="flex h-full flex-col px-24 pb-14 pt-16">
         <StageMeta
           room={room}

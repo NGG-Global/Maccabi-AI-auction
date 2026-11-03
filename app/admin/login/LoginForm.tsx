@@ -31,7 +31,7 @@ export default function LoginForm({ next }: { next: string }) {
   }
 
   return (
-    <main className="stage-atmos flex min-h-screen items-center justify-center px-4" dir="rtl">
+    <main className="stage-atmos relative flex min-h-screen items-center justify-center px-4" dir="rtl">
       <div className="ev-rise w-full max-w-sm rounded-[22px] border border-velvet-3 bg-velvet-2 p-8">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <CoinIcon size={44} />

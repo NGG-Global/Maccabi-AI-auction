@@ -15,6 +15,12 @@ interface Props {
   initialRound: AuctionRound | null
 }
 
+/** What the two dashboards receive from the shell. */
+export interface LiveShellProps {
+  drawerOpen: boolean
+  onDrawerClose: () => void
+}
+
 type TabId = 'controls' | 'analytics'
 
 function TabButton({ id, label, active, onClick }: { id: TabId; label: string; active: boolean; onClick: (id: TabId) => void }) {
@@ -40,6 +46,8 @@ export default function LiveWrapper({ room, traits, initialRound }: Props) {
   // mounted the first time the facilitator opens it and stays mounted after.
   const [analyticsMounted, setAnalyticsMounted] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const closeDrawer = useCallback(() => setDrawerOpen(false), [])
   const gameMode = room.game_mode
 
   function selectTab(id: TabId) {
@@ -59,7 +67,7 @@ export default function LiveWrapper({ room, traits, initialRound }: Props) {
   }, [])
 
   return (
-    <div className="flex h-screen flex-col bg-velvet-0" dir="rtl">
+    <div className="flex h-dvh flex-col overflow-hidden bg-velvet-0" dir="rtl">
       <nav className="flex h-11 shrink-0 items-center gap-2 border-b border-velvet-3 bg-velvet-0 px-3" aria-label="מסך המנחה">
         <span className="ml-2 font-display text-[18px] font-black text-ivory">ערב מכירה</span>
         <div className="flex gap-1 rounded-full border border-velvet-3 bg-velvet-1 p-0.5" role="tablist">
@@ -67,6 +75,17 @@ export default function LiveWrapper({ room, traits, initialRound }: Props) {
           <TabButton id="analytics" label="תמונת מצב" active={activeTab === 'analytics'} onClick={selectTab} />
         </div>
         <span className="mr-auto truncate px-2 text-[13px] text-ivory-mute">{room.title}</span>
+        {activeTab === 'controls' && (
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(o => !o)}
+            aria-expanded={drawerOpen}
+            aria-controls="facilitator-drawer"
+            className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${drawerOpen ? 'border-ivory bg-ivory text-velvet-0' : 'border-velvet-3 text-ivory-dim hover:text-ivory'}`}
+          >
+            בקרת המנחה
+          </button>
+        )}
         <button type="button" onClick={toggleFullscreen} className="rounded-full border border-velvet-3 px-3 py-1 text-[13px] font-semibold text-ivory-dim hover:text-ivory">
           {fullscreen ? 'יציאה ממסך מלא' : 'מסך מלא'}
         </button>
@@ -76,9 +95,9 @@ export default function LiveWrapper({ room, traits, initialRound }: Props) {
 
       <div className={activeTab === 'controls' ? 'contents' : 'hidden'}>
         {gameMode === 'allocation' ? (
-          <AllocationDashboard room={room} traits={traits} />
+          <AllocationDashboard room={room} traits={traits} drawerOpen={drawerOpen} onDrawerClose={closeDrawer} />
         ) : (
-          <AuctionDashboard room={room} traits={traits} initialRound={initialRound} />
+          <AuctionDashboard room={room} traits={traits} initialRound={initialRound} drawerOpen={drawerOpen} onDrawerClose={closeDrawer} />
         )}
       </div>
       <div className={activeTab === 'analytics' ? 'contents' : 'hidden'}>

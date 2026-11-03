@@ -11,6 +11,7 @@ import JoinShare from '@/components/admin/JoinShare'
 import ResetControl from '@/components/admin/ResetControl'
 import LiveWindowBadge from './LiveWindowBadge'
 import LiveFrame, { DrawerSection, type LiveMessage } from './LiveFrame'
+import type { LiveShellProps } from './LiveWrapper'
 import StageMeta from './StageMeta'
 import StageButton, { StageConfirm } from './StageButton'
 import LobbyScene from './LobbyScene'
@@ -26,7 +27,7 @@ import { Button } from '@/components/evening/ui'
 import { UNIT_LABEL, fmt } from '@/components/evening/units'
 import { useReducedMotion } from '@/components/evening/useReducedMotion'
 
-interface Props {
+interface Props extends LiveShellProps {
   room: Room
   traits: Trait[]
   initialRound: AuctionRound | null
@@ -43,7 +44,7 @@ interface WallPerson { id: string; name: string; up: boolean }
 /** The closing moment: two cues, the strike, then the sold state. */
 type Closing = null | 'cue1' | 'cue2' | 'strike' | 'sold'
 
-export default function AuctionDashboard({ room, traits, initialRound }: Props) {
+export default function AuctionDashboard({ room, traits, initialRound, drawerOpen, onDrawerClose }: Props) {
   const [currentRound, setCurrentRound] = useState<AuctionRound | null>(initialRound)
   const [bids, setBids] = useState<BidRow[]>([])
   const [people, setPeople] = useState<WallPerson[]>([])
@@ -320,7 +321,7 @@ export default function AuctionDashboard({ room, traits, initialRound }: Props) 
   )
 
   return (
-    <LiveFrame drawer={drawer} message={message} busy={loading}>
+    <LiveFrame drawer={drawer} drawerOpen={drawerOpen} onDrawerClose={onDrawerClose} message={message} busy={loading}>
       <div className="flex h-full flex-col px-24 pb-14 pt-16">
         <StageMeta room={room} live={isOpen} note={<><span className="num">{people.length}</span> משתתפים</>} />
 
