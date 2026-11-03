@@ -4,7 +4,7 @@
 
 Live real-time auction game for in-person leadership workshops (~100 participants per room).
 
-A multi-room platform (migration 010): NGG staff sign in at `/admin`, create **rooms** (`auction.rooms`: title, client, logo, game mode, starting coins, statements) and run each room as a separate live event with its own projected screen at `/admin/rooms/[id]/live` and its own join QR (`/join?room=<slug>`).
+A multi-room platform (migration 010): NGG staff sign in at `/admin`, create **rooms** (`auction.rooms`: title, client, logo, game mode, starting coins, step per click `bid_step`, statements) and run each room as a separate live event with its own projected screen at `/admin/rooms/[id]/live` and its own join QR (`/join?room=<slug>`).
 
 Two interfaces:
 1. Participant — mobile phone, Hebrew RTL
@@ -12,7 +12,7 @@ Two interfaces:
 
 Core rule: Every participant starts with the room's `starting_coins`. Each round auctions one leadership statement (trait). Participants bid or raise while open. When the facilitator closes a round, only the winner pays their bid; everyone else keeps their coins. Highest bid wins; a tie goes to whoever reached that amount first (earliest `updated_at`).
 
-Rooms: a room is **live** while `status = 'active'` and `active_until > now()` (12 hours from the last activation; `set_room_status`). Participants can join and bid only while live. Game-shaping settings (mode, coins, round length, slug, statements) are **locked** while the room has participants or rounds; `reset_room` unlocks them. Rooms that hosted a game are archived, never deleted.
+Rooms: a room is **live** while `status = 'active'` and `active_until > now()` (12 hours from the last activation; `set_room_status`). Participants can join and bid only while live. Game-shaping settings (mode, coins, step per click, round length, slug, statements) are **locked** while the room has participants or rounds; `reset_room` unlocks them. Rooms that hosted a game are archived, never deleted.
 
 Staff auth: `@nggconsult.com` e-mail + `NGG_STAFF_PASSWORD`, signed cookie (`lib/auth`), gated by `proxy.ts` and again in every handler. Rate-limited per IP via `auction.staff_login_attempts`.
 
@@ -93,7 +93,7 @@ lib/
   participant-session.ts   # per-room localStorage on the phone
   types.ts                 # shared DB types
 proxy.ts                   # gate for /admin and /api/admin
-supabase/migrations/       # numbered SQL migration files (010 = rooms)
+supabase/migrations/       # numbered SQL migration files (010 = rooms, 013 = bid_step)
 supabase/seed.sql
 scripts/create-logo-bucket.mjs
 scripts/test-db/           # local Postgres bootstrap for the integration tests

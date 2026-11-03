@@ -1,26 +1,34 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import RoomBrand from '@/components/shared/RoomBrand'
-import type { PublicRoom } from '@/lib/types'
+import { Notice } from '@/components/evening/ui'
 
 // Pieces shared by the auction and allocation participant screens.
 
+/** The phone frame: one column, max 430px, wallet bar on top, content, a sticky footer. */
+export function PhoneShell({ children, footer }: { children: React.ReactNode; footer?: React.ReactNode }) {
+  return (
+    <main className="flex min-h-screen flex-col bg-velvet-1" dir="rtl">
+      <div className="mx-auto flex w-full max-w-[430px] flex-1 flex-col">
+        <div className={`flex flex-1 flex-col gap-4 px-[14px] pt-4 ${footer ? 'pb-[220px]' : 'pb-8'}`}>{children}</div>
+      </div>
+      {footer && (
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-velvet-3 bg-velvet-1 pb-[max(22px,env(safe-area-inset-bottom))] pt-[14px]">
+          <div className="mx-auto flex w-full max-w-[430px] flex-col gap-3 px-[18px]">{footer}</div>
+        </div>
+      )}
+    </main>
+  )
+}
+
 export function PlaySkeleton() {
   return (
-    <main className="min-h-screen bg-slate-950 flex flex-col" dir="rtl">
-      <header className="bg-slate-900 border-b border-white/10 px-5 py-4 flex items-center justify-between">
-        <div className="flex flex-col gap-2">
-          <div className="skeleton h-3 w-10 rounded" />
-          <div className="skeleton h-5 w-28 rounded" />
-        </div>
-        <div className="skeleton h-12 w-24 rounded-2xl" />
-      </header>
-      <div className="flex-1 flex flex-col px-4 py-6 gap-4">
-        <div className="skeleton h-40 w-full rounded-3xl" />
-        <div className="skeleton h-24 w-full rounded-2xl" />
-        <div className="skeleton h-14 w-full rounded-2xl" />
+    <main className="flex min-h-screen flex-col bg-velvet-1" dir="rtl" aria-busy="true" aria-label="טוען">
+      <div className="mx-auto flex w-full max-w-[430px] flex-1 flex-col gap-4 px-[14px] pt-4">
+        <div className="skeleton h-[88px] w-full rounded-[18px]" />
+        <div className="skeleton h-40 w-full rounded-[22px]" />
+        <div className="skeleton h-20 w-full rounded-[14px]" />
+        <div className="skeleton mt-auto mb-6 h-[66px] w-full rounded-[18px]" />
       </div>
     </main>
   )
@@ -28,57 +36,33 @@ export function PlaySkeleton() {
 
 export function PlayError({ message }: { message: string }) {
   return (
-    <main className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-      <div className="glass rounded-3xl p-8 text-center max-w-sm animate-scale-in">
-        <p className="text-4xl mb-4">⚠️</p>
-        <p className="text-red-400 text-lg font-semibold">{message}</p>
-        <Link href="/" className="block mt-4 text-amber-400 underline text-sm">חזרה לדף הכניסה</Link>
+    <main className="flex min-h-screen items-center justify-center bg-velvet-1 px-4" dir="rtl">
+      <div className="ev-rise flex w-full max-w-sm flex-col gap-4 rounded-[22px] border border-velvet-3 bg-velvet-2 p-6 text-center">
+        <p className="m-0 font-display text-[28px] font-black leading-tight text-ivory">משהו השתבש</p>
+        <Notice tone="error">{message}</Notice>
+        <Link href="/" className="text-[15px] font-semibold text-ivory-dim underline decoration-velvet-4 underline-offset-4 hover:text-ivory">
+          חזרה לדף הכניסה
+        </Link>
       </div>
     </main>
   )
 }
 
-/** Room branding + name + wallet bar; the balance flashes when it changes (e.g. when a round closes). */
-export function WalletHeader({ room, name, balance }: { room: PublicRoom; name: string; balance: number }) {
-  const prevBalanceRef = useRef<number | null>(null)
-  const [walletFlash, setWalletFlash] = useState(false)
-
-  useEffect(() => {
-    if (prevBalanceRef.current !== null && balance !== prevBalanceRef.current) {
-      setWalletFlash(true)
-      const t = setTimeout(() => setWalletFlash(false), 800)
-      prevBalanceRef.current = balance
-      return () => clearTimeout(t)
-    }
-    prevBalanceRef.current = balance
-  }, [balance])
-
-  return (
-    <header className="bg-slate-900 border-b border-white/10 px-5 py-3 flex flex-col gap-3">
-      <RoomBrand title={room.title} clientName={room.client_name} logoPath={room.logo_path} size="sm" />
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-slate-500 text-xs">שלום,</p>
-          <p className="text-white font-bold text-base">{name}</p>
-        </div>
-        <div className={`text-left rounded-2xl px-4 py-2 border transition-colors duration-300 ${
-          walletFlash
-            ? 'bg-amber-500/30 border-amber-400/60 animate-wallet-flash'
-            : 'bg-amber-500/10 border-amber-500/30'
-        }`}>
-          <p className="text-amber-500/70 text-xs">יתרה</p>
-          <p className="text-amber-400 text-2xl font-black tabular-nums">{balance.toLocaleString()} <span className="text-lg">🪙</span></p>
-        </div>
-      </div>
-    </header>
-  )
-}
-
 /** Shown on the phone when the room's live window is closed. */
 export function RoomPausedNotice() {
+  return <Notice tone="error">הסשן אינו פעיל כרגע. המתינו שהמנחה יפעיל אותו.</Notice>
+}
+
+/** A line of game rules, same language on the join screen and the waiting screens. */
+export function RulesList({ rules }: { rules: string[] }) {
   return (
-    <div className="bg-red-500/10 border border-red-500/30 rounded-2xl px-4 py-3 text-center">
-      <p className="text-red-300 text-sm font-semibold">החדר אינו פעיל כרגע. המתינו שהמנחה יפעיל אותו.</p>
-    </div>
+    <ol className="m-0 flex list-none flex-col gap-3 p-0">
+      {rules.map((text, i) => (
+        <li key={text} className="flex items-start gap-3 text-[16px] leading-relaxed text-ivory-dim">
+          <span aria-hidden="true" className="num mt-[2px] w-6 shrink-0 text-[18px] text-ivory-mute">{String(i + 1).padStart(2, '0')}</span>
+          <span>{text}</span>
+        </li>
+      ))}
+    </ol>
   )
 }

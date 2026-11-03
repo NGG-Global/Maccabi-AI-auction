@@ -53,6 +53,13 @@ export function parseRoomInput(body: unknown, opts: { requireTraits: boolean }):
     default_round_seconds = n
   }
 
+  // The step per click: at least 1 and at most half the budget. Missing = the mode's default.
+  const defaultStep = Math.min(game_mode === 'allocation' ? 50 : 10, Math.max(1, Math.floor(starting_coins / 2)))
+  const bid_step = b.bid_step === null || b.bid_step === undefined || b.bid_step === '' ? defaultStep : Number(b.bid_step)
+  if (!Number.isInteger(bid_step) || bid_step < 1 || bid_step * 2 > starting_coins) {
+    return { ok: false, error: 'הקפיצה בכל לחיצה חייבת להיות מספר שלם, לפחות 1 ולכל היותר חצי מהתקציב' }
+  }
+
   let traits: TraitInput[] | null = null
   if (b.traits !== null && b.traits !== undefined) {
     const parsed = parseTraits(b.traits)
@@ -62,5 +69,5 @@ export function parseRoomInput(body: unknown, opts: { requireTraits: boolean }):
     return { ok: false, error: 'יש להוסיף לפחות היגד אחד' }
   }
 
-  return { ok: true, value: { slug, title, client_name, game_mode, starting_coins, default_round_seconds, traits } }
+  return { ok: true, value: { slug, title, client_name, game_mode, starting_coins, default_round_seconds, bid_step, traits } }
 }

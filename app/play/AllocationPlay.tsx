@@ -11,8 +11,15 @@ import {
   parseAllocationInput,
   sortRoundsByTrait,
   isRoundWinner,
+  roundWinnerNames,
 } from '@/lib/game/allocation'
-import { PlaySkeleton, PlayError, WalletHeader } from './PlayShell'
+import { PlaySkeleton, PlayError, PhoneShell, RulesList } from './PlayShell'
+import WalletBar from '@/components/evening/WalletBar'
+import Stepper from '@/components/evening/Stepper'
+import CoinIcon from '@/components/evening/CoinIcon'
+import ParticipantMark from '@/components/evening/ParticipantMark'
+import { CTA, btnClass } from '@/components/evening/ui'
+import { UNIT_LABEL, defaultBidStep, fmt, lotNo } from '@/components/evening/units'
 
 interface Props {
   room: PublicRoom
@@ -22,12 +29,11 @@ interface Props {
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
-const STEP = 50
 const AUTOSAVE_DELAY_MS = 1200
 
 /**
  * Budget-allocation mode: every trait is open at once and the participant
- * splits their wallet across them. Changes auto-save (and can be saved on
+ * splits their wallet across them. Changes auto-save (and can be sent on
  * demand) until the facilitator closes the allocation. Participants see
  * only their own split; group results appear on the facilitator screen.
  */
@@ -41,6 +47,8 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [saveError, setSaveError] = useState<string | null>(null)
+  // After "שליחת ההצעות" the phone shows the sent screen until the next edit.
+  const [sentView, setSentView] = useState(false)
 
   const fetchSeqRef = useRef(0)
   const draftRef = useRef(draft)
@@ -50,6 +58,7 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
   const savingRef = useRef(false)
   const pendingSaveRef = useRef(false)
 
+  const STEP = room.bid_step ?? defaultBidStep('allocation', room.starting_coins)
   const openRounds = useMemo(() => rounds.filter(r => r.status === 'open'), [rounds])
   const phase: 'waiting' | 'open' | 'closed' =
     openRounds.length > 0 ? 'open' : rounds.length > 0 ? 'closed' : 'waiting'
@@ -78,7 +87,7 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
       supabase.from('participants').select('*').eq('id', participantId).eq('room_id', room.id).maybeSingle<Participant>(),
       supabase
         .from('auction_rounds')
-        .select(`*, ${EMBED.roundTrait}, ${EMBED.roundWinnerIds}`)
+        .select(`*, ${EMBED.roundTrait}, ${EMBED.roundWinners}`)
         .eq('room_id', room.id)
         .in('status', ['open', 'closed']),
     ])
@@ -89,7 +98,7 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
       return
     }
     if (!p) {
-      setLoadError('המשתתף לא נמצא (ייתכן שהחדר אופס). סרקו את קוד ה-QR והירשמו מחדש.')
+      setLoadError('המשתתף לא נמצא (ייתכן שהסשן אופס). סרקו את קוד ה־QR והירשמו מחדש.')
       setLoading(false)
       return
     }
@@ -122,7 +131,8 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
   }, [supabase, participantId, room.id])
 
   useEffect(() => {
-    fetchState()
+    // Deferred a tick so the first load never sets state inside the effect itself.
+    const first = setTimeout(() => fetchState(), 0)
 
     // Throttle: at most one refresh per 300 ms, and a burst cannot postpone it.
     let refreshTimer: ReturnType<typeof setTimeout> | null = null
@@ -142,16 +152,18 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
       .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'bids', filter: `participant_id=eq.${participantId}` }, scheduleRefresh)
       .subscribe()
     return () => {
+      clearTimeout(first)
       if (refreshTimer) clearTimeout(refreshTimer)
       supabase.removeChannel(channel)
     }
   }, [supabase, participantId, room.id, fetchState])
 
-  const save = useCallback(async () => {
+  const save = useCallback(async (): Promise<boolean> => {
     // A save requested while one is in flight runs right after it, with the
     // draft as it is then.
-    if (savingRef.current) { pendingSaveRef.current = true; return }
+    if (savingRef.current) { pendingSaveRef.current = true; return false }
     savingRef.current = true
+    let ok = false
     try {
       do {
         pendingSaveRef.current = false
@@ -159,7 +171,7 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
         // Every open trait is sent (empty = 0): a save replaces the whole split.
         const current: Record<string, string> = {}
         for (const id of openIdsRef.current) current[id] = draftRef.current[id] ?? ''
-        if (openIdsRef.current.length === 0 || !checkAllocationDraft(current, balanceRef.current).valid) return
+        if (openIdsRef.current.length === 0 || !checkAllocationDraft(current, balanceRef.current).valid) return false
 
         setSaveState('saving')
         setSaveError(null)
@@ -173,25 +185,27 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
           const data = await res.json().catch(() => ({}))
           if (!res.ok) {
             setSaveState('error')
-            setSaveError(data.error ?? 'שגיאה בשמירה')
+            setSaveError(data.error ?? 'שגיאה בשליחה')
             if (data.code === 'allocation_not_open') fetchState()
-            return
+            return false
           }
           setSaved(Object.fromEntries(Object.entries(payload).filter(([, v]) => v > 0)))
           setSaveState('saved')
+          ok = true
         } catch {
           setSaveState('error')
           setSaveError('שגיאת רשת. נסו שוב.')
-          return
+          return false
         }
       } while (pendingSaveRef.current)
     } finally {
       savingRef.current = false
     }
+    return ok
   }, [fetchState, sessionToken, room.id])
 
   // Auto-save shortly after the last change, so nobody loses their split
-  // because they forgot to press save before the facilitator closed it.
+  // because they forgot to press send before the facilitator closed it.
   useEffect(() => {
     if (phase !== 'open' || !dirty || !check.valid) return
     const t = setTimeout(save, AUTOSAVE_DELAY_MS)
@@ -200,6 +214,7 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
 
   function setAmount(roundId: string, value: string) {
     setDraft(prev => ({ ...prev, [roundId]: value }))
+    setSentView(false)
     if (saveState === 'error') setSaveState('idle')
   }
 
@@ -210,226 +225,213 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
     setAmount(roundId, next > 0 ? String(next) : '')
   }
 
+  async function send() {
+    const ok = await save()
+    if (ok) {
+      setSentView(true)
+      if (navigator.vibrate) navigator.vibrate(20)
+    }
+  }
+
   if (loading) return <PlaySkeleton />
   if (loadError || !participant) return <PlayError message={loadError ?? 'שגיאה לא צפויה'} />
 
   const totalSaved = Object.values(saved).reduce((s, v) => s + v, 0)
+  const usedCount = Object.values(saved).filter(v => v > 0).length
   const wonRounds = rounds.filter(r => r.status === 'closed' && isRoundWinner(r, participant.id))
-  const usedPct = balance > 0 ? Math.min(100, Math.round((check.total / balance) * 100)) : 0
+  const lostRounds = rounds.filter(r => r.status === 'closed' && !isRoundWinner(r, participant.id) && (saved[r.id] ?? 0) > 0)
+  const remainingLive = phase === 'open' ? Math.max(0, check.remaining) : balance
 
   const statusLine =
-    !check.valid ? null :
-    saveState === 'saving' ? <span className="text-slate-400">שומר…</span> :
-    saveState === 'error' ? <span className="text-red-400">{saveError}</span> :
-    dirty ? <span className="text-amber-400">שינויים ממתינים לשמירה</span> :
-    totalSaved > 0 || saveState === 'saved' ? <span className="text-green-400">✓ החלוקה נשמרה</span> :
-    <span className="text-slate-500">עוד לא חילקת מטבעות</span>
+    check.error ? <span className="text-error">{check.error}</span>
+    : saveState === 'saving' ? <span className="text-ivory-mute">שולחים…</span>
+    : saveState === 'error' ? <span className="text-error">{saveError}</span>
+    : dirty ? <span className="text-ember">השינויים יישלחו אוטומטית בעוד רגע</span>
+    : totalSaved > 0 ? <span className="text-ivory-mute">ההצעות נשמרו. אפשר לשנות עד הסגירה.</span>
+    : <span className="text-ivory-mute">מחלקים את התקציב בין הפריטים ושולחים.</span>
+
+  const footer = phase === 'open' && !sentView ? (
+    <>
+      <p className="m-0 min-h-[20px] text-center text-[14px]">{statusLine}</p>
+      <button
+        type="button"
+        onClick={send}
+        disabled={!check.valid || check.total === 0 || saveState === 'saving'}
+        className={CTA}
+      >
+        {saveState === 'saving' ? 'שולחים…' : check.total === 0 ? `חלקו לפחות ${fmt(STEP)}` : 'שליחת ההצעות'}
+      </button>
+    </>
+  ) : undefined
 
   return (
-    <main className="min-h-screen bg-slate-950 flex flex-col">
-      <WalletHeader room={room} name={participant.display_name} balance={participant.wallet_balance} />
+    <PhoneShell footer={footer}>
+      {phase === 'closed' ? (
+        <div className="flex items-center justify-between px-2 pt-2">
+          <span className="inline-flex items-center gap-2 text-[17px] font-semibold text-ivory">
+            <ParticipantMark name={participant.display_name} size={30} />
+            {participant.display_name}
+          </span>
+          <span className="text-[14px] text-ivory-mute">המכירה נסגרה</span>
+        </div>
+      ) : (
+        <WalletBar
+          remaining={remainingLive}
+          total={room.starting_coins}
+          unitLabel={UNIT_LABEL}
+          label="נשארו לך לחלק"
+          name={participant.display_name}
+        />
+      )}
 
-      <div className={`flex-1 flex flex-col px-4 py-6 gap-4 ${phase === 'open' ? 'pb-48' : ''}`}>
-
-        {/* Waiting */}
-        {phase === 'waiting' && (
-          <div className="flex-1 flex flex-col items-center justify-center gap-6 animate-fade-in">
-            <div className="text-7xl animate-float">🧩</div>
-            <div className="text-center">
-              <p className="text-white text-2xl font-black mb-2">ממתינים לפתיחת החלוקה</p>
-              <p className="text-slate-500">כל ההיגדים ייפתחו יחד</p>
-            </div>
-            <AllocationRules coins={room.starting_coins} />
+      {/* Waiting */}
+      {phase === 'waiting' && (
+        <div className="ev-fade flex flex-1 flex-col justify-center gap-6 py-6">
+          <div className="text-center">
+            <p className="m-0 font-display text-[36px] font-black leading-tight text-ivory">ממתינים לפתיחת המכירה</p>
+            <p className="mt-2 mb-0 text-[17px] text-ivory-dim">כל הפריטים ייפתחו יחד</p>
           </div>
-        )}
-
-        {/* Open */}
-        {phase === 'open' && (
-          <div className="flex flex-col gap-4 animate-slide-in-up">
-            <div className="bg-gradient-to-br from-blue-950 to-slate-900 rounded-3xl p-5 border border-blue-500/30">
-              <span className="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mb-2">
-                <span className="w-2 h-2 bg-blue-400 rounded-full animate-live-dot" />
-                החלוקה פתוחה
-              </span>
-              <h2 className="text-2xl font-black text-white mb-1">
-                חלקו {balance.toLocaleString()} מטבעות בין {openRounds.length} ההיגדים
-              </h2>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                השינויים נשמרים אוטומטית, ואפשר לשנות עד שהמנחה סוגר את החלוקה. ההקצאה הגבוהה ביותר בכל היגד זוכה בו, ובשוויון כל המובילים זוכים יחד.
-              </p>
-            </div>
-
-            {openRounds.map(r => {
-              const raw = draft[r.id] ?? ''
-              const amount = parseAllocationInput(raw)
-              const share = balance > 0 && amount ? Math.min(100, Math.round((amount / balance) * 100)) : 0
-              return (
-                <div key={r.id} className={`rounded-2xl p-4 border transition-colors ${
-                  amount ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-900 border-white/10'
-                }`}>
-                  <p className="text-white font-bold text-lg leading-snug">{r.trait?.title}</p>
-                  {r.trait?.description && (
-                    <p className="text-slate-500 text-xs leading-relaxed mt-1">{r.trait.description}</p>
-                  )}
-
-                  {/* Numbers read left-to-right, so the stepper is LTR inside the RTL page */}
-                  <div dir="ltr" className="flex items-center gap-2 mt-3">
-                    <button
-                      type="button"
-                      onClick={() => step(r.id, -STEP)}
-                      disabled={!amount}
-                      aria-label={`הורדת ${STEP} מטבעות`}
-                      className="w-12 h-12 rounded-xl bg-slate-800 text-white text-2xl font-black disabled:opacity-30 active:scale-95 transition-all shrink-0"
-                    >
-                      −
-                    </button>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={raw}
-                      onChange={e => setAmount(r.id, e.target.value.replace(/[^\d]/g, ''))}
-                      placeholder="0"
-                      aria-label={`מטבעות עבור ${r.trait?.title ?? ''}`}
-                      className="flex-1 min-w-0 h-12 bg-slate-800 border-2 border-slate-700 focus:border-amber-500 rounded-xl px-3 text-2xl font-black text-center text-white focus:outline-none transition-colors placeholder:text-slate-600 tabular-nums"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => step(r.id, STEP)}
-                      disabled={check.remaining <= 0}
-                      aria-label={`הוספת ${STEP} מטבעות`}
-                      className="w-12 h-12 rounded-xl bg-amber-500 text-slate-900 text-2xl font-black disabled:opacity-30 active:scale-95 transition-all shrink-0"
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mt-3">
-                    <div className="h-full bg-amber-500 rounded-full transition-all duration-300" style={{ width: `${share}%` }} />
-                  </div>
-                </div>
-              )
-            })}
-
-            <p className="text-center text-slate-500 text-xs leading-relaxed px-2">
-              בסגירת החלוקה כל המטבעות שהקצית יורדים מהיתרה — גם בהיגדים שלא זכית בהם. מטבעות שלא חולקו נשארים אצלך.
-            </p>
-          </div>
-        )}
-
-        {/* Closed */}
-        {phase === 'closed' && (
-          <div className="flex flex-col gap-4 animate-scale-in">
-            <div className={`rounded-3xl p-6 border-2 text-center ${
-              wonRounds.length > 0
-                ? 'bg-gradient-to-br from-amber-950 to-slate-900 border-amber-400/60 animate-pulse-gold'
-                : 'bg-slate-900 border-white/10'
-            }`}>
-              <p className="text-5xl mb-3">{wonRounds.length > 0 ? '🏆' : '🧩'}</p>
-              <p className={`text-2xl font-black mb-1 ${wonRounds.length > 0 ? 'text-amber-400' : 'text-white'}`}>
-                {wonRounds.length > 0
-                  ? `זכית ב-${wonRounds.length} ${wonRounds.length === 1 ? 'היגד' : 'היגדים'}!`
-                  : 'החלוקה נסגרה'}
-              </p>
-              <p className="text-slate-400 text-sm">
-                {totalSaved > 0
-                  ? <>הקצית <span className="text-white font-bold">{totalSaved.toLocaleString()} 🪙</span> בסך הכל</>
-                  : 'לא הקצית מטבעות בחלוקה זו'}
-              </p>
-            </div>
-
-            {totalSaved > 0 && (
-              <div className="glass rounded-2xl overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-white/10">
-                  <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">החלוקה שלך</span>
-                </div>
-                {rounds.map(r => {
-                  const mine = saved[r.id] ?? 0
-                  const won = isRoundWinner(r, participant.id)
-                  const shared = won && (r.winners?.length ?? 0) > 1
-                  return (
-                    <div key={r.id} className={`flex items-center gap-3 px-4 py-3 border-b border-white/5 ${won ? 'bg-amber-500/10' : ''}`}>
-                      <div className="flex-1 min-w-0">
-                        <p className={`font-bold truncate ${won ? 'text-amber-300' : mine ? 'text-white' : 'text-slate-500'}`}>
-                          {won && '🏆 '}{r.trait?.title}
-                        </p>
-                        {shared && (
-                          <p className="text-amber-400/80 text-xs">🤝 זכייה משותפת עם עוד {(r.winners?.length ?? 1) - 1}</p>
-                        )}
-                        {!won && r.winning_bid_amount !== null && (
-                          <p className="text-slate-500 text-xs">ההקצאה הזוכה: {r.winning_bid_amount.toLocaleString()} 🪙</p>
-                        )}
-                      </div>
-                      <span className={`font-black tabular-nums shrink-0 ${won ? 'text-amber-400' : mine ? 'text-slate-200' : 'text-slate-600'}`}>
-                        {mine.toLocaleString()} 🪙
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            <p className="text-center text-slate-600 text-xs">
-              <a href={`/profile?room=${encodeURIComponent(room.slug)}`} className="underline hover:text-slate-400 transition-colors">צפה בפרופיל שלך</a>
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Sticky budget bar while the allocation is open */}
-      {phase === 'open' && (
-        <div className="fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur border-t border-white/10 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="max-w-md mx-auto flex flex-col gap-2">
-            <div className="flex items-baseline justify-between text-sm">
-              <span className="text-slate-300">
-                חולקו <span className="text-white font-black tabular-nums">{check.total.toLocaleString()}</span> מתוך {balance.toLocaleString()}
-              </span>
-              <span className={`font-bold tabular-nums ${check.remaining < 0 ? 'text-red-400' : 'text-amber-400'}`}>
-                {check.remaining < 0 ? 'חריגה' : `נותרו ${check.remaining.toLocaleString()}`}
-              </span>
-            </div>
-            <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-300 ${check.valid ? 'bg-amber-500' : 'bg-red-500'}`}
-                style={{ width: `${check.valid ? usedPct : 100}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs min-h-4">
-                {check.error ? <span className="text-red-400">{check.error}</span> : statusLine}
-              </p>
-              <button
-                type="button"
-                onClick={save}
-                disabled={!dirty || !check.valid || saveState === 'saving'}
-                className="bg-amber-500 hover:bg-amber-400 disabled:opacity-30 text-slate-900 rounded-xl px-5 py-2.5 text-sm font-black transition-all active:scale-95 shrink-0"
-              >
-                {saveState === 'saving' ? '...' : 'שמירה'}
-              </button>
-            </div>
+          <div className="rounded-[22px] border border-velvet-3 bg-velvet-2 px-5 py-5">
+            <RulesList rules={[
+              `לכל משתתף ${fmt(room.starting_coins)} ${UNIT_LABEL}.`,
+              'כל הפריטים פתוחים יחד. מחלקים את התקציב ביניהם.',
+              'אפשר לשנות את ההצעות עד שהמנחה סוגר את המכירה.',
+              'ההקצאה הגבוהה בכל פריט זוכה בו. בשוויון כל המובילים זוכים יחד.',
+            ]} />
           </div>
         </div>
       )}
-    </main>
-  )
-}
 
-function AllocationRules({ coins }: { coins: number }) {
-  return (
-    <div className="glass rounded-3xl p-5 w-full max-w-sm">
-      <div className="flex flex-col gap-3">
-        {[
-          { icon: '🪙', text: `לכל משתתף ${coins.toLocaleString()} מטבעות` },
-          { icon: '🧩', text: 'כל ההיגדים פתוחים יחד — מחלקים את המטבעות ביניהם' },
-          { icon: '✏️', text: 'אפשר לשנות את החלוקה עד שהמנחה סוגר אותה' },
-          { icon: '🏆', text: 'ההקצאה הגבוהה ביותר בכל היגד זוכה בו; בשוויון כל המובילים זוכים יחד' },
-        ].map(r => (
-          <div key={r.icon} className="flex items-start gap-3">
-            <span className="text-xl shrink-0">{r.icon}</span>
-            <p className="text-slate-300 text-sm leading-relaxed">{r.text}</p>
-          </div>
-        ))}
-      </div>
-    </div>
+      {/* Open: the list of lots with steppers */}
+      {phase === 'open' && !sentView && (
+        <div className="ev-rise flex flex-col gap-2">
+          {openRounds.map((r, i) => {
+            const raw = draft[r.id] ?? ''
+            const amount = parseAllocationInput(raw) ?? 0
+            const has = amount > 0
+            const title = r.trait?.title ?? ''
+            return (
+              <div
+                key={r.id}
+                className={`flex items-center gap-[10px] rounded-[16px] border px-3 py-[10px] transition-[border-color,background] duration-300 ${
+                  has ? 'border-[rgba(255,90,54,.5)] bg-[#2a1a1d]' : 'border-velvet-3 bg-velvet-2'
+                }`}
+              >
+                <span aria-hidden="true" className="num w-[26px] shrink-0 text-[17px] text-ivory-mute">{lotNo(i + 1)}</span>
+                <span className="min-w-0 flex-1 text-[19px] font-semibold leading-[1.2] text-ivory">{title}</span>
+                <Stepper
+                  size="sm"
+                  coin={false}
+                  value={amount}
+                  inputValue={raw ? fmt(amount) : ''}
+                  onInput={v => setAmount(r.id, v)}
+                  inputLabel={`${UNIT_LABEL} עבור ${title}`}
+                  onDown={() => step(r.id, -STEP)}
+                  onUp={() => step(r.id, STEP)}
+                  downDisabled={!has}
+                  upDisabled={check.remaining < STEP}
+                  downLabel={`הורדת ${fmt(STEP)} ${UNIT_LABEL} מ${title}`}
+                  upLabel={`הוספת ${fmt(STEP)} ${UNIT_LABEL} ל${title}`}
+                  className="w-[190px] shrink-0"
+                />
+              </div>
+            )
+          })}
+          <p className="m-0 px-2 pt-2 text-center text-[14px] leading-relaxed text-ivory-mute">
+            בסגירה כל מה שהקציתם יורד מהיתרה, גם בפריטים שלא זכיתם בהם. מה שלא חולק נשאר אצלכם.
+          </p>
+        </div>
+      )}
+
+      {/* Open: sent */}
+      {phase === 'open' && sentView && (
+        <div className="ev-fade flex flex-1 flex-col items-center justify-center gap-0 px-6 py-6 text-center">
+          <span className="ev-raise relative inline-block" aria-hidden="true">
+            <CoinIcon stack size={132} className="drop-shadow-[0_14px_24px_rgba(0,0,0,.5)]" />
+            <span className="absolute -bottom-1 -left-1.5 flex h-12 w-12 items-center justify-center rounded-full bg-vermilion text-velvet-0 shadow-[0_0_0_5px_var(--color-velvet-1)]">
+              <svg viewBox="0 0 24 24" fill="none" className="h-[26px] w-[26px]"><path d="M6 12.5l4 4 8-9" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </span>
+          </span>
+          <h4 className="mt-8 mb-2 font-display text-[40px] font-black leading-none text-ivory">ההצעות נשלחו</h4>
+          <p className="m-0 text-[20px] leading-[1.45] text-ivory-dim">
+            חילקת <span className="num">{fmt(totalSaved)}</span> בין {usedCount} {usedCount === 1 ? 'פריט' : 'פריטים'}.
+          </p>
+          <p className="mt-[14px] mb-0 text-[15px] text-ivory-mute">התוצאה תופיע כאן כשהמנחה תסגור את המכירה.</p>
+          <button type="button" onClick={() => setSentView(false)} className={btnClass('secondary', 'md', 'mt-8 h-14 px-8 text-[17px]')}>
+            שינוי ההצעות
+          </button>
+        </div>
+      )}
+
+      {/* Closed: the personal result */}
+      {phase === 'closed' && (
+        <div className="ev-rise flex flex-1 flex-col gap-[14px]">
+          <h2 className="m-0 mx-1 font-display text-[40px] font-black leading-[1.05] text-ivory">
+            {wonRounds.length > 0
+              ? <>זכית ב־<span className="num">{wonRounds.length}</span> {wonRounds.length === 1 ? 'פריט' : 'פריטים'}</>
+              : 'המכירה נסגרה'}
+          </h2>
+
+          {wonRounds.length > 0 ? (
+            <div className="flex flex-col gap-[14px] py-1">
+              {wonRounds.map(r => {
+                const others = roundWinnerNames(r).filter(n => n !== participant.display_name)
+                const idx = rounds.findIndex(x => x.id === r.id) + 1
+                return (
+                  <div key={r.id} className="overflow-hidden rounded-[18px] bg-paper text-ink-paper shadow-[var(--shadow-plate)]">
+                    <div className="flex items-center justify-between bg-velvet-2 px-[18px] py-[14px] text-ivory">
+                      <b className="font-display text-[26px] font-black leading-tight">{r.trait?.title}</b>
+                      <span className="font-display text-[18px] font-black text-ivory-mute">פריט {lotNo(idx)}</span>
+                    </div>
+                    <div className="h-[5px] bg-vermilion" />
+                    <div className="flex items-center justify-between px-[18px] pb-4 pt-3 text-[17px] text-ink-soft">
+                      <span>{others.length > 0 ? `זכייה משותפת עם ${others.join(', ')}` : 'ההקצאה שלך'}</span>
+                      <b className="num text-[30px] text-ink-paper">{fmt(saved[r.id] ?? r.winning_bid_amount ?? 0)}</b>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="m-0 mx-1 text-[19px] leading-[1.45] text-ivory-dim">
+              {totalSaved > 0
+                ? 'הפעם ההקצאות שלך לא היו הגבוהות ביותר. המטבעות שהקצית ירדו מהיתרה.'
+                : 'לא הקצית מטבעות במכירה הזאת, והיתרה נשארה מלאה.'}
+            </p>
+          )}
+
+          {lostRounds.length > 0 && (
+            <details className="mx-1 text-[15px] text-ivory-mute">
+              <summary className="cursor-pointer select-none py-1">הצעות שלא זכו ({lostRounds.length})</summary>
+              <ul className="m-0 mt-2 flex list-none flex-col gap-1.5 p-0">
+                {lostRounds.map(r => (
+                  <li key={r.id} className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 flex-1 truncate text-ivory-dim">{r.trait?.title}</span>
+                    <span className="num shrink-0 text-[17px] text-ivory-dim">{fmt(saved[r.id] ?? 0)}</span>
+                    {r.winning_bid_amount !== null && (
+                      <span className="shrink-0 text-[13px]">הזוכה: <span className="num">{fmt(r.winning_bid_amount)}</span></span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+
+          <WalletBar
+            variant="light"
+            remaining={balance}
+            total={room.starting_coins}
+            unitLabel={UNIT_LABEL}
+            label="נשאר לך"
+            className="mt-auto"
+          />
+          <p className="m-0 text-center text-[14px]">
+            <a href={`/profile?room=${encodeURIComponent(room.slug)}`} className="text-ivory-mute underline decoration-velvet-4 underline-offset-4 transition-colors hover:text-ivory">
+              הפרופיל האישי שלכם
+            </a>
+          </p>
+        </div>
+      )}
+    </PhoneShell>
   )
 }

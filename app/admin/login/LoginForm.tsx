@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import CoinIcon from '@/components/evening/CoinIcon'
+import { ErrorText, FIELD, btnClass } from '@/components/evening/ui'
 
 export default function LoginForm({ next }: { next: string }) {
   const router = useRouter()
@@ -29,42 +31,43 @@ export default function LoginForm({ next }: { next: string }) {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-      <div className="glass rounded-3xl p-8 w-full max-w-sm animate-scale-in">
-        <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🔒</div>
-          <h1 className="text-2xl font-black text-white">כניסת צוות NGG</h1>
-          <p className="text-slate-500 text-sm mt-1">ניהול חדרי המכירה הפומבית</p>
+    <main className="stage-atmos flex min-h-screen items-center justify-center px-4" dir="rtl">
+      <div className="ev-rise w-full max-w-sm rounded-[22px] border border-velvet-3 bg-velvet-2 p-8">
+        <div className="mb-8 flex flex-col items-center gap-3 text-center">
+          <CoinIcon size={44} />
+          <h1 className="m-0 font-display text-[34px] font-black leading-none text-ivory">ערב מכירה</h1>
+          <p className="m-0 text-[15px] text-ivory-mute">כניסת צוות NGG לניהול הסשנים</p>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="name@nggconsult.com"
-            autoComplete="username"
-            dir="ltr"
-            required
-            disabled={loading}
-            className="w-full bg-slate-800 border-2 border-slate-700 focus:border-amber-500 rounded-2xl px-5 py-3.5 text-lg text-center text-white focus:outline-none transition-colors placeholder:text-slate-600 disabled:opacity-50"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="סיסמת הצוות"
-            autoComplete="current-password"
-            required
-            disabled={loading}
-            className="w-full bg-slate-800 border-2 border-slate-700 focus:border-amber-500 rounded-2xl px-5 py-3.5 text-lg text-center text-white focus:outline-none transition-colors placeholder:text-slate-600 disabled:opacity-50"
-          />
-          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading || !email || !password}
-            className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-30 text-slate-900 rounded-2xl py-3.5 text-lg font-black transition-all active:scale-95"
-          >
-            {loading ? 'נכנס...' : 'כניסה'}
+          <label className="flex flex-col gap-1.5 text-[14px] font-semibold text-ivory-dim">
+            דוא״ל
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="name@nggconsult.com"
+              autoComplete="username"
+              dir="ltr"
+              required
+              disabled={loading}
+              className={FIELD}
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-[14px] font-semibold text-ivory-dim">
+            סיסמת הצוות
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+              disabled={loading}
+              className={FIELD}
+            />
+          </label>
+          {error && <ErrorText>{error}</ErrorText>}
+          <button type="submit" disabled={loading || !email || !password} className={btnClass('primary', 'md', 'mt-2 h-12 w-full text-[17px]')}>
+            {loading ? 'נכנסים…' : 'כניסה'}
           </button>
         </form>
       </div>

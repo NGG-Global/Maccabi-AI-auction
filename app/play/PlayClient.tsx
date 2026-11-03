@@ -23,7 +23,7 @@ export default function PlayClient() {
   const searchParams = useSearchParams()
   const slug = searchParams.get('room') ?? lastRoomSlug()
   const [session, setSession] = useState<Session | null>(null)
-  const [error, setError] = useState<string | null>(slug ? null : 'לא נמצא חדר. סרקו את קוד ה-QR מחדש.')
+  const [error, setError] = useState<string | null>(slug ? null : 'לא נמצא סשן. סרקו את קוד ה־QR מחדש.')
 
   useEffect(() => {
     if (!slug) return
@@ -33,10 +33,10 @@ export default function PlayClient() {
         .from('rooms').select(ROOM_PUBLIC_COLUMNS).eq('slug', slug).maybeSingle<PublicRoom>()
       if (cancelled) return
       if (rErr) { setError('שגיאה בטעינת הנתונים. רעננו את הדף.'); return }
-      if (!room) { setError('החדר לא נמצא. סרקו את קוד ה-QR מחדש.'); return }
+      if (!room) { setError('הסשן לא נמצא. סרקו את קוד ה־QR מחדש.'); return }
 
       const participant = loadParticipant(room.id)
-      if (!participant) { setError('לא נמצאו פרטי משתתף לחדר זה. סרקו את קוד ה-QR והירשמו.'); return }
+      if (!participant) { setError('לא נמצאו פרטי משתתף לסשן זה. סרקו את קוד ה־QR והירשמו.'); return }
 
       // The game screen loads (and validates) the participant itself; no extra round trip here.
       setSession({ room, participant })

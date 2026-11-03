@@ -21,6 +21,8 @@ export interface Room {
   game_mode: GameMode
   starting_coins: number
   default_round_seconds: number | null
+  /** The amount the phone's − / + buttons move by (migration 013). */
+  bid_step: number
   current_round_id: string | null
   created_at: string
   // Server-side only (not granted to the browser; see migration 010)
@@ -32,12 +34,12 @@ export interface Room {
 
 /** The room columns the browser (anon key) may read. */
 export const ROOM_PUBLIC_COLUMNS =
-  'id, slug, title, client_name, logo_path, game_mode, status, starting_coins, default_round_seconds, current_round_id, created_at'
+  'id, slug, title, client_name, logo_path, game_mode, status, starting_coins, default_round_seconds, bid_step, current_round_id, created_at'
 
 export type PublicRoom = Pick<
   Room,
   | 'id' | 'slug' | 'title' | 'client_name' | 'logo_path' | 'game_mode' | 'status'
-  | 'starting_coins' | 'default_round_seconds' | 'current_round_id' | 'created_at'
+  | 'starting_coins' | 'default_round_seconds' | 'bid_step' | 'current_round_id' | 'created_at'
 >
 
 export interface Participant {
@@ -123,6 +125,7 @@ export interface RoomInput {
   game_mode: GameMode
   starting_coins: number
   default_round_seconds: number | null
+  bid_step: number
   traits: TraitInput[] | null
 }
 

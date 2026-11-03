@@ -6,7 +6,15 @@ import { DB_SCHEMA } from '@/lib/supabase/schema'
 import type { AuctionRound, Participant, Bid, PublicRoom } from '@/lib/types'
 import { ROUND_SELECT } from '@/lib/supabase/embeds'
 import { useRoundTimer } from '@/lib/hooks/useRoundTimer'
-import { PlaySkeleton, PlayError, WalletHeader } from './PlayShell'
+import { PlaySkeleton, PlayError, PhoneShell, RulesList } from './PlayShell'
+import WalletBar from '@/components/evening/WalletBar'
+import LotTicket from '@/components/evening/LotTicket'
+import NumberRoller from '@/components/evening/NumberRoller'
+import Stepper from '@/components/evening/Stepper'
+import SoldStamp from '@/components/evening/SoldStamp'
+import CountdownLine from '@/components/evening/CountdownLine'
+import { CTA, ErrorText } from '@/components/evening/ui'
+import { UNIT_LABEL, defaultBidStep, fmt, lotNo } from '@/components/evening/units'
 
 interface GameState {
   participant: Participant | null
@@ -21,11 +29,12 @@ interface RoundStats {
   noBidCount: number    // wallet > 0 but no bid yet
   foldedCount: number   // wallet = 0, cannot bid
   highestBid: number
+  leaderId: string | null
   isLeading: boolean    // current participant would win if the round closed now
   isTiedBehind: boolean // matches the top bid, but someone reached it first
 }
 
-const EMPTY_STATS: RoundStats = { bidderCount: 0, noBidCount: 0, foldedCount: 0, highestBid: 0, isLeading: false, isTiedBehind: false }
+const EMPTY_STATS: RoundStats = { bidderCount: 0, noBidCount: 0, foldedCount: 0, highestBid: 0, leaderId: null, isLeading: false, isTiedBehind: false }
 
 interface Props {
   room: PublicRoom
@@ -40,6 +49,9 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
   const [bidSubmitting, setBidSubmitting] = useState(false)
   const [bidError, setBidError] = useState<string | null>(null)
   const [bidSuccess, setBidSuccess] = useState(false)
+  // Display names of leading bidders, fetched once per participant.
+  const [leaderNames, setLeaderNames] = useState<Record<string, string>>({})
+  const highestRef = useRef(0)
   const bidSoundRef = useRef<HTMLAudioElement | null>(null)
   const fetchSeqRef = useRef(0)
   const currentRoundRef = useRef<AuctionRound | null>(null)
@@ -62,19 +74,43 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
     if (!row) return
     const highestBid = row.highest_bid ?? 0
     const myAmount = row.my_amount ?? 0
+    const leaderId: string | null = row.leader_participant_id ?? null
     // Leading = first in tie-break order. Matching the top bid after someone
     // else reached it is a tie this participant would lose.
-    const isLeading = myAmount > 0 && row.leader_participant_id === participantId
+    const isLeading = myAmount > 0 && leaderId === participantId
     const isTiedBehind = myAmount > 0 && myAmount === highestBid && !isLeading
     setRoundStats({
       bidderCount: row.bidder_count ?? 0,
       noBidCount: row.no_bid_count ?? 0,
       foldedCount: row.folded_count ?? 0,
       highestBid,
+      leaderId,
       isLeading,
       isTiedBehind,
     })
+    // The amount to send follows the highest bid up: a typed amount is
+    // dropped only when the room overtook it.
+    if (highestBid !== highestRef.current) {
+      highestRef.current = highestBid
+      setBidInput(prev => (prev !== '' && parseInt(prev, 10) > highestBid ? prev : ''))
+    }
   }, [supabase])
+
+  // The leader's name for "ההצעה הגבוהה": one small read per new leader,
+  // so a stream of bids by the same person costs nothing.
+  const leaderId = roundStats.leaderId
+  const leaderKnown = !leaderId || leaderId === participantId || leaderId in leaderNames
+  useEffect(() => {
+    if (leaderKnown || !leaderId) return
+    let cancelled = false
+    supabase.from('participants').select('display_name').eq('id', leaderId).eq('room_id', room.id).maybeSingle<{ display_name: string }>()
+      .then(({ data }) => {
+        if (cancelled || !data) return
+        setLeaderNames(prev => ({ ...prev, [leaderId]: data.display_name }))
+      })
+    return () => { cancelled = true }
+  }, [leaderId, leaderKnown, room.id, supabase])
+  const leaderName = leaderId ? leaderNames[leaderId] ?? null : null
 
   // Wallet only (a round closed, or a reset): no need to reload the round.
   const fetchParticipant = useCallback(async (participantId: string) => {
@@ -98,7 +134,7 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
         .limit(1),
     ])
     if (!participant) {
-      setState(prev => ({ ...prev, loading: false, error: 'המשתתף לא נמצא (ייתכן שהחדר אופס). סרקו את קוד ה-QR והירשמו מחדש.' }))
+      setState(prev => ({ ...prev, loading: false, error: 'המשתתף לא נמצא (ייתכן שהסשן אופס). סרקו את קוד ה־QR והירשמו מחדש.' }))
       return
     }
 
@@ -112,6 +148,13 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
     }
 
     if (seq !== fetchSeqRef.current) return
+    if (currentRoundRef.current?.id !== round?.id) {
+      // A fresh lot starts from a fresh amount.
+      highestRef.current = 0
+      setBidInput('')
+      setBidSuccess(false)
+      setBidError(null)
+    }
     currentRoundRef.current = round
     setState(prev => ({ ...prev, participant, currentRound: round, myBid, loading: false }))
 
@@ -123,7 +166,8 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
   }, [supabase, fetchRoundStats, room.id])
 
   useEffect(() => {
-    fetchState(participantId)
+    // Deferred a tick so the first load never sets state inside the effect itself.
+    const first = setTimeout(() => fetchState(participantId), 0)
 
     // Each kind of change refreshes only what it affects. With ~100 phones,
     // a bid elsewhere in the room used to cost every phone a full reload
@@ -154,24 +198,35 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
       .on('postgres_changes', { event: '*', schema: DB_SCHEMA, table: 'participants', filter: `id=eq.${participantId}` }, () => fetchParticipant(participantId))
       .subscribe()
     return () => {
+      clearTimeout(first)
       if (statsTimer) clearTimeout(statsTimer)
       if (stateTimer) clearTimeout(stateTimer)
       supabase.removeChannel(channel)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const { participant, currentRound, myBid, loading, error } = state
+  const timer = useRoundTimer(currentRound?.opened_at ?? null, currentRound?.status === 'open', room.default_round_seconds)
+
+  const balance = participant?.wallet_balance ?? 0
+  const highest = roundStats.highestBid
+  const step = room.bid_step ?? defaultBidStep('auction', room.starting_coins)
+  // The amount to send: free text, moved by the stepper, never below the
+  // lowest raise that would lead. An empty input shows the suggested raise.
+  const minAmount = Math.max(highest + 1, (myBid?.amount ?? 0) + 1, 1)
+  const suggested = Math.min(balance, Math.max(minAmount, highest + step))
+  const amount = bidInput === '' ? suggested : parseInt(bidInput, 10) || 0
+
   async function handleBidSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const amount = parseInt(bidInput, 10)
-    if (isNaN(amount)) return
+    if (isNaN(amount) || amount < 1) return
     setBidSubmitting(true)
     setBidError(null)
     setBidSuccess(false)
-    setBidInput('')
     try {
       const res = await fetch('/api/bid/submit', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken, roomId: room.id, roundId: state.currentRound?.id, amount }),
+        body: JSON.stringify({ sessionToken, roomId: room.id, roundId: currentRound?.id, amount }),
       })
       const data = await res.json()
       if (!res.ok) { setBidError(data.error ?? 'שגיאה') }
@@ -181,7 +236,7 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
           myBid: {
             id: 'optimistic',
             room_id: room.id,
-            round_id: state.currentRound?.id ?? '',
+            round_id: currentRound?.id ?? '',
             participant_id: prev.participant?.id ?? '',
             amount,
             created_at: new Date().toISOString(),
@@ -193,185 +248,160 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
           bidSoundRef.current.currentTime = 0
           bidSoundRef.current.play().catch(() => {})
         }
-        if (state.currentRound) fetchRoundStats(state.currentRound.id, room.id, participantId)
+        if (navigator.vibrate) navigator.vibrate(20)
+        if (currentRound) fetchRoundStats(currentRound.id, room.id, participantId)
       }
     } catch { setBidError('שגיאת רשת. נסו שוב.') }
     finally { setBidSubmitting(false) }
   }
 
-  const { participant, currentRound, myBid, loading, error } = state
-  const timer = useRoundTimer(currentRound?.opened_at ?? null, currentRound?.status === 'open', room.default_round_seconds)
-
   if (loading) return <PlaySkeleton />
-
   if (error || !participant) return <PlayError message={error ?? 'שגיאה לא צפויה'} />
 
   const isOpen = currentRound?.status === 'open'
   const isClosed = currentRound?.status === 'closed'
   const iWon = isClosed && currentRound?.winner_participant_id === participant.id
+  const lotIndex = currentRound?.trait?.sort_order ?? 0
+  const closingPrice = currentRound?.winning_bid_amount ?? null
+  const winnerName = currentRound?.winner?.display_name ?? null
+
+  const notEnough = highest + 1 > balance
+  const canBid = isOpen && !roundStats.isLeading && !bidSubmitting && !notEnough && amount >= minAmount && amount <= balance
+  const ctaLabel =
+    bidSubmitting ? 'שולחים…'
+    : roundStats.isLeading ? 'אתם מובילים'
+    : notEnough ? `אין מספיק ${UNIT_LABEL}`
+    : `שליחת הצעה · ${fmt(isNaN(amount) ? 0 : amount)} ${UNIT_LABEL}`
+
+  const status =
+    roundStats.isLeading ? { text: 'אתם מובילים', lead: true }
+    : roundStats.isTiedBehind ? { text: 'שוויון: זוכה מי שהציע את הסכום ראשון', lead: false }
+    : myBid ? { text: 'עקפו אותך', lead: false }
+    : { text: 'טרם הצעתם', lead: false }
+
+  const footer = isOpen ? (
+    <form onSubmit={handleBidSubmit} className="flex flex-col gap-3">
+      <Stepper
+        value={isNaN(amount) ? 0 : amount}
+        inputValue={fmt(bidInput === '' ? suggested : amount)}
+        onInput={raw => { setBidInput(raw); setBidSuccess(false) }}
+        inputLabel="סכום ההצעה"
+        onDown={() => setBidInput(String(Math.max(minAmount, amount - step)))}
+        onUp={() => setBidInput(String(Math.min(balance, amount + step)))}
+        downDisabled={roundStats.isLeading || amount - step < minAmount}
+        upDisabled={roundStats.isLeading || amount + step > balance}
+        downLabel={`הורדה ב־${fmt(step)} ${UNIT_LABEL}`}
+        upLabel={`העלאה ב־${fmt(step)} ${UNIT_LABEL}`}
+        caption="ההצעה שלך"
+      />
+      {bidError && <ErrorText>{bidError}</ErrorText>}
+      <button type="submit" disabled={!canBid} className={CTA}>{ctaLabel}</button>
+      <p className="m-0 min-h-[22px] text-center text-[15px] text-ivory-mute">
+        {bidSuccess ? <span className="text-ember">ההצעה נשלחה</span> : 'המטבעות יורדים מהיתרה רק אם תזכו בפריט.'}
+      </p>
+    </form>
+  ) : undefined
 
   return (
-    <main className="min-h-screen bg-slate-950 flex flex-col">
+    <PhoneShell footer={footer}>
+      <WalletBar remaining={balance} total={room.starting_coins} unitLabel={UNIT_LABEL} label="נשארו לך" name={participant.display_name} />
 
-      <WalletHeader room={room} name={participant.display_name} balance={participant.wallet_balance} />
-
-      <div className="flex-1 flex flex-col px-4 py-6 gap-4">
-
-        {/* Waiting */}
-        {!currentRound && (
-          <div className="flex-1 flex flex-col items-center justify-center gap-6 animate-fade-in">
-            <div className="text-7xl animate-float">🏆</div>
-            <div className="text-center">
-              <p className="text-white text-2xl font-black mb-2">ממתינים להתחלה</p>
-              <p className="text-slate-500">הסבב הבא יתחיל בקרוב</p>
-            </div>
+      {/* Waiting */}
+      {!currentRound && (
+        <div className="ev-fade flex flex-1 flex-col justify-center gap-6 py-6">
+          <div className="text-center">
+            <p className="m-0 font-display text-[36px] font-black leading-tight text-ivory">ממתינים להתחלה</p>
+            <p className="mt-2 mb-0 text-[17px] text-ivory-dim">הפריט הבא ייפתח בקרוב</p>
           </div>
-        )}
+          <div className="rounded-[22px] border border-velvet-3 bg-velvet-2 px-5 py-5">
+            <RulesList rules={[
+              'בכל סבב מוצג פריט אחד.',
+              'שולחים הצעה ומעלים אותה כל עוד הסבב פתוח.',
+              'רק הזוכה משלם את הצעתו.',
+              'בשוויון זוכה מי שהציע את הסכום ראשון.',
+            ]} />
+          </div>
+        </div>
+      )}
 
-        {/* Round closed result */}
-        {isClosed && (
-          <div key={`closed-${currentRound!.id}`} className={`rounded-3xl p-6 border-2 text-center animate-scale-in ${
-            iWon
-              ? 'bg-gradient-to-br from-amber-950 to-slate-900 border-amber-400/60 animate-pulse-gold'
-              : 'bg-slate-900 border-white/10'
-          }`}>
-            {iWon ? (
+      {/* Round closed result */}
+      {isClosed && currentRound && (
+        <div key={`closed-${currentRound.id}`} className="ev-rise flex flex-1 flex-col gap-4">
+          <LotTicket index1={lotIndex} category={currentRound.trait?.category} title={currentRound.trait?.title ?? ''} />
+          <div className="my-auto flex flex-col items-center gap-3 px-2 py-6 text-center">
+            {winnerName ? (
               <>
-                <p className="text-5xl mb-3">🏆</p>
-                <p className="text-amber-400 text-2xl font-black mb-1">זכית!</p>
-                <p className="text-slate-300 text-sm">בהיגד: <span className="text-white font-bold">{currentRound!.trait?.title}</span></p>
+                <SoldStamp size="phone" text={iWon ? 'נמכר לך' : 'נמכר'} animate />
+                <h4 className="mt-4 mb-0 font-display text-[36px] font-black leading-[1.1] text-ivory">
+                  {iWon ? `זכית בפריט ${lotNo(lotIndex)}` : `ל${winnerName}`}
+                </h4>
+                <p className="m-0 text-[19px] leading-[1.45] text-ivory-dim">
+                  {iWon
+                    ? <><span className="num">{fmt(closingPrice ?? 0)}</span> {UNIT_LABEL} ירדו מהיתרה שלך.</>
+                    : <>במחיר <span className="num">{fmt(closingPrice ?? 0)}</span> {UNIT_LABEL}. לא הוצאת כלום בסבב הזה.</>}
+                </p>
+                {!iWon && myBid && myBid.amount === closingPrice && (
+                  <p className="m-0 text-[15px] text-ember">שוויון: זוכה מי שהציע את הסכום ראשון</p>
+                )}
               </>
             ) : (
               <>
-                <p className="text-4xl mb-3">🤷</p>
-                <p className="text-white text-xl font-bold mb-1">הסבב נסגר</p>
-                {myBid && <p className="text-slate-400 text-sm">הגשת הצעה של <span className="text-white font-bold">{myBid.amount} 🪙</span></p>}
-                {myBid && myBid.amount === currentRound!.winning_bid_amount && (
-                  <p className="text-amber-300/90 text-sm mt-1">⏱️ שוויון — הוכרע לטובת מי שהציע את הסכום ראשון</p>
-                )}
-                {!myBid && <p className="text-slate-500 text-sm">לא הגשת הצעה בסבב זה</p>}
+                <SoldStamp size="phone" text="לא נמכרה" animate />
+                <p className="mt-4 mb-0 text-[19px] leading-[1.45] text-ivory-dim">לא נשלחו הצעות על הפריט הזה.</p>
               </>
             )}
+            <p className="mt-4 mb-0 text-[15px] text-ivory-mute">הפריט הבא ייפתח בקרוב</p>
           </div>
-        )}
+          <ProfileLink slug={room.slug} />
+        </div>
+      )}
 
-        {/* Open round */}
-        {isOpen && (
-          <div key={`open-${currentRound!.id}`} className="flex flex-col gap-4 animate-slide-in-up">
+      {/* Open round */}
+      {isOpen && currentRound && (
+        <div key={`open-${currentRound.id}`} className="ev-rise flex flex-col gap-4">
+          <LotTicket index1={lotIndex} category={currentRound.trait?.category} title={currentRound.trait?.title ?? ''} description={currentRound.trait?.description} />
 
-            {/* Trait card */}
-            <div className="bg-gradient-to-br from-blue-950 to-slate-900 rounded-3xl p-6 border border-blue-500/30">
-              <span className="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mb-3">
-                <span className="w-2 h-2 bg-blue-400 rounded-full animate-live-dot" />
-                סבב פתוח
-                {timer.remaining !== null && (
-                  <span className={`mr-auto tabular-nums font-mono text-sm ${timer.overtime ? 'text-red-400' : 'text-amber-400'}`}>
-                    {timer.overtime ? 'הזמן נגמר' : `⏳ ${timer.remaining}`}
-                  </span>
-                )}
-              </span>
-              <h2 className={`text-3xl font-black text-white ${currentRound!.trait?.description ? 'mb-2' : ''}`}>{currentRound!.trait?.title}</h2>
-              {currentRound!.trait?.description && (
-                <p className="text-slate-400 text-sm leading-relaxed">{currentRound!.trait.description}</p>
-              )}
-            </div>
-
-            {/* ── Live group stats ── */}
-            <div className="glass rounded-2xl overflow-hidden">
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
-                <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">מצב הקבוצה</span>
-                <span className="flex items-center gap-1.5 text-xs text-green-400">
-                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-live-dot" />
-                  חי
-                </span>
-              </div>
-
-              {/* Highest bid banner — visible once any bid exists */}
-              {roundStats.highestBid > 0 && (
-                <div className={`flex items-center justify-between px-4 py-2.5 border-b border-white/10 ${
-                  roundStats.isLeading
-                    ? 'bg-amber-500/15 border-b border-amber-500/20'
-                    : 'bg-white/[0.03]'
-                }`}>
-                  <span className="text-sm">
-                    {roundStats.isLeading
-                      ? <span className="text-amber-400 font-bold">👑 אתה/את בראש!</span>
-                      : roundStats.isTiedBehind
-                      ? <span className="text-amber-300 font-bold">⏱️ שוויון — מוביל מי שהציע ראשון</span>
-                      : <span className="text-slate-400">הצעה גבוהה</span>}
-                  </span>
-                  <span className={`font-black tabular-nums text-lg ${roundStats.isLeading ? 'text-amber-400' : 'text-white'}`}>
-                    {roundStats.highestBid.toLocaleString()} 🪙
-                  </span>
-                </div>
-              )}
-
-              {/* Three stat counters */}
-              <div className="grid grid-cols-3 divide-x divide-x-reverse divide-white/10">
-                {[
-                  { value: roundStats.bidderCount,  label: 'הציעו',        color: 'text-green-400',  icon: '✅' },
-                  { value: roundStats.noBidCount,   label: 'טרם הציעו',    color: 'text-slate-400',  icon: '⏳' },
-                  { value: roundStats.foldedCount,  label: 'אין יתרה',     color: 'text-red-400',    icon: '💔' },
-                ].map(s => (
-                  <div key={s.label} className="flex flex-col items-center py-4 gap-0.5">
-                    <span className="text-base">{s.icon}</span>
-                    <span key={s.value} className={`text-2xl font-black tabular-nums ${s.color} animate-scale-in`}>{s.value}</span>
-                    <span className="text-[10px] text-slate-500 text-center leading-tight">{s.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Payment info */}
-            <div className="bg-green-500/10 border border-green-500/30 rounded-2xl px-4 py-3 flex items-start gap-2">
-              <span className="text-green-400 text-lg shrink-0">💡</span>
-              <p className="text-green-300 text-sm leading-relaxed">רק <strong>הזוכה</strong> משלם את הצעתו. אם לא תזכה — המטבעות שלך נשארים אצלך.</p>
-            </div>
-
-            {/* Current bid status */}
-            {myBid && (
-              <div key={`bid-${myBid.amount}`} className="bg-green-500/10 border border-green-500/30 rounded-2xl px-4 py-3 flex items-center justify-between animate-scale-in">
-                <span className="text-green-400 text-sm font-medium">הצעתך הנוכחית</span>
-                <span className="text-green-300 font-black text-lg">{myBid.amount.toLocaleString()} 🪙</span>
-              </div>
-            )}
-
-            {/* Bid form */}
-            <form onSubmit={handleBidSubmit} className="flex flex-col gap-3">
-              <div className="relative">
-                <input
-                  type="number"
-                  min={myBid ? myBid.amount + 1 : 1}
-                  max={participant.wallet_balance}
-                  value={bidInput}
-                  onChange={e => { setBidInput(e.target.value); setBidSuccess(false) }}
-                  placeholder={myBid ? `מעל ${myBid.amount}` : 'סכום הצעה'}
-                  disabled={bidSubmitting}
-                  className="w-full bg-slate-800 border-2 border-slate-700 focus:border-amber-500 rounded-2xl px-5 py-4 text-2xl font-black text-center text-white focus:outline-none transition-colors placeholder:text-slate-600 disabled:opacity-50 tabular-nums"
-                />
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">🪙</span>
-              </div>
-
-              {bidError && <p className="text-red-400 text-sm text-center animate-slide-in-up">{bidError}</p>}
-              {bidSuccess && <p className="text-green-400 text-sm text-center font-bold animate-scale-in">✓ ההצעה נשלחה בהצלחה</p>}
-
-              <button
-                type="submit"
-                disabled={bidSubmitting || !bidInput || parseInt(bidInput) < 1}
-                className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-30 text-slate-900 rounded-2xl py-4 text-xl font-black transition-all active:scale-95 shadow-lg shadow-amber-500/20"
-              >
-                {bidSubmitting ? '...' : myBid ? '⬆ העלה הצעה' : '💰 הגש הצעה'}
-              </button>
-            </form>
-
-            {/* Profile link hint */}
-            <p className="text-center text-slate-600 text-xs">
-              <a href={`/profile?room=${encodeURIComponent(room.slug)}`} className="underline hover:text-slate-400 transition-colors">צפה בפרופיל שלך</a>
-            </p>
+          <div className="flex items-end justify-between gap-3 px-1">
+            <span className="font-display text-[60px] font-black leading-[.9] text-vermilion">
+              <NumberRoller value={highest} />
+            </span>
+            <span className="text-start text-[17px] leading-[1.35] text-ivory-dim">
+              <b className="block text-[20px] font-bold text-ivory">
+                {highest === 0 ? 'עדיין אין הצעות' : roundStats.isLeading ? 'ההצעה שלך' : leaderName ?? '…'}
+              </b>
+              {highest === 0 ? 'פתחו את המכירה' : roundStats.isLeading ? 'היא הגבוהה כרגע' : 'ההצעה הגבוהה'}
+            </span>
           </div>
-        )}
-      </div>
-    </main>
+
+          <span className={`self-start rounded-full px-[14px] py-[6px] text-[17px] font-bold ${
+            status.lead ? 'bg-[rgba(255,90,54,.18)] text-[#ffd2c4]' : 'bg-[rgba(255,179,138,.14)] text-ember'
+          }`}>
+            {status.text}
+          </span>
+
+          {room.default_round_seconds !== null && (
+            <CountdownLine timer={timer} roundSeconds={room.default_round_seconds} size="phone" />
+          )}
+
+          <p className="m-0 text-[15px] text-ivory-mute">
+            {roundStats.bidderCount > 0
+              ? <><span className="num text-ivory-dim">{roundStats.bidderCount}</span> שלחו הצעה בסבב הזה</>
+              : 'אף אחד עדיין לא שלח הצעה בסבב הזה'}
+          </p>
+
+          <ProfileLink slug={room.slug} />
+        </div>
+      )}
+    </PhoneShell>
+  )
+}
+
+function ProfileLink({ slug }: { slug: string }) {
+  return (
+    <p className="m-0 mt-auto pt-2 text-center text-[14px]">
+      <a href={`/profile?room=${encodeURIComponent(slug)}`} className="text-ivory-mute underline decoration-velvet-4 underline-offset-4 transition-colors hover:text-ivory">
+        הפרופיל האישי שלכם
+      </a>
+    </p>
   )
 }

@@ -29,7 +29,19 @@ describe('parseRoomInput', () => {
     if (r.ok) {
       expect(r.value.traits?.[0]).toMatchObject({ title: 'היגד', category: 'מנהיגות', sort_order: 1 })
       expect(r.value.default_round_seconds).toBe(90)
+      expect(r.value.bid_step).toBe(10)
     }
+  })
+  it('takes the step per click and defaults it by mode', () => {
+    const r = parseRoomInput({ ...base, bid_step: 25 }, { requireTraits: true })
+    expect(r.ok && r.value.bid_step).toBe(25)
+    const alloc = parseRoomInput({ ...base, game_mode: 'allocation' }, { requireTraits: true })
+    expect(alloc.ok && alloc.value.bid_step).toBe(50)
+    const tiny = parseRoomInput({ ...base, starting_coins: 5 }, { requireTraits: true })
+    expect(tiny.ok && tiny.value.bid_step).toBe(2)
+    expect(parseRoomInput({ ...base, bid_step: 0 }, { requireTraits: true }).ok).toBe(false)
+    expect(parseRoomInput({ ...base, bid_step: 600 }, { requireTraits: true }).ok).toBe(false)
+    expect(parseRoomInput({ ...base, bid_step: 2.5 }, { requireTraits: true }).ok).toBe(false)
   })
   it('rejects a missing category, bad coins, bad slug and bad round length', () => {
     expect(parseTraits([{ title: 'היגד', category: 'אחר' }]).ok).toBe(false)

@@ -1,0 +1,1346 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ערב מכירה — אב־טיפוס חי</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  color-scheme: dark;
+  --velvet-0:#0d080b; --velvet-1:#160e12; --velvet-2:#211519; --velvet-3:#33232a; --velvet-4:#4a333c;
+  --ivory:#f4ecdf; --ivory-dim:#cfc2b1; --ivory-mute:#a39585;
+  --vermilion:#ff5a36; --vermilion-deep:#d93a1a; --ember:#ffb38a;
+  --bronze:#b98a5e; --paper:#efe5d4; --ink-on-paper:#1d1316; --ink-soft:#5b4a4f;
+  --serif:"Frank Ruhl Libre","David Libre",Georgia,"Times New Roman",serif;
+  --sans:"IBM Plex Sans Hebrew","Assistant",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--velvet-0);color:var(--ivory);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+::selection{background:var(--vermilion);color:var(--velvet-0)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--vermilion);outline-offset:3px;border-radius:6px}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--velvet-3);border-radius:10px}::-webkit-scrollbar-track{background:transparent}
+.num{font-variant-numeric:tabular-nums lining-nums;direction:ltr;unicode-bidi:isolate;display:inline-block}
+
+/* ───────── shell ───────── */
+.shell{max-width:1640px;margin:0 auto;padding:18px 24px 40px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;margin-bottom:18px}
+.brand{display:flex;align-items:baseline;gap:12px}
+.brand b{font-family:var(--serif);font-weight:900;font-size:26px;letter-spacing:-.01em}
+.brand span{color:var(--ivory-mute);font-size:14px}
+.tabs{display:flex;gap:4px;background:var(--velvet-1);border:1px solid var(--velvet-3);border-radius:999px;padding:4px;overflow-x:auto;max-width:100%}
+.tab{border:0;background:transparent;color:var(--ivory-dim);padding:9px 16px;border-radius:999px;font-size:15px;font-weight:600;white-space:nowrap;cursor:pointer;transition:background .2s,color .2s}
+.tab:hover{color:var(--ivory)}
+.tab[aria-selected="true"]{background:var(--ivory);color:var(--velvet-0)}
+.ghost{border:1px solid var(--velvet-3);background:transparent;color:var(--ivory-dim);padding:9px 16px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.ghost:hover{color:var(--ivory);border-color:var(--velvet-4)}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:28px;align-items:start}
+@media (max-width:1080px){.stage{grid-template-columns:minmax(0,1fr)}}
+.label{font-size:13px;font-weight:600;color:var(--ivory-mute);margin:0 0 8px}
+
+/* ───────── projector ───────── */
+.proj-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:var(--velvet-1);box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 1px var(--velvet-3)}
+.proj-frame:fullscreen{border-radius:0;aspect-ratio:auto;width:100vw;height:100vh;background:#000;display:flex;align-items:center;justify-content:center}
+.screen{position:absolute;top:0;left:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;background:var(--velvet-1);direction:rtl}
+.screen::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 52% 60% at 50% 18%,rgba(255,214,170,.13),rgba(255,214,170,.04) 45%,transparent 72%),
+             radial-gradient(ellipse 120% 80% at 50% 120%,rgba(0,0,0,.55),transparent 60%)}
+.screen::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.18;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.scene{position:absolute;inset:0;z-index:1;padding:64px 96px 56px;display:none}
+.scene.on{display:grid}
+.meta{display:flex;align-items:center;justify-content:space-between;gap:32px;font-size:26px;color:var(--ivory-dim);height:56px}
+.meta .room{display:flex;align-items:center;gap:22px}
+.meta .room strong{font-family:var(--serif);font-weight:700;color:var(--ivory);font-size:30px}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--vermilion);box-shadow:0 0 0 6px rgba(255,90,54,.18);animation:live 1.6s ease-in-out infinite}
+@keyframes live{50%{box-shadow:0 0 0 12px rgba(255,90,54,0)}}
+.rule{width:2px;height:28px;background:var(--velvet-4)}
+.client{width:180px;height:56px;border:1.5px dashed var(--velvet-4);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--ivory-mute)}
+
+/* digit roller */
+.roller{display:inline-flex;direction:ltr;line-height:1;font-variant-numeric:tabular-nums lining-nums;overflow:hidden;vertical-align:bottom}
+.roller .d{display:inline-block;height:1em;overflow:hidden;position:relative}
+.roller .strip{display:flex;flex-direction:column;transition:transform .7s var(--ease-out)}
+.roller .strip span,.roller .sep{height:1em;line-height:1;display:block}
+.roller .sep{display:inline-block}
+
+/* ROUND */
+#s-round{grid-template-columns:minmax(0,1fr) 430px;grid-template-rows:56px minmax(0,1fr) 132px;column-gap:72px;row-gap:28px}
+#s-round .meta{grid-column:1/-1}
+.block{grid-column:1;grid-row:2;display:flex;flex-direction:column;justify-content:center;gap:40px;min-width:0;position:relative}
+.lotline{display:flex;align-items:center;gap:22px;font-size:26px;color:var(--ivory-dim)}
+.lotno{font-family:var(--serif);font-weight:900;font-size:30px;color:var(--ivory);letter-spacing:.04em}
+.cat{border:1.5px solid var(--velvet-4);border-radius:999px;padding:4px 18px;font-size:22px;font-weight:600;color:var(--ivory-dim)}
+.statement{margin:0;font-family:var(--serif);font-weight:900;font-size:118px;line-height:1.02;letter-spacing:-.018em;color:var(--ivory);max-width:1180px;text-wrap:balance}
+.price{position:relative;display:flex;align-items:flex-end;gap:56px;min-height:240px}
+.price .fig{display:flex;flex-direction:column;gap:6px}
+.price .cap{font-size:26px;color:var(--ivory-dim);font-weight:500}
+.price .val{font-family:var(--serif);font-weight:900;font-size:232px;line-height:.86;color:var(--vermilion);display:flex;align-items:flex-end;gap:22px;transition:color .4s}
+.price .unit{font-family:var(--sans);font-size:30px;font-weight:600;color:var(--ivory-dim);line-height:1;padding-bottom:22px}
+.leader{display:flex;align-items:center;gap:22px;padding-bottom:16px}
+.paddle{position:relative;display:flex;flex-direction:column;align-items:center}
+.paddle .head{width:118px;height:118px;border-radius:24px;background:var(--ivory);color:var(--velvet-0);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:900;font-size:64px;box-shadow:0 14px 30px rgba(0,0,0,.45)}
+.paddle .stick{width:20px;height:54px;background:linear-gradient(90deg,#7a5a45,#a37b5e 50%,#6b4c39);border-radius:0 0 6px 6px}
+.leader .who{display:flex;flex-direction:column;gap:2px}
+.leader .who b{font-family:var(--serif);font-weight:900;font-size:56px;line-height:1}
+.leader .who span{font-size:24px;color:var(--ivory-dim)}
+.leader.swap .paddle{animation:raise .6s var(--ease-out)}
+@keyframes raise{0%{transform:translateY(46px);opacity:.2}100%{transform:none;opacity:1}}
+.fuse{position:relative;height:4px;background:var(--velvet-3);border-radius:4px;margin-top:8px}
+.fuse i{position:absolute;inset-block:0;right:0;width:100%;background:linear-gradient(270deg,rgba(255,90,54,.15),var(--vermilion));border-radius:4px;transform-origin:left center;transition:width 1s linear}
+.fuse i::after{content:"";position:absolute;left:-6px;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:var(--ember);box-shadow:0 0 18px 6px rgba(255,140,90,.65)}
+.fuse-row{display:flex;justify-content:space-between;align-items:center;font-size:24px;color:var(--ivory-dim);margin-top:14px}
+.fuse-row .t{font-weight:700;color:var(--ivory);font-size:30px}
+.ladder{grid-column:2;grid-row:2;display:flex;flex-direction:column;gap:14px;min-height:0;border-inline-start:1px solid var(--velvet-3);padding-inline-start:48px}
+.ladder h3{margin:0 0 6px;font-family:var(--serif);font-weight:700;font-size:34px}
+.bids{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.bid{display:flex;align-items:center;gap:18px;height:84px;padding:0 20px;border-radius:14px;background:var(--velvet-2);border:1px solid var(--velvet-3)}
+.bid .p{min-width:64px;height:52px;border-radius:10px;background:var(--velvet-3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:900;font-size:32px}
+.bid .n{flex:1;font-size:28px;font-weight:600}
+.bid .a{font-family:var(--serif);font-weight:900;font-size:40px}
+.bid.top{background:rgba(255,90,54,.12);border-color:rgba(255,90,54,.45)}
+.bid.top .p{background:var(--vermilion);color:var(--velvet-0)}
+.bid.top .a{color:var(--vermilion)}
+.bid.mine .n::after{content:" · אתם";color:var(--ember);font-weight:500}
+.queue{grid-column:1/-1;display:flex;align-items:center;gap:14px}
+.qi{flex:1 1 0;height:96px;border-radius:12px;border:1px solid var(--velvet-3);background:var(--velvet-2);padding:12px 18px;display:flex;flex-direction:column;justify-content:space-between;min-width:0;position:relative;overflow:hidden}
+.qi .qn{font-family:var(--serif);font-weight:900;font-size:24px;color:var(--ivory-mute)}
+.qi .qt{font-size:19px;font-weight:600;color:var(--ivory-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qi.live{background:var(--ivory);border-color:var(--ivory)}
+.qi.live .qn,.qi.live .qt{color:var(--velvet-0)}
+.qi .qs{position:absolute;top:10px;left:12px;border:2.5px solid var(--vermilion);color:var(--vermilion);font-family:var(--serif);font-weight:900;font-size:18px;padding:0 8px;border-radius:5px;transform:rotate(-6deg)}
+.hammer{flex:0 0 auto;height:96px;padding:0 40px;border-radius:14px;border:0;background:var(--vermilion);color:var(--velvet-0);font-family:var(--serif);font-weight:900;font-size:36px;display:flex;align-items:center;gap:16px;cursor:pointer;box-shadow:0 12px 30px rgba(255,90,54,.28);transition:transform .15s,background .2s}
+.hammer:hover{background:#ff6d4d}
+.hammer:active{transform:scale(.98)}
+.hammer:disabled{background:var(--velvet-3);color:var(--ivory-mute);box-shadow:none;cursor:default}
+.hammer svg{width:44px;height:44px}
+
+/* the hammer moment */
+.cue{position:absolute;inset-inline:0;bottom:250px;text-align:center;font-family:var(--serif);font-weight:900;font-size:64px;color:var(--ivory);opacity:0;pointer-events:none;z-index:5}
+.cue.show{animation:cue 1s var(--ease-out) forwards}
+@keyframes cue{0%{opacity:0;transform:translateY(24px);filter:blur(6px)}25%{opacity:1;transform:none;filter:none}80%{opacity:1}100%{opacity:0;transform:translateY(-12px)}}
+.flash{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:0;background:radial-gradient(ellipse 60% 60% at 50% 55%,rgba(255,236,214,.55),rgba(255,120,80,.18) 40%,transparent 70%)}
+.strike .flash{animation:flash .75s ease-out}
+@keyframes flash{0%{opacity:1}100%{opacity:0}}
+.strike .block{animation:shake .32s cubic-bezier(.36,.07,.19,.97)}
+@keyframes shake{20%{transform:translate(-5px,3px)}40%{transform:translate(4px,-3px)}60%{transform:translate(-3px,2px)}80%{transform:translate(2px,-1px)}100%{transform:none}}
+.stamp{position:absolute;z-index:7;left:10px;bottom:6px;pointer-events:none;opacity:0;
+  font-family:var(--serif);font-weight:900;font-size:150px;line-height:1;color:var(--vermilion);
+  border:12px solid var(--vermilion);border-radius:22px;padding:6px 44px 20px;transform:rotate(-9deg);
+  mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='r'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 1.7'/></filter><rect width='100%' height='100%' filter='url(%23r)'/></svg>");
+  -webkit-mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='r'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 1.7'/></filter><rect width='100%' height='100%' filter='url(%23r)'/></svg>")}
+.stamp small{display:block;font-size:40px;text-align:center;margin-top:-6px;letter-spacing:.02em}
+.strike .stamp,.sold .stamp{animation:slam .42s cubic-bezier(.2,.9,.25,1) forwards}
+.sold .stamp{animation-duration:0s}
+@keyframes slam{0%{opacity:0;transform:rotate(-16deg) scale(2.3);filter:blur(10px)}55%{opacity:1;transform:rotate(-8deg) scale(.96);filter:none}100%{opacity:1;transform:rotate(-9deg) scale(1)}}
+.ring{position:absolute;z-index:6;left:230px;bottom:110px;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;border:3px solid rgba(255,140,100,.9);opacity:0;pointer-events:none}
+.strike .ring{animation:ring .9s var(--ease-out)}
+@keyframes ring{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(26)}}
+.sold .price .val{color:var(--ivory)}
+.leader{transition:opacity .25s,transform .25s}
+.strike .leader,.sold .leader{opacity:0;transform:scale(.92)}
+.sold .fuse i{width:0!important}
+
+/* LOBBY */
+#s-lobby{grid-template-columns:minmax(0,1fr) 520px;grid-template-rows:56px minmax(0,1fr) 120px;column-gap:80px;row-gap:24px}
+#s-lobby .meta{grid-column:1/-1}
+.lobby-main{grid-column:1;grid-row:2;display:flex;flex-direction:column;justify-content:center;gap:34px;min-width:0}
+.big{margin:0;font-family:var(--serif);font-weight:900;font-size:150px;line-height:.95;letter-spacing:-.02em}
+.sub{margin:0;font-size:38px;line-height:1.35;color:var(--ivory-dim);max-width:44ch;text-wrap:balance}
+.count{display:flex;align-items:flex-end;gap:24px}
+.count .val{font-family:var(--serif);font-weight:900;font-size:190px;line-height:.86;color:var(--vermilion)}
+.count .of{font-family:var(--serif);font-weight:700;font-size:48px;color:var(--ivory);padding-bottom:14px}
+.wall{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;align-items:end;height:220px}
+.wp{display:flex;flex-direction:column;align-items:center;gap:0;transform:translateY(46px);transition:transform .7s var(--ease-out)}
+.wp .h{width:100%;aspect-ratio:1;max-width:96px;border-radius:18px;border:2px solid var(--velvet-4);background:var(--velvet-2);color:var(--ivory-mute);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:900;font-size:46px;transition:background .45s,color .45s,border-color .45s,box-shadow .45s}
+.wp .s{width:14px;height:38px;background:var(--velvet-3);border-radius:0 0 4px 4px;transition:background .45s}
+.wp .nm{margin-top:10px;font-size:22px;font-weight:600;color:var(--ivory-mute);transition:color .45s}
+.wp.up{transform:none}
+.wp.up .h{background:var(--ivory);border-color:var(--ivory);color:var(--velvet-0);box-shadow:0 16px 30px rgba(0,0,0,.4)}
+.wp.up .s{background:linear-gradient(90deg,#7a5a45,#a37b5e 50%,#6b4c39)}
+.wp.up .nm{color:var(--ivory)}
+.wp.me .h{box-shadow:0 0 0 4px var(--vermilion),0 16px 30px rgba(0,0,0,.4)}
+.qr{grid-column:2;grid-row:2;align-self:center;background:var(--paper);color:var(--ink-on-paper);border-radius:20px;padding:44px;display:flex;flex-direction:column;align-items:center;gap:26px;box-shadow:0 40px 80px rgba(0,0,0,.5)}
+.qr h3{margin:0;font-family:var(--serif);font-weight:900;font-size:46px}
+.qr-box{position:relative;width:340px;height:340px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:24px;font-weight:600;color:var(--ink-soft);padding:40px}
+.qr-box i{position:absolute;width:56px;height:56px;border:6px solid var(--ink-on-paper)}
+.qr-box i:nth-child(1){top:0;right:0;border-left:0;border-bottom:0;border-radius:0 10px 0 0}
+.qr-box i:nth-child(2){top:0;left:0;border-right:0;border-bottom:0;border-radius:10px 0 0 0}
+.qr-box i:nth-child(3){bottom:0;right:0;border-left:0;border-top:0;border-radius:0 0 10px 0}
+.qr-box i:nth-child(4){bottom:0;left:0;border-right:0;border-top:0;border-radius:0 0 0 10px}
+.qr .url{font-size:22px;color:var(--ink-soft);direction:ltr}
+.lobby-foot{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:24px;font-size:26px;color:var(--ivory-dim)}
+
+/* WINNERS — version A prize board */
+#s-winners{grid-template-rows:56px 104px minmax(0,1fr);row-gap:22px}
+.title{margin:0;font-family:var(--serif);font-weight:900;font-size:112px;line-height:1;letter-spacing:-.02em;align-self:end}
+.plates{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:22px;perspective:1600px;min-height:0}
+.plate{background:var(--paper);color:var(--ink-on-paper);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 50px rgba(0,0,0,.45);transform-origin:50% 50%;backface-visibility:hidden}
+.plate .band{background:var(--velvet-2);color:var(--ivory);height:128px;padding:12px 22px 14px;display:flex;flex-direction:column;justify-content:space-between;flex:0 0 auto}
+.plate .band .no{font-family:var(--serif);font-weight:900;font-size:24px;color:var(--ivory-mute);letter-spacing:.06em}
+.plate .band .tr{font-family:var(--serif);font-weight:700;font-size:38px;line-height:1.06}
+.plate .strip{height:8px;background:var(--vermilion);flex:0 0 auto}
+.plate .names{flex:1;padding:12px 22px 0;display:flex;flex-direction:column;min-height:0}
+.plate .names span{font-family:var(--serif);font-weight:900;font-size:44px;line-height:1.02}
+.plate .tag{margin:6px 22px 16px;align-self:flex-start;background:var(--vermilion);color:var(--velvet-0);font-family:var(--serif);font-weight:900;font-size:36px;padding:2px 16px 6px;border-radius:8px}
+.plates.reveal .plate{animation:flip .8s var(--ease-out) both;animation-delay:calc(var(--i) * 90ms)}
+@keyframes flip{0%{transform:rotateY(-88deg) translateZ(0);opacity:0}40%{opacity:1}100%{transform:none;opacity:1}}
+
+/* VALUES — version A podium + table */
+#s-values{grid-template-rows:56px 104px 404px minmax(0,1fr);row-gap:14px}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:28px;border-bottom:3px solid var(--ivory);height:404px}
+.pcol{width:470px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.pcol .info{text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;opacity:0;transform:translateY(16px);transition:opacity .5s var(--ease-out),transform .5s var(--ease-out)}
+.pcol .info .tr{font-family:var(--serif);font-weight:700;font-size:40px;line-height:1.1}
+.pcol .info .sum{font-family:var(--serif);font-weight:900;font-size:52px;line-height:1.1}
+.pcol .info .inv{font-size:28px;color:var(--ivory-dim)}
+.pcol .bar{align-self:stretch;height:0;border-radius:14px 14px 0 0;display:flex;justify-content:center;padding-top:16px;font-family:var(--serif);font-weight:900;font-size:84px;line-height:1;overflow:hidden;transition:height .9s var(--ease-out)}
+.pcol.r1 .bar{background:var(--vermilion);color:var(--velvet-0)}
+.pcol.r2 .bar{background:var(--ivory);color:var(--velvet-0)}
+.pcol.r3 .bar{background:var(--bronze);color:var(--velvet-0)}
+.pcol.r1 .sum{color:var(--vermilion)}
+.pcol.go .info{opacity:1;transform:none}
+.vtable{display:flex;flex-direction:column;min-height:0}
+.vrow{display:grid;grid-template-columns:110px minmax(0,1fr) 360px 320px;align-items:center;height:52px;font-size:36px;opacity:0;transform:translateY(10px);transition:opacity .45s var(--ease-out),transform .45s var(--ease-out)}
+.vrow.go{opacity:1;transform:none}
+.vrow:nth-child(odd):not(.vh){background:rgba(255,255,255,.035)}
+.vrow span{padding:0 24px}
+.vrow .rk{font-family:var(--serif);font-weight:900;color:var(--ivory-mute)}
+.vrow .tr{font-weight:600}
+.vrow .sm{font-family:var(--serif);font-weight:900}
+.vh{font-size:24px;color:var(--ivory-mute);font-weight:600;height:44px;opacity:1;transform:none}
+
+/* ───────── phone ───────── */
+.phone-col{position:sticky;top:18px}
+.phone{width:100%;max-width:390px;margin:0 auto;height:800px;border-radius:52px;background:var(--velvet-1);border:10px solid #2a1c22;box-shadow:0 40px 80px rgba(0,0,0,.55),inset 0 0 0 1px #3d2a31;overflow:hidden;position:relative}
+.view{position:absolute;inset:0;display:none;flex-direction:column}
+.view.on{display:flex}
+.ph-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:30px 22px 14px}
+.chip{display:inline-flex;align-items:center;gap:8px;font-size:18px;font-weight:600}
+.chip b{background:var(--ivory);color:var(--velvet-0);font-family:var(--serif);font-weight:900;font-size:22px;padding:3px 12px 5px;border-radius:8px}
+.wallet{display:flex;flex-direction:column;align-items:flex-start}
+.wallet small{font-size:15px;color:var(--ivory-mute)}
+.wallet span{font-family:var(--serif);font-weight:900;font-size:30px;line-height:1.05}
+.ph-body{flex:1;min-height:0;padding:6px 18px 0;display:flex;flex-direction:column;gap:16px}
+.ph-lot{background:var(--velvet-2);border:1px solid var(--velvet-3);border-radius:22px;padding:20px 22px;display:flex;flex-direction:column;gap:12px}
+.ph-lot .l1{display:flex;justify-content:space-between;align-items:center;font-size:16px;color:var(--ivory-mute)}
+.ph-lot .l1 b{font-family:var(--serif);font-weight:900;font-size:22px;color:var(--ivory)}
+.ph-lot p{margin:0;font-family:var(--serif);font-weight:900;font-size:31px;line-height:1.12}
+.ph-high{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:0 4px}
+.ph-high .v{font-family:var(--serif);font-weight:900;font-size:60px;line-height:.9;color:var(--vermilion)}
+.ph-high .w{text-align:start;font-size:17px;color:var(--ivory-dim);line-height:1.35}
+.ph-high .w b{display:block;font-size:20px;color:var(--ivory)}
+.status{align-self:flex-start;font-size:17px;font-weight:700;padding:6px 14px;border-radius:999px;background:rgba(255,179,138,.14);color:var(--ember)}
+.status.lead{background:rgba(255,90,54,.18);color:#ffd2c4}
+.ph-foot{padding:14px 18px 22px;display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--velvet-3);background:var(--velvet-1)}
+.stepper{display:flex;align-items:center;justify-content:space-between;direction:ltr}
+.sbtn{width:64px;height:64px;border-radius:18px;border:1.5px solid var(--velvet-4);background:var(--velvet-2);color:var(--ivory);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .1s}
+.sbtn:active{transform:scale(.95)}
+.sbtn:disabled{opacity:.35;cursor:default}
+.sbtn svg{width:26px;height:26px}
+.stepper .amt{display:flex;flex-direction:column;align-items:center;direction:rtl}
+.stepper .amt b{font-family:var(--serif);font-weight:900;font-size:44px;line-height:1}
+.stepper .amt small{font-size:15px;color:var(--ivory-mute)}
+.cta{height:66px;border:0;border-radius:18px;background:var(--vermilion);color:var(--velvet-0);font-family:var(--serif);font-weight:900;font-size:27px;cursor:pointer;transition:transform .1s,background .2s;display:flex;align-items:center;justify-content:center;gap:10px}
+.cta:hover{background:#ff6d4d}
+.cta:active{transform:scale(.985)}
+.cta:disabled{background:var(--velvet-3);color:var(--ivory-mute);cursor:default}
+.fine{margin:0;font-size:15px;color:var(--ivory-mute);text-align:center}
+.result-card{margin:auto 0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;padding:0 10px}
+.result-card .big-s{font-family:var(--serif);font-weight:900;font-size:54px;line-height:1;color:var(--vermilion);border:6px solid var(--vermilion);border-radius:14px;padding:2px 24px 10px;transform:rotate(-7deg);animation:slam .42s cubic-bezier(.2,.9,.25,1) both}
+.result-card h4{margin:18px 0 0;font-family:var(--serif);font-weight:900;font-size:36px;line-height:1.1}
+.result-card p{margin:0;font-size:19px;line-height:1.45;color:var(--ivory-dim)}
+
+/* phone allocation */
+.alloc-head{padding:30px 22px 14px;display:flex;flex-direction:column;gap:12px;border-bottom:1px solid var(--velvet-3)}
+.alloc-head .row{display:flex;justify-content:space-between;align-items:flex-end}
+.left small{display:block;font-size:16px;color:var(--ivory-mute)}
+.left .roller{font-family:var(--serif);font-weight:900;font-size:42px}
+.meter{height:6px;background:var(--velvet-3);border-radius:6px;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--vermilion);border-radius:6px;transition:width .45s var(--ease-out);margin-inline-start:auto}
+.alist{flex:1;overflow-y:auto;padding:10px 12px 14px;display:flex;flex-direction:column;gap:8px}
+.arow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;background:var(--velvet-2);border:1px solid var(--velvet-3);transition:border-color .3s,background .3s}
+.arow.has{border-color:rgba(255,90,54,.5);background:#2a1a1d}
+.arow .an{width:26px;font-family:var(--serif);font-weight:900;font-size:17px;color:var(--ivory-mute)}
+.arow .at{flex:1;min-width:0;font-size:19px;font-weight:600;line-height:1.2}
+.arow .ctl{display:flex;align-items:center;gap:6px;direction:ltr}
+.arow .sbtn{width:52px;height:52px;border-radius:14px}
+.arow .sbtn svg{width:22px;height:22px}
+.arow .av{min-width:70px;text-align:center;font-family:var(--serif);font-weight:900;font-size:24px;color:var(--ivory-mute)}
+.arow.has .av{color:var(--ivory)}
+.sent{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:24px;text-align:center}
+.sent .paddle .head{width:150px;height:150px;font-size:84px;border-radius:30px}
+.sent .paddle .stick{height:110px;width:24px}
+.sent .paddle{animation:raise .9s var(--ease-out) both}
+.sent h4{margin:30px 0 8px;font-family:var(--serif);font-weight:900;font-size:40px}
+.sent p{margin:0;font-size:20px;color:var(--ivory-dim);line-height:1.45}
+.wins{display:flex;flex-direction:column;gap:14px;padding:4px 0}
+.win{position:relative;background:var(--paper);color:var(--ink-on-paper);border-radius:18px;overflow:hidden}
+.win .wb{background:var(--velvet-2);color:var(--ivory);padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+.win .wb b{font-family:var(--serif);font-weight:900;font-size:26px}
+.win .wb span{font-family:var(--serif);font-weight:900;font-size:18px;color:var(--ivory-mute)}
+.win .ws{height:5px;background:var(--vermilion)}
+.win .wc{padding:12px 18px 16px;display:flex;justify-content:space-between;align-items:center;font-size:17px;color:var(--ink-soft)}
+.win .wc b{font-family:var(--serif);font-weight:900;font-size:30px;color:var(--ink-on-paper)}
+.remain{margin-top:auto;margin-bottom:22px;background:var(--ivory);color:var(--velvet-0);border-radius:20px;padding:18px 22px;display:flex;justify-content:space-between;align-items:baseline}
+.remain span{font-size:19px;font-weight:600}
+.remain b{font-family:var(--serif);font-weight:900;font-size:46px;line-height:1}
+.ph-h{margin:6px 4px 4px;font-family:var(--serif);font-weight:900;font-size:40px;line-height:1.05}
+.caption{max-width:390px;margin:14px auto 0;font-size:14px;line-height:1.5;color:var(--ivory-mute);text-align:center}
+
+@media (max-width:1080px){.phone-col{position:static}}
+@media (max-width:520px){
+  .shell{padding:14px 12px 32px}
+  .phone{border-width:8px;border-radius:44px;height:760px}
+}
+/* ───────── compact coin wallet (phone) ───────── */
+.wbar{position:relative;margin:24px 14px 4px;padding:12px 16px 16px;border-radius:18px;background:var(--velvet-2);border:1px solid var(--velvet-3);display:flex;align-items:center;gap:12px}
+.wbar.light{margin:auto 0 22px;background:var(--ivory);color:var(--velvet-0);border-color:var(--ivory)}
+.wb-coin{width:34px;height:34px;flex:0 0 auto;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4))}
+.wb-fig{flex:1;min-width:0}
+.wb-fig small{display:block;font-size:14px;color:var(--ivory-mute);line-height:1.2}
+.wb-val{display:flex;align-items:baseline;gap:6px}
+.wb-val .roller,.wb-val b{font-family:var(--serif);font-weight:900;font-size:34px;line-height:1.05}
+.wb-val .u{font-size:15px;font-weight:600;color:var(--ivory-dim)}
+.wb-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:end}
+.wb-side small{font-size:14px;color:var(--ivory-mute)}
+.wbar.light .wb-fig small,.wbar.light .wb-side small,.wbar.light .u{color:var(--ink-soft)}
+.wb-meter{position:absolute;inset-inline:16px;bottom:7px;height:4px;border-radius:4px;background:var(--velvet-3);overflow:hidden}
+.wbar.light .wb-meter{background:rgba(29,19,22,.14)}
+.wb-meter i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#8a5c3b,#cf9a62);border-radius:4px;margin-inline-start:0;transition:width .5s var(--ease-out)}
+/* ───────── coin wallet (phone, legacy) ───────── */
+.wallet-card{margin:26px 14px 6px;padding:16px 18px 14px;border-radius:24px;background:linear-gradient(180deg,#2a1b20,#211519);border:1px solid var(--velvet-3);display:flex;flex-direction:column;gap:10px}
+.wallet-card.light{margin:auto 0 22px;background:var(--ivory);color:var(--velvet-0);border-color:var(--ivory)}
+.wallet-card.light .wc-fig small,.wallet-card.light .wc-legend,.wallet-card.light .u{color:var(--ink-soft)}
+.wallet-card.light .wc-meter{background:rgba(29,19,22,.12)}
+.wc-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.me{display:inline-flex;align-items:center;gap:8px;font-size:17px;font-weight:600}
+.me i{font-style:normal;width:30px;height:30px;border-radius:9px;background:var(--ivory);color:var(--velvet-0);display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:900;font-size:18px}
+.wc-of{font-size:14px;color:var(--ivory-mute)}
+.wc-of b{color:var(--ivory-dim);font-weight:600}
+.wc-main{display:flex;align-items:center;gap:14px}
+.coins{width:56px;height:48px;flex:0 0 auto;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
+.wc-fig small{display:block;font-size:15px;color:var(--ivory-mute);margin-bottom:2px}
+.wc-val{display:flex;align-items:baseline;gap:8px}
+.wc-val .roller,.wc-val b{font-family:var(--serif);font-weight:900;font-size:46px;line-height:1}
+.wc-val .u{font-size:17px;font-weight:600;color:var(--ivory-dim)}
+.wc-meter{height:10px;border-radius:10px;background:var(--velvet-3);display:flex;overflow:hidden;gap:0}
+.wc-meter i{display:block;height:100%;width:0;transition:width .5s var(--ease-out)}
+.wc-meter i.paid{background:var(--ivory-mute)}
+.wallet-card.light .wc-meter i.paid{background:var(--ink-soft)}
+.wc-meter i.held{background:var(--vermilion)}
+.wc-meter i.draft{background:repeating-linear-gradient(135deg,rgba(255,179,138,.75) 0 4px,rgba(255,179,138,.25) 4px 8px)}
+.wc-meter.seg i+i{box-shadow:inset -2px 0 0 #211519}
+.wc-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;color:var(--ivory-dim)}
+.wc-legend span{display:inline-flex;align-items:center;gap:6px}
+.wc-legend b{font-weight:700;color:inherit}
+.k{width:10px;height:10px;border-radius:3px;display:inline-block}
+.k.paid{background:var(--ivory-mute)}.wallet-card.light .k.paid{background:var(--ink-soft)}
+.k.held{background:var(--vermilion)}
+.k.free{background:var(--velvet-4);box-shadow:inset 0 0 0 1px var(--ivory-mute)}
+.amt-n{display:inline-flex;align-items:center;gap:8px}
+.coin-s{width:28px;height:28px}
+.sent-mark{position:relative;width:132px;height:112px;animation:raise .9s var(--ease-out) both}
+.sent-mark>svg{width:132px;height:112px;filter:drop-shadow(0 14px 24px rgba(0,0,0,.5))}
+.sent-mark .ok{position:absolute;left:-6px;bottom:-4px;width:48px;height:48px;border-radius:50%;background:var(--vermilion);color:var(--velvet-0);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px var(--velvet-1)}
+.sent-mark .ok svg{width:26px;height:26px}
+
+/* ───────── mode switch ───────── */
+.modes{display:flex;gap:4px;background:var(--velvet-1);border:1px solid var(--velvet-3);border-radius:12px;padding:4px}
+.modes button{border:0;background:transparent;color:var(--ivory-dim);padding:8px 14px;border-radius:9px;font-size:15px;font-weight:600;cursor:pointer}
+.modes button[aria-pressed="true"]{background:var(--velvet-3);color:var(--ivory)}
+.show-only{display:contents}
+body.admin-on .show-only,body.admin-on .stage{display:none}
+
+/* ───────── admin ───────── */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.admin{max-width:1280px;margin:8px auto 0}
+.ad-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px}
+.ad-head h1{margin:0;font-family:var(--serif);font-weight:900;font-size:46px;line-height:1.05;letter-spacing:-.01em}
+.ad-head p{margin:8px 0 0;font-size:16px;line-height:1.5;color:var(--ivory-dim);max-width:62ch}
+.btn{height:46px;padding:0 20px;border-radius:12px;border:1px solid transparent;font-size:16px;font-weight:700;display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:background .2s,border-color .2s,color .2s,transform .1s;text-decoration:none;white-space:nowrap}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--vermilion);color:var(--velvet-0)}
+.btn.primary:hover{background:#ff6d4d}
+.btn.ghost-b{background:var(--velvet-2);border-color:var(--velvet-4);color:var(--ivory)}
+.btn.ghost-b:hover{border-color:var(--ivory-mute)}
+.btn.sm{height:38px;padding:0 14px;font-size:14px;border-radius:10px}
+.btn:disabled{opacity:.45;cursor:default}
+.link{border:0;background:none;color:var(--ivory-dim);font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:6px 0}
+.link:hover{color:var(--ivory)}
+.ad-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.seg{display:inline-flex;gap:3px;background:var(--velvet-1);border:1px solid var(--velvet-3);border-radius:12px;padding:3px}
+.seg button{border:0;background:transparent;color:var(--ivory-dim);height:38px;padding:0 14px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.seg button[aria-checked="true"]{background:var(--ivory);color:var(--velvet-0)}
+.seg.small button{height:40px}
+.search{position:relative;display:flex;align-items:center;width:min(320px,100%)}
+.search svg{position:absolute;right:14px;color:var(--ivory-mute);pointer-events:none}
+.search input{width:100%;height:44px;border-radius:12px;border:1px solid var(--velvet-4);background:var(--velvet-1);color:var(--ivory);font:inherit;font-size:15px;padding:0 42px 0 14px}
+.search input::placeholder,.field input::placeholder{color:var(--ivory-mute)}
+.stable{display:flex;flex-direction:column;gap:10px}
+.srow{display:grid;grid-template-columns:minmax(0,2.6fr) 120px 150px 70px 90px 160px 240px;align-items:center;gap:16px;padding:16px 20px;border-radius:16px;background:var(--velvet-2);border:1px solid var(--velvet-3)}
+.srow.sh{background:none;border:0;padding:0 20px;font-size:13px;font-weight:600;color:var(--ivory-mute)}
+.srow.is-live{border-color:rgba(255,90,54,.4);background:linear-gradient(90deg,#211519,#2a1a1d)}
+.s-name{display:flex;align-items:center;gap:14px;min-width:0}
+.s-logo{width:52px;height:40px;flex:0 0 auto;border-radius:8px;border:1.5px dashed var(--velvet-4);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ivory-mute)}
+.s-name b{display:block;font-family:var(--serif);font-weight:700;font-size:21px;line-height:1.2}
+.s-name span{display:block;font-size:14px;color:var(--ivory-mute);margin-top:2px}
+.s-cell{font-size:15px;color:var(--ivory-dim)}
+.s-cell.n{font-family:var(--serif);font-weight:900;font-size:20px;color:var(--ivory)}
+.s-budget{display:inline-flex;align-items:center;gap:6px;font-family:var(--serif);font-weight:900;font-size:19px;color:var(--ivory)}
+.s-budget svg{width:20px;height:20px}
+.s-budget small{font-family:var(--sans);font-weight:500;font-size:13px;color:var(--ivory-mute)}
+.pill{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--velvet-3);color:var(--ivory-dim);white-space:nowrap}
+.pill.live{background:rgba(255,90,54,.16);color:#ffd2c4}
+.pill.live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--vermilion);animation:live 1.6s ease-in-out infinite}
+.pill.done{background:transparent;border:1px solid var(--velvet-4);color:var(--ivory-mute)}
+.s-act{display:flex;justify-content:flex-end;align-items:center;gap:8px}
+.more{position:relative}
+.more summary{list-style:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--velvet-4);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ivory-dim)}
+.more summary::-webkit-details-marker{display:none}
+.more[open] summary{border-color:var(--ivory-mute);color:var(--ivory)}
+.more .menu{position:absolute;left:0;top:44px;z-index:5;min-width:170px;background:var(--velvet-2);border:1px solid var(--velvet-4);border-radius:12px;padding:6px;box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.more .menu button{display:block;width:100%;text-align:start;border:0;background:none;color:var(--ivory);padding:10px 12px;border-radius:8px;font-size:14px;cursor:pointer}
+.more .menu button:hover{background:var(--velvet-3)}
+.empty{padding:40px;text-align:center;color:var(--ivory-mute);border:1px dashed var(--velvet-4);border-radius:16px}
+@media (max-width:1100px){
+  .srow.sh{display:none}
+  .srow{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name stat" "meta meta" "act act";row-gap:12px}
+  .s-logo{display:none}
+  .s-name{grid-area:name}.s-stat{grid-area:stat}.s-act{grid-area:act;justify-content:flex-start}
+  .s-meta{grid-area:meta;display:flex!important;flex-wrap:wrap;gap:6px 18px}
+  .s-cell[data-l]::before{content:attr(data-l) " ";color:var(--ivory-mute);font-family:var(--sans);font-weight:500;font-size:13px}
+}
+.s-meta{display:contents}
+
+.ed-grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:28px;align-items:start}
+@media (max-width:1100px){.ed-grid{grid-template-columns:minmax(0,1fr)}.ed-preview{order:-1}}
+.ed-form{display:flex;flex-direction:column;gap:18px;min-width:0}
+.card{background:var(--velvet-2);border:1px solid var(--velvet-3);border-radius:20px;padding:22px 24px;display:flex;flex-direction:column;gap:16px}
+.card h2{margin:0;font-family:var(--serif);font-weight:700;font-size:26px}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:700px){.g2,.g3{grid-template-columns:minmax(0,1fr)}}
+.field{display:flex;flex-direction:column;gap:7px;min-width:0;border:0;margin:0;padding:0}
+.field label,.field legend{font-size:14px;font-weight:600;color:var(--ivory-dim);padding:0}
+.field input,.field select,.items input,.items select{height:46px;border-radius:12px;border:1px solid var(--velvet-4);background:var(--velvet-1);color:var(--ivory);font:inherit;font-size:16px;padding:0 14px;width:100%;transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field select:focus,.items input:focus,.items select:focus,.search input:focus{outline:none;border-color:var(--vermilion);box-shadow:0 0 0 3px rgba(255,90,54,.22)}
+.field.bad input,.items li.bad input{border-color:#ff8a6b}
+.hint{font-size:13px;line-height:1.45;color:var(--ivory-mute)}
+.err{font-size:13px;font-weight:600;color:#ff9d82;display:flex;align-items:center;gap:6px}
+.err::before{content:"";width:6px;height:6px;border-radius:50%;background:#ff9d82;flex:0 0 auto}
+.with-coin{position:relative}
+.with-coin svg{position:absolute;left:12px;top:50%;width:22px;height:22px;margin-top:-11px;pointer-events:none}
+.with-coin input{padding-left:44px;font-family:var(--serif);font-weight:900;font-size:20px}
+.logo-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.logo-drop{width:150px;height:68px;border-radius:12px;border:1.5px dashed var(--velvet-4);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ivory-mute)}
+.modes-pick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:700px){.modes-pick{grid-template-columns:minmax(0,1fr)}}
+.mode-card{position:relative;display:flex;flex-direction:column;gap:6px;padding:18px 20px;border-radius:16px;border:1.5px solid var(--velvet-4);background:var(--velvet-1);cursor:pointer;transition:border-color .2s,background .2s;color:var(--ivory-mute)}
+.mode-card input{position:absolute;opacity:0;pointer-events:none}
+.mode-card:has(input:disabled){opacity:.5;cursor:default}
+.field input:disabled,.field select:disabled,.items input:disabled,.items select:disabled,.seg button:disabled{opacity:.55;cursor:default}
+.mode-card:has(input:checked){border-color:var(--vermilion);background:#26171a;color:var(--ivory-dim)}
+.mode-card:has(input:focus-visible){outline:3px solid var(--vermilion);outline-offset:3px}
+.mode-art{width:120px;height:64px;margin-bottom:6px}
+.mc-t{font-family:var(--serif);font-weight:900;font-size:24px;color:var(--ivory)}
+.mc-d{font-size:15px;line-height:1.5;color:var(--ivory-dim)}
+.rule-line{margin:0;padding:12px 14px;border-radius:12px;background:var(--velvet-1);font-size:15px;line-height:1.5;color:var(--ivory-dim)}
+.items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;counter-reset:it}
+.items li{display:grid;grid-template-columns:34px minmax(0,1fr) 150px auto;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:var(--velvet-1);border:1px solid var(--velvet-3)}
+.items .ix{font-family:var(--serif);font-weight:900;font-size:18px;color:var(--ivory-mute);text-align:center}
+.items .ops{display:flex;gap:2px}
+.items .ops button{width:36px;height:36px;border:0;border-radius:9px;background:transparent;color:var(--ivory-mute);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.items .ops button:hover:not(:disabled){background:var(--velvet-3);color:var(--ivory)}
+.items .ops button:disabled{opacity:.3;cursor:default}
+@media (max-width:700px){.items li{grid-template-columns:28px minmax(0,1fr);}.items li select{grid-column:2}.items .ops{grid-column:2;justify-content:flex-end}}
+.ed-actions{position:sticky;bottom:12px;z-index:4;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:10px;padding:14px 16px;border-radius:18px;background:rgba(22,14,18,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--velvet-3);box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.act-msg{margin-inline-end:auto;font-size:14px;font-weight:600;color:#ff9d82}
+.ed-preview{position:sticky;top:18px}
+.mini-proj{font-size:4.2px;position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:var(--velvet-1);box-shadow:0 20px 50px rgba(0,0,0,.5),0 0 0 1px var(--velvet-3);padding:5em 6em;display:flex;flex-direction:column;justify-content:space-between}
+.mini-proj::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 55% 60% at 50% 15%,rgba(255,214,170,.12),transparent 70%);pointer-events:none}
+.mp-meta{position:relative;display:flex;justify-content:space-between;gap:3em;font-size:3.4em;color:var(--ivory-dim)}
+.mp-meta b{font-family:var(--serif);color:var(--ivory)}
+.mp-st{position:relative;margin:0;font-family:var(--serif);font-weight:900;font-size:9em;line-height:1.05;color:var(--ivory);text-wrap:balance}
+.mp-st.ph{color:var(--ivory-mute);font-weight:700}
+.mp-bot{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:4em}
+.mp-price{font-family:var(--serif);font-weight:900;font-size:15em;line-height:.85;color:var(--vermilion)}
+.mp-sub{font-size:3.4em;color:var(--ivory-dim)}
+.mini-phone{max-width:300px;margin:0 auto;border-radius:30px;border:7px solid #2a1c22;background:var(--velvet-1);padding:4px 0 14px}
+.mini-phone .wallet-card{margin:14px 12px 0}
+.mini-phone .wc-val .roller,.mini-phone .wc-val b{font-size:36px}
+.toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:50;background:var(--ivory);color:var(--velvet-0);padding:14px 22px;border-radius:14px;font-weight:700;font-size:15px;box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.toast:not([hidden]){animation:toast .4s var(--ease-out)}
+@keyframes toast{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="cg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6dcae"/><stop offset=".5" stop-color="#cf9a62"/><stop offset="1" stop-color="#8a5c3b"/></linearGradient>
+    <linearGradient id="cgd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a87346"/><stop offset="1" stop-color="#6e4629"/></linearGradient>
+    <symbol id="coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.5" fill="url(#cg)" stroke="#6e4629" stroke-width="1"/><circle cx="12" cy="12" r="7.2" fill="none" stroke="#fff3dc" stroke-opacity=".45" stroke-width="1.2"/><path d="M9 9.5v5h4.5M15 14.5v-5h-4.5" stroke="#7a4f30" stroke-width="1.5" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="coinStack" viewBox="0 0 56 48">
+      <ellipse cx="22" cy="40" rx="17" ry="6" fill="url(#cgd)"/><ellipse cx="22" cy="37" rx="17" ry="6" fill="url(#cg)"/>
+      <ellipse cx="22" cy="33" rx="17" ry="6" fill="url(#cgd)"/><ellipse cx="22" cy="30" rx="17" ry="6" fill="url(#cg)"/>
+      <ellipse cx="22" cy="26" rx="17" ry="6" fill="url(#cgd)"/><ellipse cx="22" cy="23" rx="17" ry="6" fill="url(#cg)"/>
+      <circle cx="38" cy="18" r="15" fill="url(#cg)" stroke="#6e4629" stroke-width="1.2"/><circle cx="38" cy="18" r="10.5" fill="none" stroke="#fff3dc" stroke-opacity=".5" stroke-width="1.5"/>
+      <path d="M34 14v7.5h6.5M42 21.5V14h-6.5" stroke="#7a4f30" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+<div class="shell">
+  <header class="bar">
+    <div class="brand"><b>ערב מכירה</b><span>אב־טיפוס חי של המכירה הפומבית · NGG</span></div>
+    <div class="modes" role="group" aria-label="תצוגה"><button type="button" id="mShow" aria-pressed="true">המופע בחדר</button><button type="button" id="mAdmin" aria-pressed="false">ניהול הסשנים</button></div>
+    <span class="show-only"><div class="tabs" role="tablist" aria-label="שלבי המכירה">
+      <button class="tab" role="tab" data-go="round" aria-selected="true">סבב מכירה פומבית</button>
+      <button class="tab" role="tab" data-go="lobby" aria-selected="false">חלוקת תקציב</button>
+      <button class="tab" role="tab" data-go="winners" aria-selected="false">הזוכים</button>
+      <button class="tab" role="tab" data-go="values" aria-selected="false">מה הקבוצה מעריכה</button>
+    </div>
+    <button class="ghost" id="fs" type="button"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>מסך מלא</button></span>
+  </header>
+
+  <main class="stage">
+    <section aria-label="המסך המוקרן">
+      <p class="label">המסך המוקרן בחדר</p>
+      <div class="proj-frame" id="frame">
+        <div class="screen" id="screen">
+
+          <!-- ROUND -->
+          <div class="scene on" id="s-round" aria-label="סבב מכירה פומבית">
+            <div class="meta">
+              <div class="room"><span class="dot" aria-hidden="true"></span><strong>היגדים ניהוליים</strong><span class="rule"></span><span>סדנת מנהיגות · קבוצה 3</span></div>
+              <div class="room"><span>38 משתתפים</span><span class="client">לוגו הלקוח</span></div>
+            </div>
+            <div class="block" id="block">
+              <div class="lotline"><span class="lotno">פריט 03</span><span>מתוך 07</span><span class="cat">יחסים</span></div>
+              <h1 class="statement">ליצור מרחב בטוח לחשיבה משותפת</h1>
+              <div>
+                <div class="price">
+                  <div class="fig">
+                    <span class="cap" id="capPrice">ההצעה הגבוהה</span>
+                    <div class="val"><span class="roller" id="rPrice" aria-live="polite"></span><span class="unit">מטבעות</span></div>
+                  </div>
+                  <div class="leader" id="leader">
+                    <div class="paddle"><div class="head" id="leadP">נ</div><div class="stick"></div></div>
+                    <div class="who"><b id="leadN">נועה</b><span>בראש המכירה</span></div>
+                  </div>
+                  <div class="stamp" aria-hidden="true">נמכר<small id="stampSub">לנועה</small></div>
+                  <div class="ring" aria-hidden="true"></div>
+                </div>
+                <div class="fuse" aria-hidden="true"><i id="fuse"></i></div>
+                <div class="fuse-row"><span>הזמן בסבב</span><span class="t num" id="tleft">0:45</span></div>
+              </div>
+            </div>
+            <aside class="ladder" aria-label="הצעות אחרונות">
+              <h3>הצעות אחרונות</h3>
+              <ol class="bids" id="bids"></ol>
+            </aside>
+            <div class="queue" id="queue"></div>
+            <div class="cue" id="cue" aria-live="assertive"></div>
+            <div class="flash" aria-hidden="true"></div>
+          </div>
+
+          <!-- LOBBY / ALLOCATION OPEN -->
+          <div class="scene" id="s-lobby" aria-label="חלוקת תקציב פתוחה">
+            <div class="meta">
+              <div class="room"><span class="dot" aria-hidden="true"></span><strong>תכונות של עובד אחזקה מצוין</strong><span class="rule"></span><span>מערך אחזקה והנדסה</span></div>
+              <div class="room"><span class="client">לוגו הלקוח</span></div>
+            </div>
+            <div class="lobby-main">
+              <h1 class="big">המכירה פתוחה</h1>
+              <p class="sub">10,000 ₪ לכל אחד, עשרה פריטים. מה שווה לכם יותר?</p>
+              <div class="count"><span class="val"><span class="roller" id="rCount"></span></span><span class="of">מתוך 12 שלחו</span></div>
+              <div class="wall" id="wall"></div>
+            </div>
+            <div class="qr">
+              <h3>סורקים ונכנסים</h3>
+              <div class="qr-box"><i></i><i></i><i></i><i></i>כאן יופיע קוד ה־QR של החדר</div>
+              <span class="url">join?room=soroka-maintenance</span>
+            </div>
+            <div class="lobby-foot">
+              <span>אפשר לסגור גם לפני שכולם שלחו. מי שלא שלח לא נכלל בחישוב.</span>
+              <button class="hammer" id="closeAlloc" type="button">
+                <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M14 24l7 7 14-15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                סגירת המכירה
+              </button>
+            </div>
+          </div>
+
+          <!-- WINNERS -->
+          <div class="scene" id="s-winners" aria-label="הזוכים">
+            <div class="meta">
+              <div class="room"><strong>תכונות של עובד אחזקה מצוין</strong></div>
+              <div class="room"><span class="client">לוגו הלקוח</span></div>
+            </div>
+            <h1 class="title">הזוכים</h1>
+            <div class="plates" id="plates"></div>
+          </div>
+
+          <!-- VALUES -->
+          <div class="scene" id="s-values" aria-label="מה הקבוצה מעריכה">
+            <div class="meta">
+              <div class="room"><strong>תכונות של עובד אחזקה מצוין</strong></div>
+              <div class="room"><span class="client">לוגו הלקוח</span></div>
+            </div>
+            <h1 class="title">מה הקבוצה מעריכה</h1>
+            <div class="podium" id="podium"></div>
+            <div class="vtable" role="table" aria-label="מקומות 4 עד 10" id="vtable"></div>
+          </div>
+
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center">
+        <button class="ghost" id="replay" type="button">הפעלה מחדש של השלב</button>
+        <span style="font-size:13px;color:var(--ivory-mute)">המשתתפים האחרים מדומים. הטלפון מימין שולט במשתתף אחד, והמסך מגיב בזמן אמת.</span>
+      </div>
+    </section>
+
+    <aside class="phone-col" aria-label="הטלפון של המשתתף">
+      <p class="label" id="phoneLabel">הטלפון של אורי</p>
+      <div class="phone">
+
+        <!-- phone: auction round -->
+        <div class="view on" id="v-round">
+          <div class="wbar">
+            <svg class="wb-coin" viewBox="0 0 24 24" aria-hidden="true"><use href="#coin"></use></svg>
+            <div class="wb-fig"><small>נשארו לך</small><span class="wb-val"><span class="roller" id="rWallet"></span><span class="u">מטבעות</span></span></div>
+            <div class="wb-side"><span class="me"><i aria-hidden="true">א</i>אורי</span><small>מתוך <span class="num">1,000</span></small></div>
+            <div class="wb-meter" aria-hidden="true"><i id="mFree"></i></div>
+          </div>
+          <div class="ph-body" id="phBody">
+            <div class="ph-lot">
+              <div class="l1"><b>פריט 03</b><span>יחסים</span></div>
+              <p>ליצור מרחב בטוח לחשיבה משותפת</p>
+            </div>
+            <div class="ph-high">
+              <span class="v"><span class="roller" id="rPhoneHigh"></span></span>
+              <span class="w"><b id="phLead">נועה</b><span id="phLeadSub">ההצעה הגבוהה</span></span>
+            </div>
+            <span class="status" id="phStatus">טרם הצעתם</span>
+          </div>
+          <div class="ph-foot" id="phFoot">
+            <div class="stepper">
+              <button class="sbtn" id="bDown" type="button" aria-label="הורדה ב־20 מטבעות"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+              <div class="amt"><span class="amt-n"><svg class="coin-s" viewBox="0 0 24 24" aria-hidden="true"><use href="#coin"></use></svg><b class="num" id="bAmt">300</b></span><small>ההצעה שלך</small></div>
+              <button class="sbtn" id="bUp" type="button" aria-label="העלאה ב־20 מטבעות"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5v14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+            </div>
+            <button class="cta" id="bSend" type="button">שליחת הצעה</button>
+            <p class="fine">המטבעות יורדים מהיתרה רק אם תזכו בפריט.</p>
+          </div>
+          <div class="ph-body" id="phResult" hidden></div>
+        </div>
+
+        <!-- phone: allocation -->
+        <div class="view" id="v-alloc">
+          <div class="wbar">
+            <svg class="wb-coin" viewBox="0 0 24 24" aria-hidden="true"><use href="#coin"></use></svg>
+            <div class="wb-fig"><small>נשארו לך לחלק</small><span class="wb-val"><span class="roller" id="rLeft"></span><span class="u">₪</span></span></div>
+            <div class="wb-side"><span class="me"><i aria-hidden="true">ס</i>סיגל</span><small>מתוך <span class="num">10,000</span></small></div>
+            <div class="wb-meter" aria-hidden="true"><i id="aFree"></i></div>
+          </div>
+          <div class="alist" id="alist"></div>
+          <div class="ph-foot">
+            <button class="cta" id="aSend" type="button">שליחת ההצעות</button>
+          </div>
+        </div>
+
+        <!-- phone: allocation sent -->
+        <div class="view" id="v-sent">
+          <div class="wc-row" style="padding:30px 22px 0"><span class="me"><i aria-hidden="true">ס</i>סיגל</span><span></span></div>
+          <div class="sent">
+            <div class="sent-mark" aria-hidden="true">
+              <svg viewBox="0 0 56 48"><use href="#coinStack"></use></svg>
+              <span class="ok"><svg viewBox="0 0 24 24" fill="none"><path d="M6 12.5l4 4 8-9" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            </div>
+            <h4>ההצעות נשלחו</h4>
+            <p id="sentLine">חילקת 10,000 ₪ בין 6 פריטים.</p>
+            <p class="fine" style="margin-top:14px">התוצאה תופיע כאן כשהמנחה תסגור את המכירה.</p>
+          </div>
+        </div>
+
+        <!-- phone: personal result -->
+        <div class="view" id="v-result">
+          <div class="wc-row" style="padding:30px 22px 6px"><span class="me"><i aria-hidden="true">ס</i>סיגל</span><span style="font-size:14px;color:var(--ivory-mute)">המכירה נסגרה</span></div>
+          <div class="ph-body" style="gap:14px">
+            <h2 class="ph-h">זכית ב־2 פריטים</h2>
+            <div class="wins">
+              <div class="win"><div class="wb"><b>יסודיות</b><span>פריט 04</span></div><div class="ws"></div><div class="wc"><span>זכייה משותפת עם משה</span><b class="num">2,000 ₪</b></div></div>
+              <div class="win"><div class="wb"><b>אדיבות וסבלנות</b><span>פריט 07</span></div><div class="ws"></div><div class="wc"><span>זכייה משותפת עם אלי</span><b class="num">4,000 ₪</b></div></div>
+            </div>
+            <div class="wbar light" style="margin:auto 0 22px">
+              <svg class="wb-coin" viewBox="0 0 24 24" aria-hidden="true"><use href="#coin"></use></svg>
+              <div class="wb-fig"><small>נשאר לך</small><span class="wb-val"><b class="num">4,000</b><span class="u">₪</span></span></div>
+              <div class="wb-side"><small>מתוך <span class="num">10,000</span></small></div>
+              <div class="wb-meter" aria-hidden="true"><i style="width:40%"></i></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <p class="caption" id="caption"></p>
+    </aside>
+  </main>
+  <section class="admin" id="admin" hidden aria-label="ניהול הסשנים">
+
+    <!-- sessions list -->
+    <div id="aList">
+      <div class="ad-head">
+        <div>
+          <h1>הסשנים</h1>
+          <p>כל צוות NGG רואה את כל הסשנים. כל סשן הוא מכירה נפרדת, עם מסך מוקרן וקישור הצטרפות משלו.</p>
+        </div>
+        <button class="btn primary" id="newSession" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>סשן חדש</button>
+      </div>
+      <div class="ad-tools">
+        <div class="seg" role="radiogroup" aria-label="סינון לפי מצב" id="fltr">
+          <button type="button" role="radio" aria-checked="true" data-f="all">הכל</button>
+          <button type="button" role="radio" aria-checked="false" data-f="live">חיים עכשיו</button>
+          <button type="button" role="radio" aria-checked="false" data-f="draft">טיוטות</button>
+          <button type="button" role="radio" aria-checked="false" data-f="done">הסתיימו</button>
+        </div>
+        <label class="search"><span class="sr">חיפוש סשן</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input type="search" id="q" placeholder="חיפוש לפי שם או לקוח">
+        </label>
+      </div>
+      <div class="stable" role="table" aria-label="רשימת הסשנים">
+        <div class="srow sh" role="row">
+          <span role="columnheader">סשן</span><span role="columnheader">סוג משחק</span><span role="columnheader">תקציב למשתתף</span><span role="columnheader">פריטים</span><span role="columnheader">משתתפים</span><span role="columnheader">מצב</span><span role="columnheader"><span class="sr">פעולות</span></span>
+        </div>
+        <div id="rows"></div>
+      </div>
+      <p class="empty" id="empty" hidden>אין סשנים שמתאימים לחיפוש. נסו מילה אחרת או בחרו "הכל".</p>
+    </div>
+
+    <!-- session editor -->
+    <div id="aEdit" hidden>
+      <button class="link" id="backList" type="button"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>חזרה לסשנים</button>
+      <div class="ad-head" style="margin-top:6px">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><h1 id="edH">סשן חדש</h1><span class="pill" id="edState">טיוטה</span></div>
+      </div>
+      <div class="ed-grid">
+        <form class="ed-form" id="edForm" novalidate>
+          <section class="card">
+            <h2>פרטי הסשן</h2>
+            <div class="field"><label for="fTitle">שם הסשן</label><input id="fTitle" type="text" placeholder="למשל: תכונות של עובד אחזקה מצוין" autocomplete="off"><span class="hint">יוצג בראש המסך המוקרן ובטלפונים.</span><span class="err" id="eTitle" hidden>חסר שם לסשן.</span></div>
+            <div class="g2">
+              <div class="field"><label for="fClient">לקוח וקבוצה</label><input id="fClient" type="text" placeholder="למשל: סורוקה · מערך אחזקה והנדסה" autocomplete="off"></div>
+              <div class="field"><label for="fSlug">כתובת הסשן</label><input id="fSlug" type="text" dir="ltr" placeholder="team-name" autocomplete="off"><span class="hint">אותיות לטיניות קטנות, ספרות ומקפים, 3 עד 60 תווים.</span><span class="err" id="eSlug" hidden>הכתובת צריכה להכיל 3 עד 60 אותיות לטיניות קטנות, ספרות או מקפים.</span></div>
+            </div>
+            <div class="logo-row">
+              <div class="logo-drop" aria-hidden="true">לוגו הלקוח</div>
+              <div><button class="btn ghost-b" type="button">העלאת לוגו</button><span class="hint" style="display:block;margin-top:6px">PNG, JPG או WEBP, עד 2MB. יוצג בפינת המסך המוקרן.</span></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>סוג המשחק</h2>
+            <div class="modes-pick" role="radiogroup" aria-label="סוג המשחק">
+              <label class="mode-card"><input type="radio" name="mode" value="auction" checked>
+                <svg class="mode-art" viewBox="0 0 120 64" aria-hidden="true"><rect x="38" y="8" width="44" height="34" rx="6" fill="currentColor" opacity=".9"/><rect x="8" y="14" width="22" height="22" rx="4" fill="currentColor" opacity=".25"/><rect x="90" y="14" width="22" height="22" rx="4" fill="currentColor" opacity=".25"/><rect x="46" y="50" width="28" height="6" rx="3" fill="var(--vermilion)"/></svg>
+                <span class="mc-t">מכירה פומבית</span>
+                <span class="mc-d">פריט אחד בכל סבב. ההצעה הגבוהה זוכה, ורק הזוכה משלם.</span>
+              </label>
+              <label class="mode-card"><input type="radio" name="mode" value="allocation">
+                <svg class="mode-art" viewBox="0 0 120 64" aria-hidden="true"><rect x="8" y="30" width="16" height="26" rx="3" fill="currentColor" opacity=".35"/><rect x="30" y="16" width="16" height="40" rx="3" fill="var(--vermilion)"/><rect x="52" y="38" width="16" height="18" rx="3" fill="currentColor" opacity=".35"/><rect x="74" y="24" width="16" height="32" rx="3" fill="currentColor" opacity=".6"/><rect x="96" y="44" width="16" height="12" rx="3" fill="currentColor" opacity=".35"/></svg>
+                <span class="mc-t">חלוקת תקציב</span>
+                <span class="mc-d">כל הפריטים פתוחים יחד. כל משתתף מחלק את התקציב שלו, וההקצאה הגבוהה זוכה.</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>תקציב ומטבעות</h2>
+            <div class="g3">
+              <div class="field"><label for="fBudget">תקציב לכל משתתף</label><div class="with-coin"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#coin"></use></svg><input id="fBudget" type="text" inputmode="numeric" dir="ltr" value="1,000"></div><span class="err" id="eBudget" hidden>התקציב צריך להיות לפחות פי 2 מהקפיצה.</span></div>
+              <fieldset class="field"><legend>יחידה</legend>
+                <div class="seg small" role="radiogroup" aria-label="יחידת התקציב" id="fUnit">
+                  <button type="button" role="radio" aria-checked="true" data-u="coins">מטבעות</button>
+                  <button type="button" role="radio" aria-checked="false" data-u="ils">₪ וירטואליים</button>
+                </div>
+              </fieldset>
+              <div class="field"><label for="fStep">קפיצה בכל לחיצה</label><select id="fStep"><option>10</option><option selected>20</option><option>50</option><option>100</option><option>500</option></select></div>
+            </div>
+            <div class="field" id="timerField" style="max-width:280px"><label for="fTimer">זמן לכל סבב</label><select id="fTimer"><option value="0">ללא ספירה לאחור</option><option value="30">30 שניות</option><option value="45" selected>45 שניות</option><option value="60">דקה</option><option value="90">דקה וחצי</option></select><span class="hint">הסגירה נשארת תמיד בידי המנחה.</span></div>
+            <p class="rule-line" id="ruleLine"></p>
+          </section>
+
+          <section class="card">
+            <div class="card-h"><h2>פריטי המכירה</h2><span class="hint" id="itemCount"></span></div>
+            <p class="hint" style="margin:-4px 0 12px">הסדר כאן הוא הסדר במסך ובטלפונים. הקטגוריה קובעת את הפרופיל האישי של המשתתף.</p>
+            <ol class="items" id="items"></ol>
+            <span class="err" id="eItems" hidden>צריך לפחות שני פריטים עם טקסט.</span>
+            <button class="btn ghost-b" id="addItem" type="button" style="margin-top:12px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>הוספת פריט</button>
+          </section>
+
+          <div class="ed-actions">
+            <span class="act-msg" id="actMsg" role="status"></span>
+            <button class="btn ghost-b" id="saveDraft" type="button">שמירה כטיוטה</button>
+            <button class="btn primary" id="saveLive" type="button">שמירה והפעלה ל־12 שעות</button>
+          </div>
+        </form>
+
+        <aside class="ed-preview" aria-label="תצוגה מקדימה">
+          <p class="label">כך זה ייראה במסך המוקרן</p>
+          <div class="mini-proj" id="pvProj"></div>
+          <p class="label" style="margin-top:18px">וכך בטלפון של המשתתף</p>
+          <div class="mini-phone" id="pvPhone"></div>
+          <p class="hint" style="margin-top:14px">קישור ההצטרפות וקוד ה־QR נוצרים ברגע שהסשן נשמר.</p>
+        </aside>
+      </div>
+    </div>
+    <div class="toast" id="toast" role="status" hidden></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const fmt = (n) => n.toLocaleString('en-US');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const timers = new Set();
+  const later = (fn, ms) => { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); return id; };
+  const every = (fn, ms) => { const id = setInterval(fn, ms); timers.add(id); return id; };
+  const clearAll = () => { timers.forEach((id) => { clearTimeout(id); clearInterval(id); }); timers.clear(); };
+
+  /* ── digit roller ── */
+  function roll(el, value, suffix = '') {
+    const str = fmt(value) + suffix;
+    if (el.dataset.len !== String(str.length)) {
+      el.innerHTML = '';
+      for (const ch of str) {
+        if (/\d/.test(ch)) {
+          const d = document.createElement('span'); d.className = 'd';
+          const strip = document.createElement('span'); strip.className = 'strip';
+          for (let i = 0; i < 10; i++) { const s = document.createElement('span'); s.textContent = i; strip.appendChild(s); }
+          d.appendChild(strip); el.appendChild(d);
+        } else { const s = document.createElement('span'); s.className = 'sep'; s.textContent = ch; el.appendChild(s); }
+      }
+      el.dataset.len = String(str.length);
+      el.setAttribute('aria-label', str);
+      // paint at 0 first so the first value rolls in
+      requestAnimationFrame(() => setDigits(el, str));
+      return;
+    }
+    el.setAttribute('aria-label', str);
+    setDigits(el, str);
+  }
+  function setDigits(el, str) {
+    let i = 0;
+    for (const node of el.children) {
+      const ch = str[i++];
+      if (node.classList.contains('d')) node.firstChild.style.transform = `translateY(-${Number(ch)}em)`;
+    }
+  }
+
+  /* ── projector scaling ── */
+  const frame = $('#frame'), screen = $('#screen');
+  function fit() {
+    const r = frame.getBoundingClientRect();
+    const s = Math.min(r.width / 1920, r.height / 1080);
+    screen.style.transform = `scale(${s})`;
+    screen.style.left = ((r.width - 1920 * s) / 2) + 'px';
+    screen.style.top = ((r.height - 1080 * s) / 2) + 'px';
+  }
+  new ResizeObserver(fit).observe(frame); fit();
+  $('#fs').addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen(); else frame.requestFullscreen?.();
+  });
+
+  /* ════════ ROUND (auction mode) ════════ */
+  const LOTS = ['להניע אנשים וצוותים', 'לפתח אנשים', 'ליצור מרחב בטוח לחשיבה משותפת', 'להניע ללא סמכות פורמלית', 'למפות', 'לתעדף', 'לייצר בסיס להחלטה'];
+  const BIDDERS = [[14, 'נועה'], [5, 'תמר'], [31, 'יואב'], [17, 'מאיה'], [3, 'רון'], [26, 'עדי']];
+  const ME = { p: 22, n: 'אורי' }, TOTAL = 1000, PAID_BEFORE = 360, STEP = 20, ROUND_SECS = 45;
+  const ini = (n) => n.trim().charAt(0);
+  const HAMMER_SVG = `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M14 24l7 7 14-15" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  let R;
+  function renderQueue() {
+    const q = $('#queue'); q.innerHTML = '';
+    const sold = { 0: 360, 1: 510 };
+    LOTS.forEach((t, i) => {
+      const d = document.createElement('div');
+      d.className = 'qi' + (i === 2 ? ' live' : '');
+      d.innerHTML = `<span class="qn">${String(i + 1).padStart(2, '0')}</span><span class="qt">${t}</span>` +
+        (sold[i] ? `<span class="qs num">נמכר · ${sold[i]}</span>` : '') +
+        (i === 2 && R && R.closed ? `<span class="qs num">נמכר · ${R.high}</span>` : '');
+      q.appendChild(d);
+    });
+    const b = document.createElement('button');
+    b.className = 'hammer'; b.id = 'hammer'; b.type = 'button';
+    b.innerHTML = R && R.closed ? `${'פתיחת הפריט הבא'}` : `${HAMMER_SVG}סגירת הסבב`;
+    b.addEventListener('click', () => (R.closed ? startRound() : closeRound()));
+    if (R && R.striking) b.disabled = true;
+    q.appendChild(b);
+  }
+  function renderBids() {
+    const ol = $('#bids');
+    const before = new Map($$('.bid', ol).map((li) => [li.dataset.k, li.getBoundingClientRect().top]));
+    ol.innerHTML = '';
+    R.bids.slice(0, 6).forEach((b, i) => {
+      const li = document.createElement('li');
+      li.className = 'bid' + (i === 0 ? ' top' : '') + (b.p === ME.p ? ' mine' : '');
+      li.dataset.k = b.k;
+      li.innerHTML = `<span class="p" aria-hidden="true">${ini(b.n)}</span><span class="n">${b.n}</span><span class="a num">${fmt(b.a)}</span>`;
+      ol.appendChild(li);
+    });
+    $$('.bid', ol).forEach((li) => {
+      const was = before.get(li.dataset.k), now = li.getBoundingClientRect().top;
+      if (reduce) return;
+      if (was == null) li.animate([{ transform: 'translateY(-30px)', opacity: 0, filter: 'blur(4px)' }, { transform: 'none', opacity: 1, filter: 'none' }], { duration: 420, easing: 'cubic-bezier(.16,1,.3,1)' });
+      else if (Math.abs(was - now) > 1) {
+        const scale = screen.getBoundingClientRect().width / 1920;
+        li.animate([{ transform: `translateY(${(was - now) / scale}px)` }, { transform: 'none' }], { duration: 420, easing: 'cubic-bezier(.16,1,.3,1)' });
+      }
+    });
+  }
+  function setLeader(p, n, animate) {
+    $('#leadP').textContent = ini(n); $('#leadN').textContent = n;
+    if (animate && !reduce) { const l = $('#leader'); l.classList.remove('swap'); void l.offsetWidth; l.classList.add('swap'); }
+  }
+  let kSeq = 0;
+  function placeBid(p, n, a) {
+    if (R.closed || R.striking || a <= R.high) return false;
+    R.high = a; R.leader = { p, n };
+    R.bids.unshift({ p, n, a, k: 'b' + (kSeq++) });
+    roll($('#rPrice'), a); roll($('#rPhoneHigh'), a);
+    setLeader(p, n, true); renderBids(); syncPhoneRound();
+    return true;
+  }
+  function syncWallet() {
+    const free = TOTAL - R.paid;
+    roll($('#rWallet'), free);
+    $('#mFree').style.width = (free / TOTAL * 100) + '%';
+  }
+  function syncPhoneRound() {
+    const lead = R.leader.p === ME.p;
+    const free = TOTAL - R.paid;
+    $('#phLead').textContent = lead ? 'ההצעה שלך' : R.leader.n;
+    $('#phLeadSub').textContent = lead ? 'היא הגבוהה כרגע' : 'ההצעה הגבוהה';
+    const st = $('#phStatus');
+    st.textContent = lead ? 'אתם מובילים' : (R.myBid ? 'עקפו אותך' : 'טרם הצעתם');
+    st.className = 'status' + (lead ? ' lead' : '');
+    if (R.myAmt <= R.high) R.myAmt = Math.min(free, R.high + STEP);
+    $('#bAmt').textContent = fmt(R.myAmt);
+    const canBid = !lead && R.myAmt > R.high && R.myAmt <= free && !R.closed && !R.striking;
+    $('#bSend').disabled = !canBid;
+    $('#bSend').textContent = lead ? 'אתם מובילים' : (R.high + STEP > free ? 'אין מספיק מטבעות' : `שליחת הצעה · ${fmt(R.myAmt)} מטבעות`);
+    $('#bDown').disabled = R.myAmt - STEP <= R.high;
+    $('#bUp').disabled = R.myAmt + STEP > free;
+    syncWallet();
+  }
+  function tick() {
+    if (R.closed || R.striking) return;
+    R.left = Math.max(0, R.left - 1);
+    $('#tleft').textContent = `0:${String(R.left).padStart(2, '0')}`;
+    $('#fuse').style.width = (R.left / ROUND_SECS * 100) + '%';
+    if (R.left === 0) $('#capPrice').textContent = 'הזמן נגמר · ממתינים לסגירת הסבב';
+  }
+  function simulate() {
+    if (R.closed || R.striking || R.left <= 2) return;
+    if (R.high >= 600) return;
+    const pool = BIDDERS.filter((b) => b[0] !== R.leader.p);
+    const [p, n] = pool[Math.floor(Math.random() * pool.length)];
+    const jump = Math.random() < 0.7 ? STEP : STEP * 2;
+    placeBid(p, n, R.high + jump);
+    later(simulate, 1600 + Math.random() * 1900);
+  }
+  function startRound() {
+    clearAll();
+    R = { high: 260, leader: { p: 14, n: 'נועה' }, bids: [], left: ROUND_SECS, closed: false, striking: false, myBid: false, myAmt: 300, paid: PAID_BEFORE };
+    const sc = $('#s-round'); sc.classList.remove('strike', 'sold');
+    $('#capPrice').textContent = 'ההצעה הגבוהה';
+    [[3, 'רון', 180], [31, 'יואב', 220], [5, 'תמר', 240], [14, 'נועה', 260]].forEach(([p, n, a]) => R.bids.unshift({ p, n, a, k: 'b' + (kSeq++) }));
+    roll($('#rPrice'), 260); roll($('#rPhoneHigh'), 260); setLeader(14, 'נועה', false);
+    $('#fuse').style.width = '100%'; $('#tleft').textContent = '0:45';
+    renderBids(); renderQueue();
+    $('#phFoot').hidden = false; $('#phResult').hidden = true; $('#phBody').hidden = false;
+    syncPhoneRound();
+    every(tick, 1000);
+    later(simulate, 1400);
+  }
+  $('#bUp').addEventListener('click', () => { R.myAmt = Math.min(TOTAL - R.paid, R.myAmt + STEP); syncPhoneRound(); });
+  $('#bDown').addEventListener('click', () => { R.myAmt = Math.max(R.high + STEP, R.myAmt - STEP); syncPhoneRound(); });
+  $('#bSend').addEventListener('click', () => {
+    if (placeBid(ME.p, ME.n, R.myAmt)) {
+      R.myBid = true; syncPhoneRound();
+      if (!reduce) $('#v-round .wb-coin').animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-8px) rotate(-6deg)' }, { transform: 'none' }], { duration: 380, easing: 'cubic-bezier(.16,1,.3,1)' });
+      if (navigator.vibrate) navigator.vibrate(20);
+    }
+  });
+  function closeRound() {
+    if (R.closed || R.striking) return;
+    R.striking = true; renderQueue(); syncPhoneRound();
+    const cue = $('#cue'), sc = $('#s-round');
+    const say = (t) => { cue.textContent = t; cue.classList.remove('show'); void cue.offsetWidth; cue.classList.add('show'); };
+    const beat = reduce ? 10 : 950;
+    say(`${fmt(R.high)} · פעם ראשונה`);
+    later(() => say(`${fmt(R.high)} · פעם שנייה`), beat);
+    later(() => {
+      cue.classList.remove('show');
+      $('#stampSub').textContent = `ל${R.leader.n}`;
+      sc.classList.add('strike');
+      $('#capPrice').textContent = 'מחיר הסגירה';
+      $('#tleft').textContent = 'נסגר';
+      R.closed = true; R.striking = false;
+      if (R.leader.p === ME.p) R.paid += R.high;
+      later(() => { sc.classList.remove('strike'); sc.classList.add('sold'); }, 900);
+      renderQueue(); syncWallet(); phoneRoundResult();
+      if (navigator.vibrate) navigator.vibrate([30, 40, 60]);
+    }, beat * 2);
+  }
+  function phoneRoundResult() {
+    const won = R.leader.p === ME.p;
+    $('#phFoot').hidden = true; $('#phBody').hidden = true;
+    const box = $('#phResult'); box.hidden = false;
+    box.innerHTML = won
+      ? `<div class="result-card"><span class="big-s">נמכר לך</span><h4>זכית בפריט 03</h4><p>${fmt(R.high)} מטבעות ירדו מהיתרה שלך.</p></div>`
+      : `<div class="result-card"><span class="big-s">נמכר</span><h4>ל${R.leader.n}</h4><p>במחיר ${fmt(R.high)} מטבעות. לא הוצאת כלום בסבב הזה.</p></div>`;
+  }
+
+  /* ════════ ALLOCATION ════════ */
+  const TRAITS = ['ידע מקצועי וניסיון', 'מהירות תגובה', 'אמינות', 'יסודיות', 'אחריות ואכפתיות', 'הקשבה', 'אדיבות וסבלנות', 'שקיפות ועדכון מקבל השירות', 'קור רוח במצבי לחץ', 'ניקיון וסדר'];
+  const PEOPLE = ['אבי', 'יוסי', 'מרים', 'עומר', 'רונית', 'אלי', 'דנה', 'סיגל', 'משה', 'נועה', 'חיים', 'ליאת'];
+  const BUDGET = 10000, ASTEP = 500;
+  let A;
+  function buildWall() {
+    const w = $('#wall'); w.innerHTML = '';
+    PEOPLE.forEach((n, i) => {
+      const d = document.createElement('div');
+      d.className = 'wp' + (A.up.has(i + 1) ? ' up' : '') + (i + 1 === 8 ? ' me' : '');
+      d.dataset.p = i + 1;
+      d.innerHTML = `<div class="h" aria-hidden="true">${ini(n)}</div><div class="s"></div><span class="nm">${n}</span>`;
+      w.appendChild(d);
+    });
+    roll($('#rCount'), A.up.size);
+  }
+  function raisePaddle(p) {
+    if (A.up.has(p)) return;
+    A.up.add(p);
+    $(`.wp[data-p="${p}"]`)?.classList.add('up');
+    roll($('#rCount'), A.up.size);
+  }
+  const SEG = ['#ff5a36', '#ffb38a', '#d93a1a', '#f4ecdf', '#b98a5e', '#ff8a6b', '#cfc2b1', '#e8744f', '#a37b5e', '#ffd2c4'];
+  function renderAlloc() {
+    const spent = A.amounts.reduce((a, b) => a + b, 0), left = BUDGET - spent;
+    const used = A.amounts.filter((a) => a > 0).length;
+    roll($('#rLeft'), left);
+    $('#aFree').style.width = (left / BUDGET * 100) + '%';
+    const list = $('#alist');
+    if (!list.children.length) {
+      TRAITS.forEach((t, i) => {
+        const row = document.createElement('div'); row.className = 'arow'; row.dataset.i = i;
+        row.innerHTML = `<span class="at">${t}</span>
+          <span class="ctl"><button class="sbtn dn" type="button" aria-label="הורדת 500 ₪ מ${t}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+          <span class="av num">0</span>
+          <button class="sbtn up" type="button" aria-label="הוספת 500 ₪ ל${t}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5v14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button></span>`;
+        row.querySelector('.up').addEventListener('click', () => { if (BUDGET - A.amounts.reduce((a, b) => a + b, 0) >= ASTEP) { A.amounts[i] += ASTEP; renderAlloc(); } });
+        row.querySelector('.dn').addEventListener('click', () => { if (A.amounts[i] > 0) { A.amounts[i] -= ASTEP; renderAlloc(); } });
+        list.appendChild(row);
+      });
+    }
+    $$('.arow', list).forEach((row) => {
+      const i = Number(row.dataset.i), a = A.amounts[i];
+      row.classList.toggle('has', a > 0);
+      row.querySelector('.av').textContent = fmt(a);
+      row.querySelector('.dn').disabled = a <= 0;
+      row.querySelector('.up').disabled = left < ASTEP;
+    });
+    const send = $('#aSend');
+    send.disabled = spent === 0;
+    send.textContent = spent === 0 ? 'חלקו לפחות 500 ₪' : 'שליחת ההצעות';
+  }
+  $('#aSend').addEventListener('click', () => {
+    const spent = A.amounts.reduce((a, b) => a + b, 0), used = A.amounts.filter((a) => a > 0).length;
+    $('#sentLine').textContent = `חילקת ${fmt(spent)} ₪ בין ${used} ${used === 1 ? 'פריט' : 'פריטים'}.`;
+    showView('v-sent'); raisePaddle(8);
+    $('#caption').textContent = 'ההצעה של סיגל נקלטה, והשם שלה נדלק על הקיר במסך המוקרן. אפשר לסגור את המכירה ולעבור לחשיפת הזוכים.';
+  });
+  $('#closeAlloc').addEventListener('click', () => go('winners'));
+  function startLobby() {
+    clearAll();
+    A = { amounts: [2000, 1500, 1500, 1000, 0, 1000, 1000, 0, 0, 0], up: new Set([1, 2, 3, 4, 5, 6, 7]) };
+    $('#alist').innerHTML = '';
+    buildWall(); renderAlloc(); showView('v-alloc');
+    [9, 10, 12].forEach((p, k) => later(() => raisePaddle(p), 1800 + k * 2300));
+  }
+
+  /* ════════ WINNERS ════════ */
+  const WINNERS = [['ידע מקצועי וניסיון', ['יוסי', 'רפי', 'גלית'], 4000], ['מהירות תגובה', ['שלמה'], 5000], ['אמינות', ['אלי'], 4000], ['יסודיות', ['סיגל', 'משה'], 2000], ['אחריות ואכפתיות', ['אבי'], 3500], ['הקשבה', ['עומר'], 3500], ['אדיבות וסבלנות', ['אלי', 'סיגל'], 4000], ['שקיפות ועדכון מקבל השירות', ['מרים'], 2500], ['קור רוח במצבי לחץ', ['שלמה'], 5000], ['ניקיון וסדר', ['נועה'], 2000]];
+  function startWinners() {
+    clearAll();
+    const box = $('#plates'); box.classList.remove('reveal'); box.innerHTML = '';
+    WINNERS.forEach(([t, names, a], i) => {
+      const shown = names.length > 3 ? [...names.slice(0, 3), `ועוד ${names.length - 3}`] : names;
+      const d = document.createElement('article'); d.className = 'plate'; d.style.setProperty('--i', i);
+      d.innerHTML = `<div class="band"><span class="no">${String(i + 1).padStart(2, '0')}</span><span class="tr">${t}</span></div><div class="strip"></div>
+        <div class="names">${shown.map((n) => `<span>${n}</span>`).join('')}</div><span class="tag num">${fmt(a)} ₪</span>`;
+      box.appendChild(d);
+    });
+    requestAnimationFrame(() => requestAnimationFrame(() => box.classList.add('reveal')));
+    showView('v-result');
+  }
+
+  /* ════════ VALUES ════════ */
+  const RANKED = [['ידע מקצועי וניסיון', 30000, 11], ['אמינות', 24500, 9], ['מהירות תגובה', 17500, 7], ['הקשבה', 17000, 8], ['קור רוח במצבי לחץ', 16500, 6], ['אדיבות וסבלנות', 13500, 4], ['אחריות ואכפתיות', 12000, 5], ['שקיפות ועדכון מקבל השירות', 7500, 4], ['יסודיות', 5500, 3], ['ניקיון וסדר', 2000, 1]];
+  function countUp(el, to, ms) {
+    if (reduce) { el.textContent = fmt(to) + ' ₪'; return; }
+    const t0 = performance.now();
+    const step = (t) => { const k = Math.min(1, (t - t0) / ms); const e = 1 - Math.pow(1 - k, 4); el.textContent = fmt(Math.round(to * e / 500) * 500) + ' ₪'; if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }
+  function startValues() {
+    clearAll();
+    const pod = $('#podium'); pod.innerHTML = '';
+    const H = { 1: 210, 2: 150, 3: 104 };
+    [2, 1, 3].forEach((r) => {
+      const [t, sum, inv] = RANKED[r - 1];
+      const c = document.createElement('div'); c.className = `pcol r${r}`;
+      c.innerHTML = `<div class="info"><span class="tr">${t}</span><span class="sum num">0 ₪</span><span class="inv">${inv} משקיעים</span></div><div class="bar"><span class="num">${r}</span></div>`;
+      pod.appendChild(c);
+    });
+    const tb = $('#vtable');
+    tb.innerHTML = `<div class="vrow vh" role="row"><span role="columnheader">#</span><span role="columnheader">פריט</span><span role="columnheader">סה״כ השקעה</span><span role="columnheader">מספר משקיעים</span></div>` +
+      RANKED.slice(3).map(([t, s, n], i) => `<div class="vrow" role="row"><span class="rk num" role="cell">${i + 4}</span><span class="tr" role="cell">${t}</span><span class="sm num" role="cell">${fmt(s)} ₪</span><span role="cell" class="num">${n}</span></div>`).join('');
+    // suspense order: 3rd, 2nd, then 1st
+    const order = [3, 2, 1];
+    order.forEach((r, k) => later(() => {
+      const c = $(`.pcol.r${r}`); c.querySelector('.bar').style.height = H[r] + 'px';
+      later(() => { c.classList.add('go'); countUp(c.querySelector('.sum'), RANKED[r - 1][1], 900); }, reduce ? 0 : 420);
+    }, reduce ? 0 : 300 + k * 1100));
+    later(() => $$('.vrow:not(.vh)', tb).forEach((row, i) => later(() => row.classList.add('go'), i * 70)), reduce ? 0 : 3900);
+    showView('v-result');
+  }
+
+  /* ════════ SESSION MANAGEMENT ════════ */
+  const LOT_CATS = ['מנהיגות', 'יחסים', 'יחסים', 'מנהיגות', 'שיפוט', 'שיפוט', 'שיפוט'];
+  const TRAIT_CATS = ['למידה', 'שיפוט', 'מנהיגות', 'שיפוט', 'מנהיגות', 'יחסים', 'יחסים', 'יחסים', 'שיפוט', 'מנהיגות'];
+  const CATS = ['מנהיגות', 'יחסים', 'שיפוט', 'למידה'];
+  let SESSIONS = [
+    { id: 'lead', title: 'היגדים ניהוליים', client: 'סדנת מנהיגות · קבוצה 3', slug: 'leadership-g3', mode: 'auction', unit: 'coins', budget: 1000, step: 20, timer: 45, people: 38, status: 'live', until: '21:40', scene: 'round', items: LOTS.map((t, i) => ({ t, c: LOT_CATS[i] })) },
+    { id: 'soroka', title: 'תכונות של עובד אחזקה מצוין', client: 'סורוקה · מערך אחזקה והנדסה', slug: 'soroka-maintenance', mode: 'allocation', unit: 'ils', budget: 10000, step: 500, timer: 0, people: 12, status: 'live', until: '18:05', scene: 'lobby', items: TRAITS.map((t, i) => ({ t, c: TRAIT_CATS[i] })) },
+    { id: 'iaa', title: 'מה מאפשר לנו לתפקד יחד ברגעי קושי?', client: 'רשות שדות התעופה · קורס שירות', slug: 'iaa-service-1', mode: 'allocation', unit: 'ils', budget: 10000, step: 500, timer: 0, people: 0, status: 'draft', items: [] },
+    { id: 'demo', title: 'תכונות ניהוליות · הדגמה', client: 'חדר הדגמה', slug: 'leadership-auction', mode: 'auction', unit: 'coins', budget: 1000, step: 20, timer: 45, people: 21, status: 'done', ended: '28.10', scene: 'winners', items: LOTS.map((t, i) => ({ t, c: LOT_CATS[i] })) }
+  ];
+  const unitName = (u) => (u === 'ils' ? '₪' : 'מטבעות');
+  const COIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#coin"></use></svg>';
+  let filter = 'all';
+  function toast(msg) {
+    const t = $('#toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toast.id); toast.id = setTimeout(() => { t.hidden = true; }, 2600);
+  }
+  function renderSessions() {
+    const q = $('#q').value.trim();
+    const list = SESSIONS.filter((s) => (filter === 'all' || s.status === filter) && (!q || (s.title + s.client).includes(q)));
+    const box = $('#rows'); box.innerHTML = '';
+    $('#empty').hidden = list.length > 0;
+    list.forEach((s) => {
+      const row = document.createElement('div');
+      row.className = 'srow' + (s.status === 'live' ? ' is-live' : ''); row.setAttribute('role', 'row');
+      const status = s.status === 'live' ? `<span class="pill live">חי · עד ${s.until}</span>` : s.status === 'draft' ? '<span class="pill">טיוטה</span>' : `<span class="pill done">הסתיים · ${s.ended}</span>`;
+      const primary = s.status === 'live' ? '<button class="btn primary sm" data-a="show" type="button">מסך מוקרן</button>'
+        : s.status === 'done' ? '<button class="btn ghost-b sm" data-a="show" type="button">תוצאות</button>'
+        : '<button class="btn primary sm" data-a="edit" type="button">השלמה והפעלה</button>';
+      row.innerHTML = `
+        <div class="s-name" role="cell"><span class="s-logo" aria-hidden="true">לוגו</span><div><b>${s.title}</b><span>${s.client || 'ללא לקוח'}</span></div></div>
+        <div class="s-meta">
+          <span class="s-cell" role="cell" data-l="">${s.mode === 'auction' ? 'מכירה פומבית' : 'חלוקת תקציב'}</span>
+          <span class="s-cell" role="cell"><span class="s-budget">${COIN}<span class="num">${fmt(s.budget)}</span><small>${unitName(s.unit)}</small></span></span>
+          <span class="s-cell n" role="cell" data-l="פריטים"><span class="num">${s.items.length}</span></span>
+          <span class="s-cell n" role="cell" data-l="משתתפים"><span class="num">${s.people}</span></span>
+        </div>
+        <div class="s-stat" role="cell">${status}</div>
+        <div class="s-act" role="cell">${primary}${s.status !== 'draft' ? '<button class="btn ghost-b sm" data-a="edit" type="button">עריכה</button>' : ''}
+          <details class="more"><summary aria-label="פעולות נוספות"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></summary>
+            <div class="menu"><button type="button" data-a="dup">שכפול לסשן חדש</button><button type="button" data-a="arch">העברה לארכיון</button></div></details>
+        </div>`;
+      row.addEventListener('click', (ev) => {
+        const b = ev.target.closest('button[data-a]'); if (!b) return;
+        const a = b.dataset.a;
+        if (a === 'edit') openEditor(s);
+        if (a === 'show') { setMode('show'); go(s.scene || 'round'); }
+        if (a === 'dup') { const c = JSON.parse(JSON.stringify(s)); Object.assign(c, { id: 'c' + Date.now(), title: s.title + ' (עותק)', slug: s.slug + '-2', status: 'draft', people: 0 }); delete c.scene; SESSIONS.unshift(c); renderSessions(); toast('נוצר עותק כטיוטה. אפשר לערוך אותו לפני ההפעלה.'); }
+        if (a === 'arch') { SESSIONS = SESSIONS.filter((x) => x !== s); renderSessions(); toast('הסשן הועבר לארכיון. אפשר לשחזר אותו משם.'); }
+      });
+      box.appendChild(row);
+    });
+  }
+  $$('#fltr button').forEach((b) => b.addEventListener('click', () => {
+    filter = b.dataset.f; $$('#fltr button').forEach((x) => x.setAttribute('aria-checked', String(x === b))); renderSessions();
+  }));
+  $('#q').addEventListener('input', renderSessions);
+
+  /* editor */
+  new ResizeObserver(([e]) => { $('#pvProj').style.fontSize = (e.contentRect.width / 100) + 'px'; }).observe($('#pvProj'));
+  let E, editing;
+  const digits = (v) => Number(String(v).replace(/[^\d]/g, '')) || 0;
+  function openEditor(s) {
+    editing = s || null;
+    E = s ? JSON.parse(JSON.stringify(s)) : { title: '', client: '', slug: '', mode: 'auction', unit: 'coins', budget: 1000, step: 20, timer: 45, people: 0, status: 'draft', items: [{ t: '', c: 'מנהיגות' }, { t: '', c: 'יחסים' }] };
+    if (s && !E.items.length) E.items = [{ t: '', c: 'מנהיגות' }, { t: '', c: 'יחסים' }];
+    $('#aList').hidden = true; $('#aEdit').hidden = false;
+    $('#edH').textContent = s ? 'עריכת סשן' : 'סשן חדש';
+    const st = $('#edState');
+    st.className = 'pill' + (E.status === 'live' ? ' live' : E.status === 'done' ? ' done' : '');
+    st.textContent = E.status === 'live' ? `חי · עד ${E.until}` : E.status === 'done' ? 'הסתיים' : 'טיוטה';
+    $('#fTitle').value = E.title; $('#fClient').value = E.client; $('#fSlug').value = E.slug;
+    $$('input[name="mode"]').forEach((r) => { r.checked = r.value === E.mode; });
+    $('#fBudget').value = fmt(E.budget);
+    $$('#fUnit button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.u === E.unit)));
+    $('#fStep').value = String(E.step); $('#fTimer').value = String(E.timer);
+    const locked = E.status === 'live' && E.people > 0;
+    $$('input[name="mode"], #fBudget, #fStep, #fTimer, #fUnit button, #addItem').forEach((el) => { el.disabled = locked; });
+    $('#actMsg').textContent = locked ? 'הסשן חי ויש בו משתתפים, לכן הגדרות המשחק והפריטים נעולים. אפשר לשנות שם, לקוח ולוגו.' : '';
+    $('#actMsg').style.color = locked ? 'var(--ivory-dim)' : '';
+    $('#saveLive').textContent = E.status === 'live' ? 'שמירת השינויים' : 'שמירה והפעלה ל־12 שעות';
+    $('#saveDraft').hidden = E.status === 'live';
+    $$('.err').forEach((e) => { e.hidden = true; }); $$('.field.bad').forEach((f) => f.classList.remove('bad'));
+    renderItems(locked); syncEditor();
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    $('#fTitle').focus({ preventScroll: true });
+  }
+  function renderItems(locked) {
+    const ol = $('#items'); ol.innerHTML = '';
+    E.items.forEach((it, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="ix num">${String(i + 1).padStart(2, '0')}</span>
+        <label><span class="sr">טקסט פריט ${i + 1}</span><input type="text" value="${it.t.replace(/"/g, '&quot;')}" placeholder="למשל: הקשבה" ${locked ? 'disabled' : ''}></label>
+        <label><span class="sr">קטגוריה של פריט ${i + 1}</span><select ${locked ? 'disabled' : ''}>${CATS.map((c) => `<option ${c === it.c ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
+        <span class="ops">
+          <button type="button" data-o="up" aria-label="הזזת פריט ${i + 1} למעלה" ${i === 0 || locked ? 'disabled' : ''}><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 10l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" data-o="down" aria-label="הזזת פריט ${i + 1} למטה" ${i === E.items.length - 1 || locked ? 'disabled' : ''}><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" data-o="del" aria-label="הסרת פריט ${i + 1}" ${locked ? 'disabled' : ''}><svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 5h12M7 5V3.5h4V5M5 5l.8 10h6.4L13 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </span>`;
+      li.querySelector('input').addEventListener('input', (e) => { it.t = e.target.value; li.classList.remove('bad'); syncEditor(); });
+      li.querySelector('select').addEventListener('change', (e) => { it.c = e.target.value; });
+      li.querySelector('.ops').addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b || b.disabled) return;
+        const o = b.dataset.o;
+        if (o === 'del') E.items.splice(i, 1);
+        if (o === 'up') [E.items[i - 1], E.items[i]] = [E.items[i], E.items[i - 1]];
+        if (o === 'down') [E.items[i + 1], E.items[i]] = [E.items[i], E.items[i + 1]];
+        renderItems(false); syncEditor();
+      });
+      ol.appendChild(li);
+    });
+  }
+  function syncEditor() {
+    const u = unitName(E.unit), n = E.items.filter((x) => x.t.trim()).length;
+    $('#timerField').hidden = E.mode !== 'auction';
+    $('#itemCount').textContent = `${n} ${n === 1 ? 'פריט' : 'פריטים'}`;
+    $('#ruleLine').textContent = E.mode === 'auction'
+      ? `כל משתתף מקבל ${fmt(E.budget)} ${u}. בכל סבב מוצג פריט אחד, ההצעות עולות בקפיצות של ${fmt(E.step)}, ורק הזוכה משלם.`
+      : `כל משתתף מחלק ${fmt(E.budget)} ${u} בין ${n || 'כל'} הפריטים, בקפיצות של ${fmt(E.step)}. כל אחד משלם את מה שהקצה.`;
+    const first = (E.items.find((x) => x.t.trim()) || {}).t;
+    const title = E.title.trim() || 'שם הסשן';
+    $('#pvProj').innerHTML = E.mode === 'auction'
+      ? `<div class="mp-meta"><b>${title}</b><span>פריט 01 מתוך ${String(Math.max(n, 1)).padStart(2, '0')}</span></div>
+         <p class="mp-st ${first ? '' : 'ph'}">${first || 'הפריט הראשון יופיע כאן'}</p>
+         <div class="mp-bot"><span class="mp-price num">0</span><span class="mp-sub">${u} · ההצעה הגבוהה</span></div>`
+      : `<div class="mp-meta"><b>${title}</b><span>${E.client || ''}</span></div>
+         <p class="mp-st">המכירה פתוחה</p>
+         <div class="mp-bot"><span class="mp-sub">${fmt(E.budget)} ${u} לכל אחד, ${n} ${n === 1 ? 'פריט' : 'פריטים'}</span><span class="mp-price num" style="font-size:8em">0</span></div>`;
+    $('#pvPhone').innerHTML = `<div class="wbar"><svg class="wb-coin" viewBox="0 0 24 24" aria-hidden="true"><use href="#coin"></use></svg>
+      <div class="wb-fig"><small>${E.mode === 'auction' ? 'נשארו לך' : 'נשארו לך לחלק'}</small><span class="wb-val"><b class="num">${fmt(E.budget)}</b><span class="u">${u}</span></span></div>
+      <div class="wb-side"><span class="me"><i aria-hidden="true">ד</i>דנה</span><small>מתוך <span class="num">${fmt(E.budget)}</span></small></div>
+      <div class="wb-meter" aria-hidden="true"><i></i></div></div>`;
+  }
+  $('#fTitle').addEventListener('input', (e) => { E.title = e.target.value; e.target.closest('.field').classList.remove('bad'); $('#eTitle').hidden = true; syncEditor(); });
+  $('#fClient').addEventListener('input', (e) => { E.client = e.target.value; syncEditor(); });
+  $('#fSlug').addEventListener('input', (e) => { E.slug = e.target.value.toLowerCase(); e.target.value = E.slug; e.target.closest('.field').classList.remove('bad'); $('#eSlug').hidden = true; });
+  $$('input[name="mode"]').forEach((r) => r.addEventListener('change', () => { E.mode = r.value; if (E.mode === 'allocation' && E.step < 50) { E.step = E.unit === 'ils' ? 500 : 50; $('#fStep').value = String(E.step); } syncEditor(); }));
+  $('#fBudget').addEventListener('input', (e) => { E.budget = digits(e.target.value); syncEditor(); });
+  $('#fBudget').addEventListener('blur', (e) => { e.target.value = fmt(E.budget); });
+  $$('#fUnit button').forEach((b) => b.addEventListener('click', () => {
+    if (b.disabled) return;
+    E.unit = b.dataset.u; $$('#fUnit button').forEach((x) => x.setAttribute('aria-checked', String(x === b)));
+    if (E.unit === 'ils' && E.budget === 1000) { E.budget = 10000; E.step = 500; $('#fBudget').value = fmt(E.budget); $('#fStep').value = '500'; }
+    if (E.unit === 'coins' && E.budget === 10000) { E.budget = 1000; E.step = 20; $('#fBudget').value = fmt(E.budget); $('#fStep').value = '20'; }
+    syncEditor();
+  }));
+  $('#fStep').addEventListener('change', (e) => { E.step = Number(e.target.value); syncEditor(); });
+  $('#fTimer').addEventListener('change', (e) => { E.timer = Number(e.target.value); });
+  $('#addItem').addEventListener('click', () => { E.items.push({ t: '', c: 'מנהיגות' }); renderItems(false); syncEditor(); const ins = $$('#items input'); ins[ins.length - 1].focus(); });
+  function check(full) {
+    const bad = [];
+    const mark = (id, field, ok) => { $(id).hidden = ok; if (field) field.classList.toggle('bad', !ok); if (!ok) bad.push(id); };
+    mark('#eTitle', $('#fTitle').closest('.field'), !!E.title.trim());
+    if (full) {
+      $('#eSlug').textContent = E.slug ? 'הכתובת צריכה להכיל 3 עד 60 אותיות לטיניות קטנות, ספרות או מקפים.' : 'חסרה כתובת לסשן. היא תופיע בקישור ההצטרפות.';
+      mark('#eSlug', $('#fSlug').closest('.field'), /^[a-z0-9-]{3,60}$/.test(E.slug));
+      mark('#eBudget', $('#fBudget').closest('.field'), E.budget >= E.step * 2);
+      const filled = E.items.filter((x) => x.t.trim()).length;
+      $('#eItems').hidden = filled >= 2; if (filled < 2) { bad.push('#eItems'); $$('#items li').forEach((li, i) => li.classList.toggle('bad', !E.items[i].t.trim())); }
+    }
+    return bad;
+  }
+  function save(live) {
+    const bad = check(live);
+    if (bad.length) {
+      $('#actMsg').style.color = ''; $('#actMsg').textContent = bad.length === 1 ? 'יש שדה אחד שצריך לתקן.' : `יש ${bad.length} שדות שצריך לתקן.`;
+      const first = $(bad[0]).closest('.field, .card'); first?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+      (first?.querySelector('input:not([disabled])'))?.focus({ preventScroll: true });
+      return;
+    }
+    E.items = E.items.filter((x) => x.t.trim());
+    if (live && E.status !== 'live') { const d = new Date(Date.now() + 12 * 3600e3); E.status = 'live'; E.until = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; E.scene = E.mode === 'auction' ? 'round' : 'lobby'; }
+    if (editing) Object.assign(editing, E); else SESSIONS.unshift({ ...E, id: 's' + Date.now() });
+    closeEditor();
+    toast(live ? (E.status === 'live' && editing && editing.people ? 'השינויים נשמרו.' : `הסשן הופעל עד ${E.until}. קישור ההצטרפות מוכן.`) : 'הטיוטה נשמרה.');
+  }
+  $('#saveDraft').addEventListener('click', () => save(false));
+  $('#saveLive').addEventListener('click', () => save(true));
+  function closeEditor() { $('#aEdit').hidden = true; $('#aList').hidden = false; renderSessions(); }
+  $('#backList').addEventListener('click', closeEditor);
+  $('#newSession').addEventListener('click', () => openEditor(null));
+
+  /* ════════ navigation ════════ */
+  function showView(id) { $$('.view').forEach((v) => v.classList.toggle('on', v.id === id)); }
+  const CAPS = {
+    round: ['הטלפון של אורי', 'בחרו סכום ושלחו הצעה. היא תופיע על המסך המוקרן מיד. בסוף לחצו "סגירת הסבב" במסך המוקרן.'],
+    lobby: ['הטלפון של סיגל', 'חלקו את 10,000 ה־₪ ושלחו. השם של סיגל יידלק על הקיר במסך המוקרן.'],
+    winners: ['הטלפון של סיגל', 'כל משתתף רואה בטלפון רק את מה שזכה בו ואת מה שנשאר לו.'],
+    values: ['הטלפון של סיגל', 'השקף נחשף מהמקום השלישי לראשון, כדי לבנות רגע לפני הדיון.']
+  };
+  let current = 'round';
+  function go(scene) {
+    $$('.scene').forEach((s) => s.classList.toggle('on', s.id === 's-' + scene));
+    $$('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.go === scene)));
+    $('#phoneLabel').textContent = CAPS[scene][0];
+    $('#caption').textContent = CAPS[scene][1];
+    current = scene;
+    ({ round: () => { showView('v-round'); startRound(); }, lobby: startLobby, winners: startWinners, values: startValues })[scene]();
+  }
+  function setMode(m) {
+    document.body.classList.toggle('admin-on', m === 'admin');
+    $('#admin').hidden = m !== 'admin';
+    $('#mShow').setAttribute('aria-pressed', String(m === 'show'));
+    $('#mAdmin').setAttribute('aria-pressed', String(m === 'admin'));
+    if (m === 'admin') { clearAll(); closeEditor(); } else requestAnimationFrame(fit);
+  }
+  $('#mShow').addEventListener('click', () => { setMode('show'); go(current); });
+  $('#mAdmin').addEventListener('click', () => setMode('admin'));
+  $$('.tab').forEach((t) => t.addEventListener('click', () => go(t.dataset.go)));
+  $('#replay').addEventListener('click', () => go(current));
+  if (location.hash === '#admin') setMode('admin'); else go('round');
+})();
+</script>
+</body>
+</html>
