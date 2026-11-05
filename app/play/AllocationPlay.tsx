@@ -14,12 +14,12 @@ import {
   roundWinnerNames,
 } from '@/lib/game/allocation'
 import { PlaySkeleton, PlayError, PhoneShell, RulesList } from './PlayShell'
-import WalletBar from '@/components/evening/WalletBar'
-import Stepper from '@/components/evening/Stepper'
-import CoinIcon from '@/components/evening/CoinIcon'
-import ParticipantMark from '@/components/evening/ParticipantMark'
-import { CTA, btnClass } from '@/components/evening/ui'
-import { UNIT_LABEL, defaultBidStep, fmt, lotNo } from '@/components/evening/units'
+import WalletBar from '@/components/game/WalletBar'
+import Stepper from '@/components/game/Stepper'
+import CoinIcon from '@/components/game/CoinIcon'
+import ParticipantMark from '@/components/game/ParticipantMark'
+import { CTA, btnClass } from '@/components/game/ui'
+import { UNIT_LABEL, defaultBidStep, fmt, lotNo } from '@/components/game/units'
 
 interface Props {
   room: PublicRoom
@@ -243,12 +243,12 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
   const remainingLive = phase === 'open' ? Math.max(0, check.remaining) : balance
 
   const statusLine =
-    check.error ? <span className="text-error">{check.error}</span>
-    : saveState === 'saving' ? <span className="text-ivory-mute">שולחים…</span>
-    : saveState === 'error' ? <span className="text-error">{saveError}</span>
-    : dirty ? <span className="text-ember">השינויים יישלחו אוטומטית בעוד רגע</span>
-    : totalSaved > 0 ? <span className="text-ivory-mute">ההצעות נשמרו. אפשר לשנות עד הסגירה.</span>
-    : <span className="text-ivory-mute">מחלקים את התקציב בין הפריטים ושולחים.</span>
+    check.error ? <span className="font-semibold text-error">{check.error}</span>
+    : saveState === 'saving' ? <span className="text-ink-3">שולחים…</span>
+    : saveState === 'error' ? <span className="font-semibold text-error">{saveError}</span>
+    : dirty ? <span className="font-semibold text-tomato-text">השינויים יישלחו אוטומטית בעוד רגע</span>
+    : totalSaved > 0 ? <span className="text-ink-3">ההצעות נשמרו. אפשר לשנות עד הסגירה.</span>
+    : <span className="text-ink-3">מחלקים את התקציב בין הפריטים ושולחים.</span>
 
   const footer = phase === 'open' && !sentView ? (
     <>
@@ -268,11 +268,11 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
     <PhoneShell footer={footer}>
       {phase === 'closed' ? (
         <div className="flex items-center justify-between px-2 pt-2">
-          <span className="inline-flex items-center gap-2 text-[17px] font-semibold text-ivory">
-            <ParticipantMark name={participant.display_name} size={30} />
+          <span className="inline-flex items-center gap-2 text-[17px] font-semibold text-ink">
+            <ParticipantMark name={participant.display_name} size={30} tone="ink" />
             {participant.display_name}
           </span>
-          <span className="text-[14px] text-ivory-mute">המכירה נסגרה</span>
+          <span className="text-[14px] text-ink-3">המכירה נסגרה</span>
         </div>
       ) : (
         <WalletBar
@@ -286,12 +286,12 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
 
       {/* Waiting */}
       {phase === 'waiting' && (
-        <div className="ev-fade flex flex-1 flex-col justify-center gap-6 py-6">
+        <div className="gm-fade flex flex-1 flex-col justify-center gap-6 py-6">
           <div className="text-center">
-            <p className="m-0 font-display text-[36px] font-black leading-tight text-ivory">ממתינים לפתיחת המכירה</p>
-            <p className="mt-2 mb-0 text-[17px] text-ivory-dim">כל הפריטים ייפתחו יחד</p>
+            <p className="m-0 text-[34px] font-bold leading-tight text-ink">ממתינים לפתיחת המכירה</p>
+            <p className="mt-2 mb-0 text-[17px] text-ink-2">כל הפריטים ייפתחו יחד</p>
           </div>
-          <div className="rounded-[22px] border border-velvet-3 bg-velvet-2 px-5 py-5">
+          <div className="rounded-[24px] border-[3px] border-ink bg-card px-5 py-5 shadow-piece-md">
             <RulesList rules={[
               `לכל משתתף ${fmt(room.starting_coins)} ${UNIT_LABEL}.`,
               'כל הפריטים פתוחים יחד. מחלקים את התקציב ביניהם.',
@@ -304,7 +304,7 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
 
       {/* Open: the list of lots with steppers */}
       {phase === 'open' && !sentView && (
-        <div className="ev-rise flex flex-col gap-2">
+        <div className="gm-rise flex flex-col gap-2.5">
           {openRounds.map((r, i) => {
             const raw = draft[r.id] ?? ''
             const amount = parseAllocationInput(raw) ?? 0
@@ -313,12 +313,12 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
             return (
               <div
                 key={r.id}
-                className={`flex items-center gap-[10px] rounded-[16px] border px-3 py-[10px] transition-[border-color,background] duration-300 ${
-                  has ? 'border-[rgba(255,90,54,.5)] bg-[#2a1a1d]' : 'border-velvet-3 bg-velvet-2'
+                className={`flex items-center gap-[10px] rounded-[18px] border-[2.5px] border-ink px-3 py-[10px] transition-[background] duration-300 ${
+                  has ? 'bg-sun-tint' : 'bg-card'
                 }`}
               >
-                <span aria-hidden="true" className="num w-[26px] shrink-0 text-[17px] text-ivory-mute">{lotNo(i + 1)}</span>
-                <span className="min-w-0 flex-1 text-[19px] font-semibold leading-[1.2] text-ivory">{title}</span>
+                <span aria-hidden="true" className="num w-[26px] shrink-0 text-[17px] text-ink-3">{lotNo(i + 1)}</span>
+                <span className="min-w-0 flex-1 text-[19px] font-medium leading-[1.2] text-ink">{title}</span>
                 <Stepper
                   size="sm"
                   coin={false}
@@ -337,7 +337,7 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
               </div>
             )
           })}
-          <p className="m-0 px-2 pt-2 text-center text-[14px] leading-relaxed text-ivory-mute">
+          <p className="m-0 px-2 pt-2 text-center text-[14px] leading-relaxed text-ink-3">
             בסגירה כל מה שהקציתם יורד מהיתרה, גם בפריטים שלא זכיתם בהם. מה שלא חולק נשאר אצלכם.
           </p>
         </div>
@@ -345,18 +345,18 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
 
       {/* Open: sent */}
       {phase === 'open' && sentView && (
-        <div className="ev-fade flex flex-1 flex-col items-center justify-center gap-0 px-6 py-6 text-center">
-          <span className="ev-raise relative inline-block" aria-hidden="true">
-            <CoinIcon stack size={132} className="drop-shadow-[0_14px_24px_rgba(0,0,0,.5)]" />
-            <span className="absolute -bottom-1 -left-1.5 flex h-12 w-12 items-center justify-center rounded-full bg-vermilion text-velvet-0 shadow-[0_0_0_5px_var(--color-velvet-1)]">
+        <div className="gm-fade flex flex-1 flex-col items-center justify-center gap-0 px-6 py-6 text-center">
+          <span className="gm-pop relative inline-block" aria-hidden="true">
+            <CoinIcon stack size={132} />
+            <span className="absolute -bottom-1 -left-1.5 flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-ink bg-leaf text-ink">
               <svg viewBox="0 0 24 24" fill="none" className="h-[26px] w-[26px]"><path d="M6 12.5l4 4 8-9" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </span>
           </span>
-          <h4 className="mt-8 mb-2 font-display text-[40px] font-black leading-none text-ivory">ההצעות נשלחו</h4>
-          <p className="m-0 text-[20px] leading-[1.45] text-ivory-dim">
+          <h4 className="mt-8 mb-2 text-[38px] font-bold leading-none text-ink">ההצעות נשלחו</h4>
+          <p className="m-0 text-[20px] leading-[1.45] text-ink-2">
             חילקת <span className="num">{fmt(totalSaved)}</span> בין {usedCount} {usedCount === 1 ? 'פריט' : 'פריטים'}.
           </p>
-          <p className="mt-[14px] mb-0 text-[15px] text-ivory-mute">התוצאה תופיע כאן כשהמנחה תסגור את המכירה.</p>
+          <p className="mt-[14px] mb-0 text-[15px] text-ink-3">התוצאה תופיע כאן כשהמנחה תסגור את המכירה.</p>
           <button type="button" onClick={() => setSentView(false)} className={btnClass('secondary', 'md', 'mt-8 h-14 px-8 text-[17px]')}>
             שינוי ההצעות
           </button>
@@ -365,8 +365,8 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
 
       {/* Closed: the personal result */}
       {phase === 'closed' && (
-        <div className="ev-rise flex flex-1 flex-col gap-[14px]">
-          <h2 className="m-0 mx-1 font-display text-[40px] font-black leading-[1.05] text-ivory">
+        <div className="gm-rise flex flex-1 flex-col gap-[14px]">
+          <h2 className="m-0 mx-1 text-[38px] font-bold leading-[1.05] text-ink">
             {wonRounds.length > 0
               ? <>זכית ב־<span className="num">{wonRounds.length}</span> {wonRounds.length === 1 ? 'פריט' : 'פריטים'}</>
               : 'המכירה נסגרה'}
@@ -378,22 +378,22 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
                 const others = roundWinnerNames(r).filter(n => n !== participant.display_name)
                 const idx = rounds.findIndex(x => x.id === r.id) + 1
                 return (
-                  <div key={r.id} className="overflow-hidden rounded-[18px] bg-paper text-ink-paper shadow-[var(--shadow-plate)]">
-                    <div className="flex items-center justify-between bg-velvet-2 px-[18px] py-[14px] text-ivory">
-                      <b className="font-display text-[26px] font-black leading-tight">{r.trait?.title}</b>
-                      <span className="font-display text-[18px] font-black text-ivory-mute">פריט {lotNo(idx)}</span>
+                  <div key={r.id} className="overflow-hidden rounded-[18px] border-[3px] border-ink bg-card text-ink shadow-piece-md">
+                    <div className="flex items-center justify-between bg-ink px-[18px] py-[14px] text-white">
+                      <b className="text-[24px] font-semibold leading-tight">{r.trait?.title}</b>
+                      <span className="text-[17px] font-semibold text-ink-soft">פריט {lotNo(idx)}</span>
                     </div>
-                    <div className="h-[5px] bg-vermilion" />
-                    <div className="flex items-center justify-between px-[18px] pb-4 pt-3 text-[17px] text-ink-soft">
+                    <div className="h-[6px] bg-sun" />
+                    <div className="flex items-center justify-between px-[18px] pb-4 pt-3 text-[17px] text-ink-3">
                       <span>{others.length > 0 ? `זכייה משותפת עם ${others.join(', ')}` : 'ההקצאה שלך'}</span>
-                      <b className="num text-[30px] text-ink-paper">{fmt(saved[r.id] ?? r.winning_bid_amount ?? 0)}</b>
+                      <b className="num text-[30px] text-ink">{fmt(saved[r.id] ?? r.winning_bid_amount ?? 0)}</b>
                     </div>
                   </div>
                 )
               })}
             </div>
           ) : (
-            <p className="m-0 mx-1 text-[19px] leading-[1.45] text-ivory-dim">
+            <p className="m-0 mx-1 text-[19px] leading-[1.45] text-ink-2">
               {totalSaved > 0
                 ? 'הפעם ההקצאות שלך לא היו הגבוהות ביותר. המטבעות שהקצית ירדו מהיתרה.'
                 : 'לא הקצית מטבעות במכירה הזאת, והיתרה נשארה מלאה.'}
@@ -401,13 +401,13 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
           )}
 
           {lostRounds.length > 0 && (
-            <details className="mx-1 text-[15px] text-ivory-mute">
+            <details className="mx-1 text-[15px] text-ink-3">
               <summary className="cursor-pointer select-none py-1">הצעות שלא זכו ({lostRounds.length})</summary>
               <ul className="m-0 mt-2 flex list-none flex-col gap-1.5 p-0">
                 {lostRounds.map(r => (
                   <li key={r.id} className="flex items-baseline justify-between gap-3">
-                    <span className="min-w-0 flex-1 truncate text-ivory-dim">{r.trait?.title}</span>
-                    <span className="num shrink-0 text-[17px] text-ivory-dim">{fmt(saved[r.id] ?? 0)}</span>
+                    <span className="min-w-0 flex-1 truncate text-ink-2">{r.trait?.title}</span>
+                    <span className="num shrink-0 text-[17px] text-ink-2">{fmt(saved[r.id] ?? 0)}</span>
                     {r.winning_bid_amount !== null && (
                       <span className="shrink-0 text-[13px]">הזוכה: <span className="num">{fmt(r.winning_bid_amount)}</span></span>
                     )}
@@ -418,7 +418,7 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
           )}
 
           <WalletBar
-            variant="light"
+            variant="tint"
             remaining={balance}
             total={room.starting_coins}
             unitLabel={UNIT_LABEL}
@@ -426,7 +426,7 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
             className="mt-auto"
           />
           <p className="m-0 text-center text-[14px]">
-            <a href={`/profile?room=${encodeURIComponent(room.slug)}`} className="text-ivory-mute underline decoration-velvet-4 underline-offset-4 transition-colors hover:text-ivory">
+            <a href={`/profile?room=${encodeURIComponent(room.slug)}`} className="text-ink-3 underline decoration-ink/30 underline-offset-4 transition-colors hover:text-ink">
               הפרופיל האישי שלכם
             </a>
           </p>

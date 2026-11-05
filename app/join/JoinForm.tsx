@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { loadParticipant, saveParticipant } from '@/lib/participant-session'
-import { CTA, ErrorText, FIELD, btnClass } from '@/components/evening/ui'
+import { CTA, ErrorText, FIELD, btnClass } from '@/components/game/ui'
 
 interface Props { roomId: string; roomSlug: string }
 
@@ -46,7 +46,7 @@ export default function JoinForm({ roomId, roomSlug }: Props) {
           כבר נרשמתם מהטלפון הזה. חזרה למכירה
         </button>
       )}
-      <label className="flex flex-col gap-2 text-[14px] font-semibold text-ivory-dim">
+      <label className="flex flex-col gap-2 text-[14px] font-semibold text-ink-2">
         השם שלכם
         <input
           type="text"
@@ -57,7 +57,7 @@ export default function JoinForm({ roomId, roomSlug }: Props) {
           required
           disabled={loading}
           autoComplete="name"
-          className={`${FIELD} h-14 text-center text-[20px] font-semibold`}
+          className={`${FIELD} h-14 text-center text-[20px] font-semibold shadow-piece-sm`}
         />
       </label>
       {error && <ErrorText>{error}</ErrorText>}

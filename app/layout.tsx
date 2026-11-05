@@ -1,25 +1,25 @@
 import type { Metadata, Viewport } from 'next'
-import { Frank_Ruhl_Libre, IBM_Plex_Sans_Hebrew } from 'next/font/google'
+import { Fredoka, Heebo } from 'next/font/google'
 import './globals.css'
 
-// "Evening Sale" type: a heavy Hebrew serif for content (statements,
-// numbers, titles) and a clean sans for UI. See design-kit/DESIGN.md.
-const frank = Frank_Ruhl_Libre({
+// "Board Game" type: Fredoka everywhere (it has Hebrew), Heebo as the fallback.
+// See design-kit/DESIGN.md.
+const fredoka = Fredoka({
   subsets: ['hebrew', 'latin'],
-  weight: ['500', '700', '900'],
-  variable: '--font-frank',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-fredoka',
   display: 'swap',
 })
 
-const plex = IBM_Plex_Sans_Hebrew({
+const heebo = Heebo({
   subsets: ['hebrew', 'latin'],
   weight: ['400', '500', '600', '700'],
-  variable: '--font-plex',
+  variable: '--font-heebo',
   display: 'swap',
 })
 
 export const metadata: Metadata = {
-  title: 'ערב מכירה — NGG',
+  title: 'המכירה הפומבית — NGG',
   description: 'מכירה פומבית חיה לסדנאות של NGG',
 }
 
@@ -27,13 +27,13 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#160e12',
+  themeColor: '#dff3e9',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="he" dir="rtl" className={`${frank.variable} ${plex.variable} h-full`}>
-      <body className="min-h-full bg-velvet-1 text-ivory antialiased">{children}</body>
+    <html lang="he" dir="rtl" className={`${fredoka.variable} ${heebo.variable} h-full`}>
+      <body className="min-h-full bg-page text-ink antialiased">{children}</body>
     </html>
   )
 }

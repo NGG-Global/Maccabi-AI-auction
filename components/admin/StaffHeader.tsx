@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Button } from '@/components/evening/ui'
+import { Button } from '@/components/game/ui'
 
 export default function StaffHeader({ email }: { email: string }) {
   const router = useRouter()
@@ -22,11 +22,11 @@ export default function StaffHeader({ email }: { email: string }) {
   return (
     <header className="flex items-center justify-between gap-4 px-6 py-3">
       <Link href="/admin" className="flex items-baseline gap-3 no-underline">
-        <b className="font-display text-[26px] font-black tracking-[-.01em] text-ivory">ערב מכירה</b>
-        <span className="hidden text-[14px] text-ivory-mute sm:inline">ניהול הסשנים · NGG</span>
+        <b className="text-[26px] font-bold text-ink">המכירה הפומבית</b>
+        <span className="hidden text-[14px] text-ink-3 sm:inline">ניהול הסשנים · NGG</span>
       </Link>
       <div className="flex items-center gap-3 text-[14px]">
-        <span className="hidden text-ivory-mute sm:inline" dir="ltr">{email}</span>
+        <span className="hidden text-ink-3 sm:inline" dir="ltr">{email}</span>
         <Button size="sm" onClick={logout} disabled={busy}>התנתקות</Button>
       </div>
     </header>

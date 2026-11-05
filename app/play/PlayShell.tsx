@@ -1,19 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { Notice } from '@/components/evening/ui'
+import { Notice } from '@/components/game/ui'
 
 // Pieces shared by the auction and allocation participant screens.
 
-/** The phone frame: one column, max 430px, wallet bar on top, content, a sticky footer. */
+/** The phone frame: the mint board, one column, max 430px, wallet bar on top, content, a sticky footer. */
 export function PhoneShell({ children, footer }: { children: React.ReactNode; footer?: React.ReactNode }) {
   return (
-    <main className="flex min-h-screen flex-col bg-velvet-1" dir="rtl">
+    <main className="bg-dots flex min-h-screen flex-col" dir="rtl">
       <div className="mx-auto flex w-full max-w-[430px] flex-1 flex-col">
-        <div className={`flex flex-1 flex-col gap-4 px-[14px] pt-4 ${footer ? 'pb-[220px]' : 'pb-8'}`}>{children}</div>
+        <div className={`flex flex-1 flex-col gap-4 px-[14px] pt-4 ${footer ? 'pb-[230px]' : 'pb-8'}`}>{children}</div>
       </div>
       {footer && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-velvet-3 bg-velvet-1 pb-[max(22px,env(safe-area-inset-bottom))] pt-[14px]">
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t-[3px] border-ink bg-white/85 pb-[max(22px,env(safe-area-inset-bottom))] pt-[14px] backdrop-blur-[6px]">
           <div className="mx-auto flex w-full max-w-[430px] flex-col gap-3 px-[18px]">{footer}</div>
         </div>
       )}
@@ -23,12 +23,12 @@ export function PhoneShell({ children, footer }: { children: React.ReactNode; fo
 
 export function PlaySkeleton() {
   return (
-    <main className="flex min-h-screen flex-col bg-velvet-1" dir="rtl" aria-busy="true" aria-label="טוען">
+    <main className="bg-dots flex min-h-screen flex-col" dir="rtl" aria-busy="true" aria-label="טוען">
       <div className="mx-auto flex w-full max-w-[430px] flex-1 flex-col gap-4 px-[14px] pt-4">
-        <div className="skeleton h-[88px] w-full rounded-[18px]" />
-        <div className="skeleton h-40 w-full rounded-[22px]" />
-        <div className="skeleton h-20 w-full rounded-[14px]" />
-        <div className="skeleton mt-auto mb-6 h-[66px] w-full rounded-[18px]" />
+        <div className="skeleton h-[92px] w-full rounded-[24px]" />
+        <div className="skeleton h-40 w-full rounded-[24px]" />
+        <div className="skeleton h-20 w-full rounded-[18px]" />
+        <div className="skeleton mt-auto mb-6 h-16 w-full rounded-[22px]" />
       </div>
     </main>
   )
@@ -36,11 +36,11 @@ export function PlaySkeleton() {
 
 export function PlayError({ message }: { message: string }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-velvet-1 px-4" dir="rtl">
-      <div className="ev-rise flex w-full max-w-sm flex-col gap-4 rounded-[22px] border border-velvet-3 bg-velvet-2 p-6 text-center">
-        <p className="m-0 font-display text-[28px] font-black leading-tight text-ivory">משהו השתבש</p>
+    <main className="bg-dots flex min-h-screen items-center justify-center px-4" dir="rtl">
+      <div className="gm-rise flex w-full max-w-sm flex-col gap-4 rounded-[24px] border-[3px] border-ink bg-card p-6 text-center shadow-piece-md">
+        <p className="m-0 text-[26px] font-bold leading-tight text-ink">משהו השתבש</p>
         <Notice tone="error">{message}</Notice>
-        <Link href="/" className="text-[15px] font-semibold text-ivory-dim underline decoration-velvet-4 underline-offset-4 hover:text-ivory">
+        <Link href="/" className="text-[15px] font-semibold text-ink-2 underline decoration-ink/30 underline-offset-4 hover:text-ink">
           חזרה לדף הכניסה
         </Link>
       </div>
@@ -58,8 +58,8 @@ export function RulesList({ rules }: { rules: string[] }) {
   return (
     <ol className="m-0 flex list-none flex-col gap-3 p-0">
       {rules.map((text, i) => (
-        <li key={text} className="flex items-start gap-3 text-[16px] leading-relaxed text-ivory-dim">
-          <span aria-hidden="true" className="num mt-[2px] w-6 shrink-0 text-[18px] text-ivory-mute">{String(i + 1).padStart(2, '0')}</span>
+        <li key={text} className="flex items-start gap-3 text-[16px] leading-relaxed text-ink-2">
+          <span aria-hidden="true" className="num mt-[2px] flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-sun text-[14px] text-ink">{i + 1}</span>
           <span>{text}</span>
         </li>
       ))}

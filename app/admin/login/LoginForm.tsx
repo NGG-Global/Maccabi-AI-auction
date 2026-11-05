@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import CoinIcon from '@/components/evening/CoinIcon'
-import { ErrorText, FIELD, btnClass } from '@/components/evening/ui'
+import CoinIcon from '@/components/game/CoinIcon'
+import { ErrorText, FIELD, btnClass } from '@/components/game/ui'
 
 export default function LoginForm({ next }: { next: string }) {
   const router = useRouter()
@@ -31,15 +31,15 @@ export default function LoginForm({ next }: { next: string }) {
   }
 
   return (
-    <main className="stage-atmos relative flex min-h-screen items-center justify-center px-4" dir="rtl">
-      <div className="ev-rise w-full max-w-sm rounded-[22px] border border-velvet-3 bg-velvet-2 p-8">
+    <main className="bg-dots relative flex min-h-screen items-center justify-center px-4" dir="rtl">
+      <div className="gm-rise w-full max-w-sm rounded-[24px] border-[3px] border-ink bg-card p-8 shadow-piece-md">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <CoinIcon size={44} />
-          <h1 className="m-0 font-display text-[34px] font-black leading-none text-ivory">ערב מכירה</h1>
-          <p className="m-0 text-[15px] text-ivory-mute">כניסת צוות NGG לניהול הסשנים</p>
+          <h1 className="m-0 text-[32px] font-bold leading-none text-ink">המכירה הפומבית</h1>
+          <p className="m-0 text-[15px] text-ink-3">כניסת צוות NGG לניהול הסשנים</p>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1.5 text-[14px] font-semibold text-ivory-dim">
+          <label className="flex flex-col gap-1.5 text-[14px] font-semibold text-ink-2">
             דוא״ל
             <input
               type="email"
@@ -53,7 +53,7 @@ export default function LoginForm({ next }: { next: string }) {
               className={FIELD}
             />
           </label>
-          <label className="flex flex-col gap-1.5 text-[14px] font-semibold text-ivory-dim">
+          <label className="flex flex-col gap-1.5 text-[14px] font-semibold text-ink-2">
             סיסמת הצוות
             <input
               type="password"

@@ -1,13 +1,13 @@
-import CoinIcon from '@/components/evening/CoinIcon'
+import CoinIcon from '@/components/game/CoinIcon'
 
-/** Full-screen loading state in the Evening Sale language: velvet ground, a coin and a thin line. */
+/** Full-screen loading state in the board-game language: the mint board, a coin and a thin line. */
 export default function LoadingScreen() {
   return (
-    <div className="stage-atmos fixed inset-0 z-[9999] grid place-items-center" role="status" aria-live="polite" aria-label="טוען">
-      <div className="ev-fade flex flex-col items-center gap-6">
-        <CoinIcon size={56} className="drop-shadow-[0_10px_24px_rgba(0,0,0,.5)]" />
-        <p className="m-0 font-display text-[34px] font-black leading-none text-ivory">ערב מכירה</p>
-        <div className="skeleton h-1 w-44 rounded-full" />
+    <div className="bg-dots fixed inset-0 z-[9999] grid place-items-center" role="status" aria-live="polite" aria-label="טוען">
+      <div className="gm-fade flex flex-col items-center gap-5 rounded-[24px] border-[3px] border-ink bg-card px-10 py-8 shadow-piece-md">
+        <CoinIcon size={56} />
+        <p className="m-0 text-[30px] font-bold leading-none text-ink">המכירה הפומבית</p>
+        <div className="skeleton h-1.5 w-44 rounded-full" />
       </div>
     </div>
   )

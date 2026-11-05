@@ -10,7 +10,7 @@ interface Props {
 }
 
 /**
- * A 4px track with a vermilion fill and an ember head that shrinks over
+ * A white outlined track with a tomato-to-sunflower fill that shrinks over
  * the round's seconds. Closing always stays manual: at 0 the line waits.
  */
 export default function CountdownLine({ timer, roundSeconds, closed = false, size = 'projector' }: Props) {
@@ -21,10 +21,10 @@ export default function CountdownLine({ timer, roundSeconds, closed = false, siz
   const big = size === 'projector'
   return (
     <div>
-      <div className={`fuse ${closed ? 'done' : ''}`} aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>
-      <div className={`flex items-center justify-between ${big ? 'mt-[14px] text-[24px]' : 'mt-2 text-[14px]'} text-ivory-dim`}>
-        <span>{label}</span>
-        {time && <span className={`num text-ivory ${big ? 'text-[30px]' : 'text-[18px]'}`}>{time}</span>}
+      <div className={`fuse ${big ? 'mt-[18px]' : 'fuse-sm mt-2'}`} aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>
+      <div className={`flex items-center justify-between ${big ? 'mt-[14px] text-[24px]' : 'mt-2 text-[14px]'} text-ink-2`}>
+        <span className={closed ? 'font-bold text-ink' : ''}>{label}</span>
+        {time && <span className={`num text-ink ${big ? 'text-[30px]' : 'text-[18px]'}`}>{time}</span>}
       </div>
     </div>
   )

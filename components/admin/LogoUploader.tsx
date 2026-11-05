@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { MAX_LOGO_BYTES, logoPublicUrl } from '@/lib/storage/logo'
-import { Button, ErrorText, Hint } from '@/components/evening/ui'
+import { Button, ErrorText, Hint } from '@/components/game/ui'
 
 interface Props {
   roomId: string | null
@@ -52,10 +52,10 @@ export default function LogoUploader({ roomId, logoPath, disabled, onChange }: P
 
   return (
     <div className="flex flex-wrap items-center gap-4">
-      <div className="flex h-[68px] w-[150px] shrink-0 items-center justify-center overflow-hidden rounded-[12px] border-[1.5px] border-dashed border-velvet-4 text-[13px] text-ivory-mute">
+      <div className="flex h-[68px] w-[150px] shrink-0 items-center justify-center overflow-hidden rounded-[12px] border-[2.5px] border-dashed border-muted-outline bg-card text-[13px] text-ink-3">
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="לוגו הלקוח" className="h-full w-full bg-ivory object-contain p-1" />
+          <img src={url} alt="לוגו הלקוח" className="h-full w-full bg-card object-contain p-1" />
         ) : (
           'לוגו הלקוח'
         )}
@@ -75,7 +75,7 @@ export default function LogoUploader({ roomId, logoPath, disabled, onChange }: P
             {busy ? 'מעלים…' : url ? 'החלפת הלוגו' : 'העלאת לוגו'}
           </Button>
           {url && (
-            <button type="button" onClick={remove} disabled={disabled || busy} className="text-[14px] font-semibold text-ivory-dim underline decoration-velvet-4 underline-offset-4 hover:text-ivory disabled:opacity-50">
+            <button type="button" onClick={remove} disabled={disabled || busy} className="text-[14px] font-semibold text-ink-2 underline decoration-ink/30 underline-offset-4 hover:text-ink disabled:opacity-50">
               הסרת הלוגו
             </button>
           )}

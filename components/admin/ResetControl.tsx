@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/evening/ui'
+import { Button } from '@/components/game/ui'
 
 interface Props {
   roomId: string
@@ -43,9 +43,9 @@ export default function ResetControl({ roomId, disabled, onReset, onError }: Pro
   }
 
   return (
-    <div className="ev-rise flex flex-col gap-2 rounded-[12px] border border-[rgba(255,157,130,.4)] bg-[rgba(255,157,130,.06)] p-3">
+    <div className="gm-rise flex flex-col gap-2 rounded-[12px] border-2 border-error bg-error-tint p-3">
       <p className="m-0 text-[14px] font-bold text-error">איפוס הסשן</p>
-      <p className="m-0 text-[13px] leading-relaxed text-ivory-dim">
+      <p className="m-0 text-[13px] leading-relaxed text-ink-2">
         מוחק את המשתתפים וההצעות של הסשן הזה בלבד. ההגדרות והפריטים נשמרים. אי אפשר לבטל.
       </p>
       <div className="mt-1 flex gap-2">

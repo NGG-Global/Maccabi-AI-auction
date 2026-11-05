@@ -8,10 +8,10 @@ import { isRoundWinner, roundWinnerNames } from '@/lib/game/allocation'
 import { EMBED } from '@/lib/supabase/embeds'
 import { lastRoomSlug, loadParticipant } from '@/lib/participant-session'
 import RoomBrand from '@/components/shared/RoomBrand'
-import WalletBar from '@/components/evening/WalletBar'
-import ParticipantMark from '@/components/evening/ParticipantMark'
+import WalletBar from '@/components/game/WalletBar'
+import ParticipantMark from '@/components/game/ParticipantMark'
 import { PlaySkeleton, PlayError } from '@/app/play/PlayShell'
-import { UNIT_LABEL, fmt, lotNo } from '@/components/evening/units'
+import { UNIT_LABEL, fmt, lotNo } from '@/components/game/units'
 
 interface RoundWithBid { round: AuctionRound; bid: Bid; won: boolean }
 
@@ -82,31 +82,31 @@ export default function ProfileClient() {
   const isAllocation = room.game_mode === 'allocation'
 
   return (
-    <main className="flex min-h-screen flex-col bg-velvet-1" dir="rtl">
+    <main className="bg-dots flex min-h-screen flex-col" dir="rtl">
       <div className="mx-auto flex w-full max-w-[430px] flex-1 flex-col gap-4 px-[14px] pb-8 pt-4">
         <div className="flex items-center justify-between gap-3 px-1">
-          <span className="inline-flex min-w-0 items-center gap-2 text-[17px] font-semibold text-ivory">
-            <ParticipantMark name={participant.display_name} size={30} />
+          <span className="inline-flex min-w-0 items-center gap-2 text-[17px] font-semibold text-ink">
+            <ParticipantMark name={participant.display_name} size={30} tone="ink" />
             <span className="truncate">{participant.display_name}</span>
           </span>
-          <span className="text-[14px] text-ivory-mute">הפרופיל האישי</span>
+          <span className="text-[14px] text-ink-3">הפרופיל האישי</span>
         </div>
 
         <RoomBrand title={room.title} clientName={room.client_name} logoPath={room.logo_path} size="sm" />
 
-        <h1 className="m-0 mx-1 font-display text-[40px] font-black leading-[1.05] text-ivory">
+        <h1 className="m-0 mx-1 text-[38px] font-bold leading-[1.05] text-ink">
           {won.length > 0
             ? <>זכית ב־<span className="num">{won.length}</span> {won.length === 1 ? 'פריט' : 'פריטים'}</>
             : rounds.length > 0 ? 'לא זכית בפריטים הפעם' : 'עדיין לא השתתפת בסבבים'}
         </h1>
 
         {archetype && (
-          <div className="flex items-center gap-4 rounded-[20px] border border-velvet-3 bg-velvet-2 px-5 py-4">
-            <ParticipantMark name={archetype.mark} size={52} tone="active" />
+          <div className="flex items-center gap-4 rounded-[24px] border-[3px] border-ink bg-card px-5 py-4 shadow-piece-md">
+            <ParticipantMark name={archetype.mark} size={56} tone="sky" />
             <div className="min-w-0">
-              <p className="m-0 text-[13px] font-semibold text-ivory-mute">הפרופיל שלך</p>
-              <p className="m-0 font-display text-[24px] font-black leading-tight text-ivory">{archetype.title}</p>
-              <p className="m-0 mt-1 text-[15px] leading-relaxed text-ivory-dim">{archetype.desc}</p>
+              <p className="m-0 text-[13px] font-semibold text-ink-3">הפרופיל שלך</p>
+              <p className="m-0 text-[24px] font-bold leading-tight text-ink">{archetype.title}</p>
+              <p className="m-0 mt-1 text-[15px] leading-relaxed text-ink-2">{archetype.desc}</p>
             </div>
           </div>
         )}
@@ -117,15 +117,15 @@ export default function ProfileClient() {
               const others = isAllocation ? roundWinnerNames(r.round).filter(n => n !== participant.display_name) : []
               const idx = r.round.trait?.sort_order ?? 0
               return (
-                <div key={r.round.id} className="overflow-hidden rounded-[18px] bg-paper text-ink-paper shadow-[var(--shadow-plate)]">
-                  <div className="flex items-center justify-between gap-3 bg-velvet-2 px-[18px] py-[14px] text-ivory">
-                    <b className="font-display text-[26px] font-black leading-tight">{r.round.trait?.title}</b>
-                    {idx > 0 && <span className="shrink-0 font-display text-[18px] font-black text-ivory-mute">פריט {lotNo(idx)}</span>}
+                <div key={r.round.id} className="overflow-hidden rounded-[18px] border-[3px] border-ink bg-card text-ink shadow-piece-md">
+                  <div className="flex items-center justify-between gap-3 bg-ink px-[18px] py-[14px] text-white">
+                    <b className="text-[24px] font-semibold leading-tight">{r.round.trait?.title}</b>
+                    {idx > 0 && <span className="shrink-0 text-[17px] font-semibold text-ink-soft">פריט {lotNo(idx)}</span>}
                   </div>
-                  <div className="h-[5px] bg-vermilion" />
-                  <div className="flex items-center justify-between px-[18px] pb-4 pt-3 text-[17px] text-ink-soft">
+                  <div className="h-[6px] bg-sun" />
+                  <div className="flex items-center justify-between px-[18px] pb-4 pt-3 text-[17px] text-ink-3">
                     <span>{others.length > 0 ? `זכייה משותפת עם ${others.join(', ')}` : isAllocation ? 'ההקצאה שלך' : 'מחיר הסגירה'}</span>
-                    <b className="num text-[30px] text-ink-paper">{fmt(r.bid.amount)}</b>
+                    <b className="num text-[30px] text-ink">{fmt(r.bid.amount)}</b>
                   </div>
                 </div>
               )
@@ -134,13 +134,13 @@ export default function ProfileClient() {
         )}
 
         {lost.length > 0 && (
-          <div className="rounded-[18px] border border-velvet-3 bg-velvet-2 px-4 py-3">
-            <p className="m-0 mb-2 text-[13px] font-semibold text-ivory-mute">{isAllocation ? 'הקצאות שלא זכו' : 'הצעות שלא זכו'}</p>
+          <div className="rounded-[18px] border-[2.5px] border-ink bg-card px-4 py-3">
+            <p className="m-0 mb-2 text-[13px] font-semibold text-ink-3">{isAllocation ? 'הקצאות שלא זכו' : 'הצעות שלא זכו'}</p>
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
               {lost.map(r => (
                 <li key={r.round.id} className="flex items-baseline justify-between gap-3 text-[16px]">
-                  <span className="min-w-0 flex-1 truncate text-ivory-dim">{r.round.trait?.title}</span>
-                  <span className="num shrink-0 text-[18px] text-ivory-dim">{fmt(r.bid.amount)}</span>
+                  <span className="min-w-0 flex-1 truncate text-ink-2">{r.round.trait?.title}</span>
+                  <span className="num shrink-0 text-[18px] text-ink-2">{fmt(r.bid.amount)}</span>
                 </li>
               ))}
             </ul>
@@ -148,7 +148,7 @@ export default function ProfileClient() {
         )}
 
         <WalletBar
-          variant="light"
+          variant="tint"
           remaining={participant.wallet_balance}
           total={room.starting_coins}
           unitLabel={UNIT_LABEL}

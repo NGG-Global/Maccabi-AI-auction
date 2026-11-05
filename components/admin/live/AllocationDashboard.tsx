@@ -14,9 +14,9 @@ import StageMeta from './StageMeta'
 import StageButton, { StageConfirm } from './StageButton'
 import LobbyScene from './LobbyScene'
 import { WinnersBoard, ValuesSlide } from './ResultsSlides'
-import StatusPill from '@/components/evening/StatusPill'
-import { Button } from '@/components/evening/ui'
-import { UNIT_LABEL, fmt } from '@/components/evening/units'
+import StatusPill from '@/components/game/StatusPill'
+import { Button } from '@/components/game/ui'
+import { UNIT_LABEL, fmt } from '@/components/game/units'
 import { summarizeAllocation, sortRoundsByTrait, type AllocationBidRow } from '@/lib/game/allocation'
 
 interface Props extends LiveShellProps {
@@ -204,25 +204,25 @@ export default function AllocationDashboard({ room, traits, drawerOpen, onDrawer
       <DrawerSection title="מצב">
         <div className="flex items-center justify-between gap-2">
           {phase === 'open' ? <StatusPill kind="open">המכירה פתוחה</StatusPill> : phase === 'closed' ? <StatusPill kind="closed">המכירה נסגרה</StatusPill> : <StatusPill kind="draft">ממתינים לפתיחה</StatusPill>}
-          <span className="text-[13px] text-ivory-mute">{people.length} משתתפים · {phase === 'waiting' ? '—' : allocatorCount} שלחו</span>
+          <span className="text-[13px] text-ink-3">{people.length} משתתפים · {phase === 'waiting' ? '—' : allocatorCount} שלחו</span>
         </div>
         {phase === 'closed' && (
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => setSlide('winners')} aria-pressed={slide === 'winners'} className={slide === 'winners' ? '!bg-ivory !text-velvet-0' : ''}>הזוכים</Button>
-            <Button size="sm" onClick={() => setSlide('values')} aria-pressed={slide === 'values'} className={slide === 'values' ? '!bg-ivory !text-velvet-0' : ''}>מה הקבוצה מעריכה</Button>
+            <Button size="sm" onClick={() => setSlide('winners')} aria-pressed={slide === 'winners'} className={slide === 'winners' ? '!bg-ink !text-white' : ''}>הזוכים</Button>
+            <Button size="sm" onClick={() => setSlide('values')} aria-pressed={slide === 'values'} className={slide === 'values' ? '!bg-ink !text-white' : ''}>מה הקבוצה מעריכה</Button>
             <Button size="sm" onClick={() => setReplay(k => k + 1)}>הפעלת החשיפה מחדש</Button>
           </div>
         )}
-        {phase === 'closed' && <p className="m-0 text-[12px] text-ivory-mute">למכירה חוזרת יש לאפס את הסשן.</p>}
+        {phase === 'closed' && <p className="m-0 text-[12px] text-ink-3">למכירה חוזרת יש לאפס את הסשן.</p>}
       </DrawerSection>
       <DrawerSection title="הצטרפות">
         <JoinShare slug={room.slug} />
       </DrawerSection>
       <DrawerSection title="פריטי המכירה">
-        <ol className="m-0 flex list-none flex-col gap-1 p-0 text-[13px] text-ivory-dim">
+        <ol className="m-0 flex list-none flex-col gap-1 p-0 text-[13px] text-ink-2">
           {sortedTraits.map((t, i) => (
             <li key={t.id} className="flex items-center gap-2">
-              <span className="num w-6 text-ivory-mute">{String(i + 1).padStart(2, '0')}</span>
+              <span className="num w-6 text-ink-3">{String(i + 1).padStart(2, '0')}</span>
               <span className="truncate">{t.title}</span>
             </li>
           ))}
@@ -242,12 +242,12 @@ export default function AllocationDashboard({ room, traits, drawerOpen, onDrawer
 
   return (
     <LiveFrame drawer={drawer} drawerOpen={drawerOpen} onDrawerClose={onDrawerClose} message={message} busy={loading}>
-      <div className="flex h-full flex-col px-24 pb-14 pt-16">
+      <div className={`flex h-full flex-col px-24 pb-14 ${phase === 'closed' && slide === 'values' ? 'pt-10' : 'pt-16'}`}>
         <StageMeta
           room={room}
           live={phase === 'open'}
           end={phase === 'closed' ? (
-            <div className="flex gap-2 rounded-full border border-velvet-3 bg-velvet-1 p-1" role="tablist" aria-label="שקפי התוצאות">
+            <div className="flex gap-1 rounded-full border-[3px] border-ink bg-card p-1 shadow-piece-sm" role="tablist" aria-label="שקפי התוצאות">
               {([['winners', 'הזוכים'], ['values', 'מה הקבוצה מעריכה']] as const).map(([id, label]) => (
                 <button
                   key={id}
@@ -255,7 +255,7 @@ export default function AllocationDashboard({ room, traits, drawerOpen, onDrawer
                   role="tab"
                   aria-selected={slide === id}
                   onClick={() => setSlide(id)}
-                  className={`rounded-full px-5 py-1.5 text-[22px] font-semibold transition-colors ${slide === id ? 'bg-ivory text-velvet-0' : 'text-ivory-dim hover:text-ivory'}`}
+                  className={`rounded-full px-5 py-1.5 text-[22px] font-semibold transition-colors ${slide === id ? 'bg-ink text-white' : 'text-ink-2 hover:text-ink'}`}
                 >
                   {label}
                 </button>
@@ -303,8 +303,8 @@ export default function AllocationDashboard({ room, traits, drawerOpen, onDrawer
         )}
 
         {phase === 'closed' && (
-          <div className="grid min-h-0 flex-1 grid-rows-[104px_minmax(0,1fr)] gap-y-[22px] pt-[22px]">
-            <h1 className="m-0 self-end font-display text-[112px] font-black leading-none tracking-[-.02em] text-ivory">
+          <div className={`grid min-h-0 flex-1 ${slide === 'winners' ? 'grid-rows-[104px_minmax(0,1fr)] gap-y-[22px] pt-[22px]' : 'grid-rows-[96px_minmax(0,1fr)] gap-y-3 pt-2'}`}>
+            <h1 className="m-0 self-end text-[112px] font-bold leading-none tracking-[-.015em] text-ink">
               {slide === 'winners' ? 'הזוכים' : 'מה הקבוצה מעריכה'}
             </h1>
             {slide === 'winners'

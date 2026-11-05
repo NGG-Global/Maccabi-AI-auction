@@ -1,148 +1,145 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════
-   "Evening Sale" tokens — see design-kit/DESIGN.md (normative).
+   "Board Game" tokens — see design-kit/DESIGN.md (normative).
    Font variables come from next/font in app/layout.tsx.
    ═══════════════════════════════════════════════════════════════ */
 
 @theme inline {
-  --font-display: var(--font-frank), "David Libre", Georgia, "Times New Roman", serif;
-  --font-sans: var(--font-plex), "Assistant", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-sans: var(--font-fredoka), var(--font-heebo), system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
 }
 
 @theme {
-  --color-velvet-0: #0d080b;   /* deepest: outside the stage, text on vermilion */
-  --color-velvet-1: #160e12;   /* ground */
-  --color-velvet-2: #211519;   /* raised */
-  --color-velvet-3: #33232a;   /* line */
-  --color-velvet-4: #4a333c;   /* line strong */
-  --color-ivory: #f4ecdf;
-  --color-ivory-dim: #cfc2b1;
-  --color-ivory-mute: #a39585;
-  --color-vermilion: #ff5a36;
-  --color-vermilion-hover: #ff6d4d;
-  --color-vermilion-deep: #d93a1a;
-  --color-ember: #ffb38a;
-  --color-bronze: #b98a5e;
-  --color-paper: #efe5d4;
-  --color-ink-paper: #1d1316;
-  --color-ink-soft: #5b4a4f;
-  --color-error: #ff9d82;
+  --color-ink: #1f2a37;
+  --color-ink-2: #3d4a5a;
+  --color-ink-3: #5b6675;
+  --color-ink-soft: #a9b7c4;   /* lot numbers on the ink band */
+  --color-mint: #dff3e9;
+  --color-mint-line: #c9dcd2;
+  --color-page: #eef6f1;
+  --color-card: #ffffff;
+  --color-zebra: #f3f8f5;
+  --color-tomato: #ff6b4a;
+  --color-tomato-hover: #ff8466;
+  --color-tomato-text: #b23a1f;   /* tomato-coloured text on white/sunflower */
+  --color-sun: #ffc83d;
+  --color-sun-tint: #fff1c4;
+  --color-sun-text: #8a4b00;      /* text on the sunflower tint */
+  --color-sky: #7cc0ff;
+  --color-lilac: #c4b5fd;
+  --color-peach: #ffb48f;
+  --color-leaf: #9be3bf;
+  --color-leaf-dot: #0f7a4a;
+  --color-muted-outline: #9aa9b5;
+  --color-disabled: #e4ece8;
+  --color-meter: #e3eee8;
+  --color-error: #b42318;
+  --color-error-tint: #fff5f2;
 
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --radius-xl: 22px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  /* hard offset shadows: no blur, ever */
+  --shadow-piece-xs: 2px 2px 0 #1f2a37;
+  --shadow-piece-sm: 3px 3px 0 #1f2a37;
+  --shadow-piece: 4px 4px 0 #1f2a37;
+  --shadow-piece-md: 5px 5px 0 #1f2a37;
+  --shadow-piece-lg: 6px 6px 0 #1f2a37;
+  --shadow-piece-xl: 8px 8px 0 #1f2a37;
+  --shadow-piece-2xl: 9px 9px 0 #1f2a37;
+  --shadow-frame: 8px 8px 0 rgba(31, 42, 55, .25);
 
   --ease-out-expo: cubic-bezier(.16, 1, .3, 1);
-
-  --shadow-stage: 0 30px 80px rgba(0, 0, 0, .55);
-  --shadow-plate: 0 24px 50px rgba(0, 0, 0, .45);
-  --shadow-primary: 0 12px 30px rgba(255, 90, 54, .28);
-  --shadow-menu: 0 18px 40px rgba(0, 0, 0, .5);
 }
 
 /* ── base ─────────────────────────────────────────────── */
-:root { color-scheme: dark; }
+:root { color-scheme: light; }
 html { scroll-padding-top: env(safe-area-inset-top, 0px); }
 body {
-  background: var(--color-velvet-1);
-  color: var(--color-ivory);
+  background: var(--color-page);
+  color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-::selection { background: var(--color-vermilion); color: var(--color-velvet-0); }
-:focus-visible { outline: 3px solid var(--color-vermilion); outline-offset: 3px; border-radius: 6px; }
+::selection { background: var(--color-sun); color: var(--color-ink); }
+:focus-visible { outline: 3px solid var(--color-ink); outline-offset: 3px; border-radius: 6px; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: var(--color-velvet-3); border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: #b9cfc3; border-radius: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* remove the spinner from numeric inputs */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 
 /* Custom classes live in the components layer: utilities must be able to
    override them (an unlayered rule beats every layered utility). */
 @layer components {
-  /* numbers: serif, tabular, isolated LTR */
-  .num {
-    font-family: var(--font-display);
-    font-weight: 900;
-    font-variant-numeric: tabular-nums lining-nums;
-    direction: ltr;
-    unicode-bidi: isolate;
-    display: inline-block;
-  }
+  /* numbers: bold, tabular, isolated LTR */
+  .num { font-weight: 700; font-variant-numeric: tabular-nums lining-nums; direction: ltr; unicode-bidi: isolate; display: inline-block; }
 
-  /* remove the spinner from numeric inputs */
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-  input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+  /* backgrounds */
+  .bg-dots { background-color: var(--color-mint); background-image: radial-gradient(rgba(31,42,55,.10) 2px, transparent 2.6px); background-size: 30px 30px; }
+  .bg-dots-stage { background-color: var(--color-mint); background-image: radial-gradient(rgba(31,42,55,.10) 3px, transparent 3.6px); background-size: 44px 44px; }
+  .bg-dots-fine { background-color: var(--color-mint); background-image: radial-gradient(rgba(31,42,55,.10) 1.5px, transparent 2px); background-size: 16px 16px; }
 
-  /* ── projector atmosphere (ProjectorCanvas root) ───────── */
-  .stage-atmos { background: var(--color-velvet-1); overflow: hidden; }
-  .stage-atmos::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
-    background: radial-gradient(ellipse 52% 60% at 50% 18%, rgba(255,214,170,.13), rgba(255,214,170,.04) 45%, transparent 72%),
-                radial-gradient(ellipse 120% 80% at 50% 120%, rgba(0,0,0,.55), transparent 60%); }
-  .stage-atmos::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: .18; mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
-  .stage-atmos > * { position: relative; z-index: 1; }
+  /* the game piece: white card, ink outline, hard shadow; press behaviour for interactive pieces */
+  .piece { background: var(--color-card); border: 3px solid var(--color-ink); border-radius: var(--radius-lg); box-shadow: var(--shadow-piece-md); }
+  .piece-press { transition: transform .1s, box-shadow .1s; }
+  .piece-press:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--color-ink); }
+  .piece-press:disabled { background: var(--color-disabled); color: var(--color-ink-3); border-color: var(--color-muted-outline); box-shadow: none; transform: none; }
+  .press-sm { transition: transform .1s, box-shadow .1s; }
+  .press-sm:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--color-ink); }
+  .press-sm:disabled { box-shadow: none; transform: none; }
 
-  /* ── sold stamp rough-ink mask ─────────────────────────── */
-  .stamp-ink {
-    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='r'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 1.7'/></filter><rect width='100%' height='100%' filter='url(%23r)'/></svg>");
-            mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='r'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 1.7'/></filter><rect width='100%' height='100%' filter='url(%23r)'/></svg>");
-  }
-
-  /* ── digit roller (NumberRoller) ───────────────────────── */
+  /* digit roller (NumberRoller) */
   .roller { display: inline-flex; flex-shrink: 0; direction: ltr; line-height: 1; font-variant-numeric: tabular-nums lining-nums; overflow: hidden; vertical-align: bottom; unicode-bidi: isolate; }
   .roller .d { display: inline-block; flex: none; height: 1em; overflow: hidden; position: relative; }
   .roller .strip { display: flex; flex-direction: column; transition: transform .7s var(--ease-out-expo); will-change: transform; }
   .roller .strip span, .roller .sep { height: 1em; line-height: 1; display: block; }
   .roller .sep { display: inline-block; }
 
-  /* ── countdown line (CountdownLine) ────────────────────── */
-  .fuse { position: relative; height: 4px; background: var(--color-velvet-3); border-radius: 4px; }
-  .fuse i { position: absolute; inset-block: 0; right: 0; background: linear-gradient(270deg, rgba(255,90,54,.15), var(--color-vermilion)); border-radius: 4px; transition: width 1s linear; }
-  .fuse i::after { content: ""; position: absolute; left: -6px; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: var(--color-ember); box-shadow: 0 0 18px 6px rgba(255,140,90,.65); }
-  .fuse.done i::after { display: none; }
+  /* countdown line (CountdownLine): a white outlined track, a tomato→sunflower fill shrinking from the left */
+  .fuse { position: relative; height: 20px; background: var(--color-card); border: 4px solid var(--color-ink); border-radius: 20px; overflow: hidden; }
+  .fuse i { position: absolute; inset-block: 0; right: 0; background: linear-gradient(270deg, var(--color-sun), var(--color-tomato)); transition: width 1s linear; }
+  .fuse-sm { height: 12px; border-width: 2.5px; }
 
-  /* ── skeleton while loading ────────────────────────────── */
-  @keyframes ev-skeleton { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
-  .skeleton {
-    background: linear-gradient(90deg, rgba(244,236,223,.04) 0%, rgba(244,236,223,.10) 50%, rgba(244,236,223,.04) 100%);
-    background-size: 200% 100%;
-    animation: ev-skeleton 1.5s ease-in-out infinite;
-    border-radius: 12px;
-  }
+  /* skeleton while loading */
+  @keyframes gm-skeleton { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+  .skeleton { background: linear-gradient(90deg, rgba(31,42,55,.06) 0%, rgba(31,42,55,.14) 50%, rgba(31,42,55,.06) 100%); background-size: 200% 100%; animation: gm-skeleton 1.5s ease-in-out infinite; border-radius: 12px; }
 
-  /* ── motion ────────────────────────────────────────────── */
-  @keyframes ev-live { 50% { box-shadow: 0 0 0 12px rgba(255,90,54,0); } }
-  @keyframes ev-raise { 0% { transform: translateY(46px); opacity: .2; } 100% { transform: none; opacity: 1; } }
-  @keyframes ev-cue { 0% { opacity: 0; transform: translateY(24px); filter: blur(6px); } 25% { opacity: 1; transform: none; filter: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
-  @keyframes ev-flash { 0% { opacity: 1; } 100% { opacity: 0; } }
-  @keyframes ev-shake { 20% { transform: translate(-5px,3px); } 40% { transform: translate(4px,-3px); } 60% { transform: translate(-3px,2px); } 80% { transform: translate(2px,-1px); } 100% { transform: none; } }
-  @keyframes ev-slam { 0% { opacity: 0; transform: rotate(-16deg) scale(2.3); filter: blur(10px); } 55% { opacity: 1; transform: rotate(-8deg) scale(.96); filter: none; } 100% { opacity: 1; transform: rotate(-9deg) scale(1); } }
-  @keyframes ev-slam-sm { 0% { opacity: 0; transform: rotate(-14deg) scale(2); filter: blur(8px); } 55% { opacity: 1; transform: rotate(-6deg) scale(.96); filter: none; } 100% { opacity: 1; transform: rotate(-7deg) scale(1); } }
-  @keyframes ev-ring { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(26); } }
-  @keyframes ev-flip { 0% { transform: rotateY(-88deg); opacity: 0; } 40% { opacity: 1; } 100% { transform: none; opacity: 1; } }
-  @keyframes ev-toast { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-  @keyframes ev-fade { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes ev-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-  @keyframes ev-drop { from { opacity: 0; transform: translateY(-30px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+  /* motion */
+  @keyframes gm-live { 50% { box-shadow: 0 0 0 12px rgba(255,107,74,0); } }
+  @keyframes gm-pop { 0% { transform: translateY(34px) scale(.9); opacity: .4; } 100% { transform: none; opacity: 1; } }
+  @keyframes gm-cue { 0% { opacity: 0; transform: translateY(24px); } 25% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
+  @keyframes gm-flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes gm-shake { 20% { transform: translate(-5px,3px); } 40% { transform: translate(4px,-3px); } 60% { transform: translate(-3px,2px); } 80% { transform: translate(2px,-1px); } 100% { transform: none; } }
+  @keyframes gm-slam { 0% { opacity: 0; transform: rotate(-16deg) scale(2.3); filter: blur(10px); } 55% { opacity: 1; transform: rotate(-8deg) scale(.96); filter: none; } 100% { opacity: 1; transform: rotate(-9deg) scale(1); } }
+  @keyframes gm-slam-sm { 0% { opacity: 0; transform: rotate(-14deg) scale(2); filter: blur(8px); } 55% { opacity: 1; transform: rotate(-6deg) scale(.96); filter: none; } 100% { opacity: 1; transform: rotate(-7deg) scale(1); } }
+  @keyframes gm-ring { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(26); } }
+  @keyframes gm-flip { 0% { transform: rotateY(-88deg); opacity: 0; } 40% { opacity: 1; } 100% { transform: none; opacity: 1; } }
+  @keyframes gm-toast { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes gm-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes gm-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes gm-drop { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: none; } }
 
-  .ev-live-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--color-vermilion); box-shadow: 0 0 0 6px rgba(255,90,54,.18); animation: ev-live 1.6s ease-in-out infinite; }
-  .ev-raise { animation: ev-raise .7s var(--ease-out-expo) both; }
-  .ev-cue { animation: ev-cue 1s var(--ease-out-expo) forwards; }
-  .ev-flash { animation: ev-flash .75s ease-out both; }
-  .ev-shake { animation: ev-shake .32s cubic-bezier(.36,.07,.19,.97); }
-  .ev-slam { animation: ev-slam .42s cubic-bezier(.2,.9,.25,1) both; }
-  .ev-slam-sm { animation: ev-slam-sm .42s cubic-bezier(.2,.9,.25,1) both; }
-  .ev-ring { animation: ev-ring .9s var(--ease-out-expo) both; }
-  .ev-flip { animation: ev-flip .8s var(--ease-out-expo) both; }
-  .ev-toast { animation: ev-toast .4s var(--ease-out-expo) both; }
-  .ev-fade { animation: ev-fade .5s ease-out both; }
-  .ev-rise { animation: ev-rise .45s var(--ease-out-expo) both; }
-  .ev-drop { animation: ev-drop .42s var(--ease-out-expo) both; }
+  .gm-live-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--color-tomato); box-shadow: 0 0 0 6px rgba(255,107,74,.22); animation: gm-live 1.6s ease-in-out infinite; }
+  .gm-pop { animation: gm-pop .7s var(--ease-out-expo) both; }
+  .gm-cue { animation: gm-cue 1s var(--ease-out-expo) forwards; }
+  .gm-flash { animation: gm-flash .75s ease-out both; }
+  .gm-shake { animation: gm-shake .32s cubic-bezier(.36,.07,.19,.97); }
+  .gm-slam { animation: gm-slam .42s cubic-bezier(.2,.9,.25,1) both; }
+  .gm-slam-sm { animation: gm-slam-sm .42s cubic-bezier(.2,.9,.25,1) both; }
+  .gm-ring { animation: gm-ring .9s var(--ease-out-expo) both; }
+  .gm-flip { animation: gm-flip .8s var(--ease-out-expo) both; }
+  .gm-toast { animation: gm-toast .4s var(--ease-out-expo) both; }
+  .gm-fade { animation: gm-fade .5s ease-out both; }
+  .gm-rise { animation: gm-rise .45s var(--ease-out-expo) both; }
+  .gm-drop { animation: gm-drop .42s var(--ease-out-expo) both; }
 }
 
 @media (prefers-reduced-motion: reduce) {

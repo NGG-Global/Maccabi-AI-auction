@@ -12,7 +12,7 @@ export const STAGE_H = 1080
 
 /**
  * A 1920×1080 stage scaled uniformly to fit its container and letterboxed
- * on velvet-deepest. Everything inside is authored in px on that canvas,
+ * on the page tint. Everything inside is authored in px on that canvas,
  * so it never reflows: it only scales.
  */
 export default function ProjectorCanvas({ children, className }: Props) {
@@ -32,9 +32,9 @@ export default function ProjectorCanvas({ children, className }: Props) {
   }, [])
 
   return (
-    <div ref={frameRef} className={`relative h-full w-full overflow-hidden bg-velvet-0 ${className ?? ''}`}>
+    <div ref={frameRef} className={`relative h-full w-full overflow-hidden bg-page ${className ?? ''}`}>
       <div
-        className="stage-atmos absolute top-0 left-0 origin-top-left text-ivory shadow-[var(--shadow-stage)]"
+        className="bg-dots-stage absolute top-0 left-0 origin-top-left overflow-hidden text-ink"
         style={{ position: 'absolute', width: STAGE_W, height: STAGE_H, transform: `scale(${fit.scale})`, left: fit.left, top: fit.top }}
         dir="rtl"
       >

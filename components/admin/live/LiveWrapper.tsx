@@ -31,7 +31,7 @@ function TabButton({ id, label, active, onClick }: { id: TabId; label: string; a
       aria-selected={active}
       onClick={() => onClick(id)}
       className={`rounded-full px-4 py-1.5 text-[14px] font-semibold transition-colors ${
-        active ? 'bg-ivory text-velvet-0' : 'text-ivory-dim hover:text-ivory'
+        active ? 'bg-ink text-white' : 'text-ink-2 hover:text-ink'
       }`}
     >
       {label}
@@ -67,30 +67,30 @@ export default function LiveWrapper({ room, traits, initialRound }: Props) {
   }, [])
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-velvet-0" dir="rtl">
-      <nav className="flex h-11 shrink-0 items-center gap-2 border-b border-velvet-3 bg-velvet-0 px-3" aria-label="מסך המנחה">
-        <span className="ml-2 font-display text-[18px] font-black text-ivory">ערב מכירה</span>
-        <div className="flex gap-1 rounded-full border border-velvet-3 bg-velvet-1 p-0.5" role="tablist">
+    <div className="flex h-dvh flex-col overflow-hidden bg-page" dir="rtl">
+      <nav className="flex h-12 shrink-0 items-center gap-2 border-b-2 border-ink bg-card px-3" aria-label="מסך המנחה">
+        <span className="ml-2 text-[18px] font-bold text-ink">המכירה הפומבית</span>
+        <div className="flex gap-1 rounded-full border-2 border-ink bg-card p-0.5" role="tablist">
           <TabButton id="controls" label="המופע בחדר" active={activeTab === 'controls'} onClick={selectTab} />
           <TabButton id="analytics" label="תמונת מצב" active={activeTab === 'analytics'} onClick={selectTab} />
         </div>
-        <span className="mr-auto truncate px-2 text-[13px] text-ivory-mute">{room.title}</span>
+        <span className="mr-auto truncate px-2 text-[13px] text-ink-3">{room.title}</span>
         {activeTab === 'controls' && (
           <button
             type="button"
             onClick={() => setDrawerOpen(o => !o)}
             aria-expanded={drawerOpen}
             aria-controls="facilitator-drawer"
-            className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${drawerOpen ? 'border-ivory bg-ivory text-velvet-0' : 'border-velvet-3 text-ivory-dim hover:text-ivory'}`}
+            className={`rounded-full border-2 px-3 py-1 text-[13px] font-semibold transition-colors ${drawerOpen ? 'border-ink bg-ink text-white' : 'border-ink bg-card text-ink hover:bg-sun-tint'}`}
           >
             בקרת המנחה
           </button>
         )}
-        <button type="button" onClick={toggleFullscreen} className="rounded-full border border-velvet-3 px-3 py-1 text-[13px] font-semibold text-ivory-dim hover:text-ivory">
+        <button type="button" onClick={toggleFullscreen} className="rounded-full border-2 border-ink bg-card px-3 py-1 text-[13px] font-semibold text-ink hover:bg-sun-tint">
           {fullscreen ? 'יציאה ממסך מלא' : 'מסך מלא'}
         </button>
-        <Link href={`/admin/rooms/${room.id}`} className="px-2 text-[13px] font-semibold text-ivory-dim hover:text-ivory">הגדרות</Link>
-        <Link href="/admin" className="px-2 text-[13px] font-semibold text-ivory-dim hover:text-ivory">הסשנים</Link>
+        <Link href={`/admin/rooms/${room.id}`} className="px-2 text-[13px] font-semibold text-ink-2 hover:text-ink">הגדרות</Link>
+        <Link href="/admin" className="px-2 text-[13px] font-semibold text-ink-2 hover:text-ink">הסשנים</Link>
       </nav>
 
       <div className={activeTab === 'controls' ? 'contents' : 'hidden'}>

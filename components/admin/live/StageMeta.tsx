@@ -13,13 +13,13 @@ interface Props {
 /** The 56px meta row at the top of every projected scene. */
 export default function StageMeta({ room, live = false, note, end }: Props) {
   return (
-    <div className="flex h-14 items-center justify-between gap-8 text-[26px] text-ivory-dim">
+    <div className="flex h-14 items-center justify-between gap-8 text-[26px] text-ink-2">
       <div className="flex min-w-0 items-center gap-[22px]">
-        {live && <span aria-hidden="true" className="ev-live-dot shrink-0" />}
-        <strong className="truncate font-display text-[30px] font-bold text-ivory">{room.title}</strong>
+        {live && <span aria-hidden="true" className="gm-live-dot shrink-0" />}
+        <strong className="truncate text-[30px] font-bold text-ink">{room.title}</strong>
         {room.client_name && (
           <>
-            <span aria-hidden="true" className="h-7 w-[2px] shrink-0 bg-velvet-4" />
+            <span aria-hidden="true" className="h-7 w-[2px] shrink-0 bg-ink-3" />
             <span className="truncate">{room.client_name}</span>
           </>
         )}
