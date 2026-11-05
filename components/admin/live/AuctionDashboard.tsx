@@ -17,15 +17,15 @@ import StageButton, { StageConfirm } from './StageButton'
 import LobbyScene from './LobbyScene'
 import BidLadder, { type LadderBid } from './BidLadder'
 import LotQueue, { type QueueLot } from './LotQueue'
-import LotTicket from '@/components/evening/LotTicket'
-import NumberRoller from '@/components/evening/NumberRoller'
-import ParticipantMark from '@/components/evening/ParticipantMark'
-import SoldStamp from '@/components/evening/SoldStamp'
-import CountdownLine from '@/components/evening/CountdownLine'
-import StatusPill from '@/components/evening/StatusPill'
-import { Button } from '@/components/evening/ui'
-import { UNIT_LABEL, fmt } from '@/components/evening/units'
-import { useReducedMotion } from '@/components/evening/useReducedMotion'
+import LotTicket from '@/components/game/LotTicket'
+import NumberRoller from '@/components/game/NumberRoller'
+import ParticipantMark from '@/components/game/ParticipantMark'
+import SoldStamp from '@/components/game/SoldStamp'
+import CountdownLine from '@/components/game/CountdownLine'
+import StatusPill from '@/components/game/StatusPill'
+import { Button } from '@/components/game/ui'
+import { UNIT_LABEL, fmt } from '@/components/game/units'
+import { useReducedMotion } from '@/components/game/useReducedMotion'
 
 interface Props extends LiveShellProps {
   room: Room
@@ -300,7 +300,7 @@ export default function AuctionDashboard({ room, traits, initialRound, drawerOpe
       <DrawerSection title="מצב">
         <div className="flex items-center justify-between gap-2">
           {isOpen ? <StatusPill kind="open">סבב פתוח</StatusPill> : isClosed ? <StatusPill kind="closed">הסבב נסגר</StatusPill> : <StatusPill kind="draft">ממתינים</StatusPill>}
-          <span className="text-[13px] text-ivory-mute">{people.length} משתתפים · {bids.length} הצעות</span>
+          <span className="text-[13px] text-ink-3">{people.length} משתתפים · {bids.length} הצעות</span>
         </div>
         {!currentRound && (
           <Button variant="primary" size="sm" onClick={handleOpenRound} disabled={loading || traitQueue.length === 0 || isOpen} className="w-full">
@@ -348,38 +348,40 @@ export default function AuctionDashboard({ room, traits, initialRound, drawerOpe
         {/* The round: open, closing, or sold */}
         {currentRound && (
           <div className="relative grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_430px] grid-rows-[minmax(0,1fr)_132px] gap-x-[72px] gap-y-7 pt-7">
-            <div className={`relative flex min-w-0 flex-col justify-center gap-10 ${striking && !reduce ? 'ev-shake' : ''}`}>
+            <div className={`relative flex min-w-0 flex-col justify-center gap-11 ${striking && !reduce ? 'gm-shake' : ''}`}>
               <LotTicket variant="projector" index1={lotIndex || 1} total={lots.length} category={currentRound.trait?.category} title={currentRound.trait?.title ?? ''} />
 
               <div>
-                <div className="relative flex min-h-[240px] items-end gap-14">
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[26px] font-medium text-ivory-dim">
+                <div className="relative flex min-h-[300px] items-center gap-11">
+                  {/* The price token */}
+                  <div className="flex flex-row-reverse items-center gap-9">
+                    <span className="max-w-[7em] text-[30px] font-medium text-ink-2">
                       {soldView ? (unsold ? 'הפריט נשאר ללא הצעות' : 'מחיר הסגירה') : timer.overtime && room.default_round_seconds ? 'הזמן נגמר · ממתינים לסגירת הסבב' : 'ההצעה הגבוהה'}
                     </span>
-                    <div className={`flex items-end gap-[22px] font-display text-[232px] font-black leading-[.86] transition-colors duration-[400ms] ${soldView ? 'text-ivory' : 'text-vermilion'}`}>
+                    <div className={`relative flex h-[300px] w-[300px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-full border-[5px] border-ink text-[118px] font-bold leading-none text-ink shadow-piece-xl transition-colors duration-[400ms] ${soldView ? 'bg-card' : 'bg-sun'}`}>
+                      <span aria-hidden="true" className="pointer-events-none absolute inset-4 rounded-full border-4 border-dashed border-ink/30" />
                       <NumberRoller value={soldView ? price : highestBid} />
-                      <span className="pb-[22px] font-sans text-[30px] font-semibold leading-none text-ivory-dim">{UNIT_LABEL}</span>
+                      <span className="text-[28px] font-semibold leading-none">{UNIT_LABEL}</span>
                     </div>
                   </div>
 
-                  {/* The leader, or the stamp that takes its place */}
+                  {/* The leader, or the sticker that takes its place */}
                   {!soldView && !striking && leader && (
-                    <div key={`${leader.participant_id}-${leader.amount}`} className="flex items-center gap-[22px] pb-4 transition-[opacity,transform] duration-300">
-                      <span className="ev-raise inline-flex"><ParticipantMark name={leader.participant?.display_name} size={118} tone="active" handle /></span>
+                    <div key={`${leader.participant_id}-${leader.amount}`} className="flex items-center gap-[22px] transition-[opacity,transform] duration-300">
+                      <span className="gm-pop inline-flex"><ParticipantMark name={leader.participant?.display_name} size={108} tone="sky" shadow /></span>
                       <div className="flex flex-col gap-0.5">
-                        <b className="font-display text-[56px] font-black leading-none text-ivory">{leader.participant?.display_name}</b>
-                        <span className="text-[24px] text-ivory-dim">{tiedAtTop > 1 ? 'בראש המכירה · הגיע לסכום ראשון' : 'בראש המכירה'}</span>
+                        <b className="text-[58px] font-bold leading-none text-ink">{leader.participant?.display_name}</b>
+                        <span className="text-[24px] text-ink-2">{tiedAtTop > 1 ? 'בראש המכירה · הגיע לסכום ראשון' : 'בראש המכירה'}</span>
                       </div>
                     </div>
                   )}
                   {(striking || soldView) && (
-                    <div className="absolute bottom-1.5 left-2.5 z-[7]">
-                      <SoldStamp text={unsold ? 'לא נמכרה' : 'נמכר'} sub={unsold ? undefined : `ל${winnerName}`} animate={striking || (closing === 'sold')} />
+                    <div className="absolute bottom-[30px] left-0 z-[7]">
+                      <SoldStamp text={unsold ? 'לא נמכרה' : 'נמכר'} sub={unsold ? undefined : `ל${winnerName}`} animate={striking || (closing === 'sold')} muted={unsold} />
                     </div>
                   )}
                   {striking && !reduce && (
-                    <span aria-hidden="true" className="ev-ring absolute bottom-[110px] left-[230px] z-[6] -ml-5 -mt-5 h-10 w-10 rounded-full border-[3px] border-[rgba(255,140,100,.9)]" />
+                    <span aria-hidden="true" className="gm-ring absolute bottom-[110px] left-[230px] z-[6] -ml-5 -mt-5 h-10 w-10 rounded-full border-4 border-ink" />
                   )}
                 </div>
                 <CountdownLine timer={timer} roundSeconds={room.default_round_seconds} closed={soldView || striking} />
@@ -392,12 +394,12 @@ export default function AuctionDashboard({ room, traits, initialRound, drawerOpe
 
             {/* Cues and flash of the closing moment */}
             {(closing === 'cue1' || closing === 'cue2') && (
-              <div key={closing} aria-live="assertive" className="ev-cue pointer-events-none absolute inset-x-0 bottom-[250px] z-[5] text-center font-display text-[64px] font-black text-ivory">
+              <div key={closing} aria-live="assertive" className="gm-cue pointer-events-none absolute inset-x-0 bottom-[340px] z-[5] mx-auto w-max rounded-[26px] border-4 border-ink bg-card px-10 pb-[18px] pt-2.5 text-center text-[64px] font-bold text-ink shadow-piece-xl">
                 <span className="num">{fmt(price)}</span> · {closing === 'cue1' ? 'פעם ראשונה' : 'פעם שנייה'}
               </div>
             )}
             {striking && (
-              <div aria-hidden="true" className="ev-flash pointer-events-none absolute -inset-24 z-[6] bg-[radial-gradient(ellipse_60%_60%_at_50%_55%,rgba(255,236,214,.55),rgba(255,120,80,.18)_40%,transparent_70%)]" />
+              <div aria-hidden="true" className="gm-flash pointer-events-none absolute -inset-24 z-[6] bg-[radial-gradient(ellipse_60%_60%_at_50%_55%,rgba(255,200,61,.55),rgba(255,107,74,.18)_40%,transparent_70%)]" />
             )}
             {soldView && winnerName && (
               <p className="sr-only" role="status">נמכר ל{winnerName} במחיר {fmt(price)} {UNIT_LABEL}</p>

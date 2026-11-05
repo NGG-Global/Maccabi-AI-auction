@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { RoomStatus } from '@/lib/types'
-import StatusPill from '@/components/evening/StatusPill'
-import { Button, ErrorText } from '@/components/evening/ui'
+import StatusPill from '@/components/game/StatusPill'
+import { Button, ErrorText } from '@/components/game/ui'
 
 interface Props {
   roomId: string
@@ -70,7 +70,7 @@ export default function LiveWindowBadge({ roomId, status, activeUntil }: Props) 
           <StatusPill kind="expired">לא פעיל</StatusPill>
         )}
         {live && (
-          <span className="text-[12px] text-ivory-mute">
+          <span className="text-[12px] text-ink-3">
             נשארו {hours > 0 ? `${hours} שע׳ ו־` : ''}{minutes} דק׳
           </span>
         )}

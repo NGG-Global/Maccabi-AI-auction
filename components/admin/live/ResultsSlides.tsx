@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { AllocationTraitResult } from '@/lib/game/allocation'
-import { fmt, lotNo } from '@/components/evening/units'
-import { useReducedMotion } from '@/components/evening/useReducedMotion'
+import { fmt, lotNo } from '@/components/game/units'
+import { useReducedMotion } from '@/components/game/useReducedMotion'
 
 /* ── "הזוכים": version A prize board ───────────────────────────────── */
 
@@ -20,7 +20,7 @@ export function WinnersBoard({ results, replayKey = 0 }: WinnersProps) {
   return (
     <div
       key={replayKey}
-      className="grid min-h-0 gap-[22px] [perspective:1600px]"
+      className="grid min-h-0 gap-[22px] pb-2 pl-2 [perspective:1600px]"
       style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))` }}
     >
       {results.map((r, i) => {
@@ -30,23 +30,23 @@ export function WinnersBoard({ results, replayKey = 0 }: WinnersProps) {
         return (
           <article
             key={r.roundId}
-            className="ev-flip flex min-h-0 flex-col overflow-hidden rounded-[14px] bg-paper text-ink-paper shadow-[var(--shadow-plate)] [backface-visibility:hidden]"
+            className="gm-flip flex min-h-0 flex-col overflow-hidden rounded-[26px] border-4 border-ink bg-card text-ink shadow-piece-xl [backface-visibility:hidden]"
             style={{ animationDelay: `${i * 90}ms` }}
           >
-            <div className="flex h-32 shrink-0 flex-col justify-between bg-velvet-2 px-[22px] pb-[14px] pt-3 text-ivory">
-              <span className="num self-start text-[24px] tracking-[.06em] text-ivory-mute">{lotNo(i + 1)}</span>
-              <span className="font-display text-[38px] font-bold leading-[1.06]">{r.traitTitle}</span>
+            <div className="flex h-[116px] shrink-0 flex-col justify-between bg-ink px-5 pb-3 pt-2.5 text-white">
+              <span className="num self-start text-[24px] text-ink-soft">{lotNo(i + 1)}</span>
+              <span className="text-[38px] font-semibold leading-[1.06]">{r.traitTitle}</span>
             </div>
-            <div className="h-2 shrink-0 bg-vermilion" />
-            <div className="flex min-h-0 flex-1 flex-col px-[22px] pt-3">
+            <div className="h-[10px] shrink-0 border-b-4 border-ink bg-sun" />
+            <div className="flex min-h-0 flex-1 flex-col px-5 pt-2">
               {unsold ? (
-                <span className="font-display text-[44px] font-black leading-[1.02] text-ink-soft">לא נמכרה</span>
+                <span className="text-[44px] font-bold leading-none text-ink-3">לא נמכרה</span>
               ) : (
-                shown.map(n => <span key={n} className="font-display text-[44px] font-black leading-[1.02]">{n}</span>)
+                shown.map(n => <span key={n} className="text-[44px] font-bold leading-none">{n}</span>)
               )}
             </div>
             {!unsold && r.winningAmount !== null && (
-              <span className="num mx-[22px] mb-4 mt-1.5 self-start rounded-[8px] bg-vermilion px-4 pb-1.5 pt-0.5 text-[36px] text-velvet-0">
+              <span className="num mx-5 mb-[14px] mt-1 self-start rounded-[14px] border-[3px] border-ink bg-sun px-4 pb-1 pt-0.5 text-[36px] text-ink">
                 {fmt(r.winningAmount)}
               </span>
             )}
@@ -85,8 +85,8 @@ interface ValuesProps {
   replayKey?: number
 }
 
-const BAR_H: Record<number, number> = { 1: 210, 2: 150, 3: 104 }
-const BAR_CLASS: Record<number, string> = { 1: 'bg-vermilion', 2: 'bg-ivory', 3: 'bg-bronze' }
+const BAR_H: Record<number, number> = { 1: 196, 2: 140, 3: 96 }
+const BAR_CLASS: Record<number, string> = { 1: 'bg-sun', 2: 'bg-sky', 3: 'bg-lilac' }
 
 /** Remounts on every replay, so the reveal always starts from an empty stage. */
 export function ValuesSlide({ ranked, replayKey = 0 }: ValuesProps) {
@@ -118,8 +118,8 @@ function ValuesReveal({ ranked }: { ranked: AllocationTraitResult[] }) {
   const place = (r: number) => ranked[r - 1]
 
   return (
-    <div className="grid min-h-0 grid-rows-[404px_minmax(0,1fr)] gap-[14px]">
-      <div className="flex h-[404px] items-end justify-center gap-7 border-b-[3px] border-ivory">
+    <div className="grid min-h-0 grid-rows-[372px_minmax(0,1fr)] gap-[12px]">
+      <div className="flex h-[372px] items-end justify-center gap-7 border-b-[5px] border-ink">
         {[2, 1, 3].map(r => {
           const item = place(r)
           if (!item) return <div key={r} className="w-[470px]" />
@@ -131,16 +131,16 @@ function ValuesReveal({ ranked }: { ranked: AllocationTraitResult[] }) {
                 className={`flex flex-col items-center gap-0.5 text-center transition-[opacity,transform] duration-500 ease-[var(--ease-out-expo)] ${shown ? 'opacity-100' : 'translate-y-4 opacity-0'}`}
                 aria-hidden={!shown}
               >
-                <span className="font-display text-[40px] font-bold leading-[1.1] text-ivory">{item.traitTitle}</span>
-                <span className={`font-display text-[52px] font-black leading-[1.1] ${r === 1 ? 'text-vermilion' : 'text-ivory'}`}>
+                <span className="text-[40px] font-semibold leading-[1.1] text-ink">{item.traitTitle}</span>
+                <span className={`text-[52px] font-bold leading-[1.1] ${r === 1 ? 'text-[#c24a2c]' : 'text-ink'}`}>
                   <CountUp to={item.totalAllocated} ms={900} run={shown} />
                 </span>
-                <span className="text-[28px] text-ivory-dim">
+                <span className="text-[28px] text-ink-2">
                   <span className="num">{item.supporterCount}</span> {item.supporterCount === 1 ? 'משקיע' : 'משקיעים'}
                 </span>
               </div>
               <div
-                className={`flex self-stretch justify-center overflow-hidden rounded-t-[14px] pt-4 font-display text-[84px] font-black leading-none text-velvet-0 transition-[height] duration-[900ms] ease-[var(--ease-out-expo)] ${BAR_CLASS[r]}`}
+                className={`flex self-stretch justify-center overflow-hidden rounded-t-[24px] border-[5px] border-b-0 border-ink pt-4 text-[84px] font-bold leading-none text-ink transition-[height] duration-[900ms] ease-[var(--ease-out-expo)] ${BAR_CLASS[r]}`}
                 style={{ height: grown ? BAR_H[r] : 0 }}
               >
                 <span className="num">{r}</span>
@@ -149,8 +149,8 @@ function ValuesReveal({ ranked }: { ranked: AllocationTraitResult[] }) {
           )
         })}
       </div>
-      <div className="flex min-h-0 flex-col overflow-hidden" role="table" aria-label="מקומות 4 ואילך">
-        <div className="grid h-11 grid-cols-[110px_minmax(0,1fr)_360px_320px] items-center text-[24px] font-semibold text-ivory-mute" role="row">
+      <div className="flex min-h-0 flex-col overflow-hidden rounded-[24px] border-4 border-ink bg-card shadow-piece-xl" role="table" aria-label="מקומות 4 ואילך">
+        <div className="grid h-11 grid-cols-[110px_minmax(0,1fr)_360px_320px] items-center border-b-[3px] border-ink text-[24px] font-semibold text-ink-3" role="row">
           <span className="px-6" role="columnheader">#</span>
           <span className="px-6" role="columnheader">פריט</span>
           <span className="px-6" role="columnheader">סה״כ השקעה</span>
@@ -160,14 +160,14 @@ function ValuesReveal({ ranked }: { ranked: AllocationTraitResult[] }) {
           <div
             key={item.roundId}
             role="row"
-            className={`grid h-[52px] grid-cols-[110px_minmax(0,1fr)_360px_320px] items-center text-[36px] transition-[opacity,transform] duration-[450ms] ease-[var(--ease-out-expo)] ${
-              i % 2 === 0 ? 'bg-[rgba(255,255,255,.035)]' : ''
+            className={`grid h-[49px] grid-cols-[110px_minmax(0,1fr)_360px_320px] items-center text-[36px] transition-[opacity,transform] duration-[450ms] ease-[var(--ease-out-expo)] ${
+              i % 2 === 0 ? 'bg-zebra' : ''
             } ${stage.rows > i ? 'opacity-100' : 'translate-y-2.5 opacity-0'}`}
           >
-            <span className="px-6 text-ivory-mute" role="cell"><span className="num">{i + 4}</span></span>
-            <span className="truncate px-6 font-semibold text-ivory" role="cell">{item.traitTitle}</span>
-            <span className="px-6 text-ivory" role="cell"><span className="num">{fmt(item.totalAllocated)}</span></span>
-            <span className="px-6 text-ivory" role="cell"><span className="num">{item.supporterCount}</span></span>
+            <span className="px-6 text-ink-3" role="cell"><span className="num">{i + 4}</span></span>
+            <span className="truncate px-6 font-medium text-ink" role="cell">{item.traitTitle}</span>
+            <span className="px-6 text-ink" role="cell"><span className="num">{fmt(item.totalAllocated)}</span></span>
+            <span className="px-6 text-ink" role="cell"><span className="num">{item.supporterCount}</span></span>
           </div>
         ))}
       </div>

@@ -6,7 +6,7 @@ interface Props {
   logoPath?: string | null
   size?: 'sm' | 'md' | 'lg'
   align?: 'start' | 'center'
-  /** Logo only, in a fixed box (the projected screen's corner). */
+  /** Logo only, in a fixed outlined box (the projected screen's corner). */
   logoOnly?: boolean
 }
 
@@ -19,18 +19,18 @@ export default function RoomBrand({ title, clientName, logoPath, size = 'md', al
   if (logoOnly) {
     return url ? (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={url} alt={clientName || title} className="h-14 w-auto max-w-[220px] rounded-[8px] bg-ivory object-contain p-1" />
+      <img src={url} alt={clientName || title} className="h-14 w-auto max-w-[220px] rounded-[14px] border-2 border-ink bg-card object-contain px-3 py-1" />
     ) : null
   }
   return (
     <div className={`flex min-w-0 items-center gap-3 ${align === 'center' ? 'flex-col justify-center text-center' : ''}`}>
       {url && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt={clientName || title} className={`${LOGO_H[size]} w-auto max-w-[160px] shrink-0 rounded-[8px] bg-ivory object-contain p-1`} />
+        <img src={url} alt={clientName || title} className={`${LOGO_H[size]} w-auto max-w-[160px] shrink-0 rounded-[10px] border-2 border-ink bg-card object-contain p-1`} />
       )}
       <div className="min-w-0">
-        <p className={`m-0 truncate font-display font-bold leading-tight text-ivory ${TITLE[size]}`}>{title}</p>
-        {clientName && <p className="m-0 truncate text-[14px] text-ivory-mute">{clientName}</p>}
+        <p className={`m-0 truncate font-bold leading-tight text-ink ${TITLE[size]}`}>{title}</p>
+        {clientName && <p className="m-0 truncate text-[14px] text-ink-3">{clientName}</p>}
       </div>
     </div>
   )

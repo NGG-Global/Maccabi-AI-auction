@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { RoomListItem } from '@/lib/types'
 import { logoPublicUrl } from '@/lib/storage/logo'
-import StatusPill from '@/components/evening/StatusPill'
-import CoinIcon from '@/components/evening/CoinIcon'
-import { Button, LinkButton, Notice, Toast } from '@/components/evening/ui'
-import { UNIT_LABEL, fmt } from '@/components/evening/units'
+import StatusPill from '@/components/game/StatusPill'
+import CoinIcon from '@/components/game/CoinIcon'
+import { Button, LinkButton, Notice, Toast } from '@/components/game/ui'
+import { UNIT_LABEL, fmt } from '@/components/game/units'
 
 type Filter = 'all' | 'live' | 'draft' | 'ended' | 'archived'
 
@@ -97,8 +97,8 @@ export default function RoomsList({ rooms }: { rooms: RoomListItem[] }) {
     <div className="flex flex-col gap-[22px]" onClick={() => { if (menuFor) setMenuFor(null) }}>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="m-0 font-display text-[46px] font-black leading-[1.05] tracking-[-.01em] text-ivory">הסשנים</h1>
-          <p className="m-0 mt-2 max-w-[62ch] text-[16px] leading-[1.5] text-ivory-dim">
+          <h1 className="m-0 text-[46px] font-bold leading-[1.05] text-ink">הסשנים</h1>
+          <p className="m-0 mt-2 max-w-[62ch] text-[16px] leading-[1.5] text-ink-2">
             כל צוות NGG רואה את כל הסשנים. כל סשן הוא מכירה נפרדת, עם מסך מוקרן וקישור הצטרפות משלו.
           </p>
         </div>
@@ -109,7 +109,7 @@ export default function RoomsList({ rooms }: { rooms: RoomListItem[] }) {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex max-w-full gap-[3px] overflow-x-auto rounded-[12px] border border-velvet-3 bg-velvet-1 p-[3px]" role="radiogroup" aria-label="סינון לפי מצב">
+        <div className="flex max-w-full gap-[3px] overflow-x-auto rounded-[12px] border-[2.5px] border-ink bg-card p-[3px] shadow-piece-sm" role="radiogroup" aria-label="סינון לפי מצב">
           {FILTERS.map(([key, label]) => (
             <button
               key={key}
@@ -118,7 +118,7 @@ export default function RoomsList({ rooms }: { rooms: RoomListItem[] }) {
               aria-checked={filter === key}
               onClick={() => setFilter(key)}
               className={`h-[38px] whitespace-nowrap rounded-[9px] px-[14px] text-[14px] font-semibold transition-colors ${
-                filter === key ? 'bg-ivory text-velvet-0' : 'text-ivory-dim hover:text-ivory'
+                filter === key ? 'bg-ink text-white' : 'text-ink-2 hover:text-ink'
               }`}
             >
               {label}
@@ -127,7 +127,7 @@ export default function RoomsList({ rooms }: { rooms: RoomListItem[] }) {
         </div>
         <label className="relative flex w-[min(320px,100%)] items-center">
           <span className="sr-only">חיפוש סשן</span>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="pointer-events-none absolute right-[14px] text-ivory-mute">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="pointer-events-none absolute right-[14px] text-ink-3">
             <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="2" /><path d="M16 16l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
           <input
@@ -135,7 +135,7 @@ export default function RoomsList({ rooms }: { rooms: RoomListItem[] }) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="חיפוש לפי שם או לקוח"
-            className="h-11 w-full rounded-[12px] border border-velvet-4 bg-velvet-1 pl-[14px] pr-[42px] text-[15px] text-ivory placeholder:text-ivory-mute focus:border-vermilion focus:shadow-[0_0_0_3px_rgba(255,90,54,.22)] focus:outline-none"
+            className="h-11 w-full rounded-[12px] border-[2.5px] border-ink bg-card pl-[14px] pr-[42px] text-[15px] text-ink placeholder:text-ink-3 focus:shadow-[0_0_0_4px_var(--color-sun)] focus:outline-none"
           />
         </label>
       </div>
@@ -143,7 +143,7 @@ export default function RoomsList({ rooms }: { rooms: RoomListItem[] }) {
       {error && <Notice tone="error">{error}</Notice>}
 
       {visible.length === 0 ? (
-        <p className="m-0 rounded-[16px] border border-dashed border-velvet-4 p-10 text-center text-[15px] text-ivory-mute">
+        <p className="m-0 rounded-[16px] border-[2.5px] border-dashed border-muted-outline bg-card p-10 text-center text-[15px] text-ink-3">
           {rooms.filter(r => r.status !== 'archived').length === 0 && filter === 'all'
             ? 'עדיין אין סשנים. צרו סשן חדש כדי להתחיל.'
             : filter === 'archived' && !q
@@ -152,7 +152,7 @@ export default function RoomsList({ rooms }: { rooms: RoomListItem[] }) {
         </p>
       ) : (
         <div className="flex flex-col gap-[10px]" role="table" aria-label="רשימת הסשנים">
-          <div className="hidden grid-cols-[minmax(0,2.6fr)_120px_150px_70px_90px_170px_250px] items-center gap-4 px-5 text-[13px] font-semibold text-ivory-mute min-[1100px]:grid" role="row">
+          <div className="hidden grid-cols-[minmax(0,2.6fr)_120px_150px_70px_90px_170px_250px] items-center gap-4 px-5 text-[13px] font-semibold text-ink-3 min-[1100px]:grid" role="row">
             <span role="columnheader">סשן</span>
             <span role="columnheader">סוג משחק</span>
             <span role="columnheader">תקציב למשתתף</span>
@@ -169,29 +169,29 @@ export default function RoomsList({ rooms }: { rooms: RoomListItem[] }) {
               <div
                 key={room.id}
                 role="row"
-                className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 rounded-[16px] border px-5 py-4 [grid-template-areas:'name_stat'_'meta_meta'_'act_act'] min-[1100px]:grid-cols-[minmax(0,2.6fr)_120px_150px_70px_90px_170px_250px] min-[1100px]:[grid-template-areas:none] ${
-                  room.is_live ? 'border-[rgba(255,90,54,.4)] bg-[linear-gradient(90deg,#211519,#2a1a1d)]' : 'border-velvet-3 bg-velvet-2'
+                className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 rounded-[20px] border-[2.5px] border-ink px-5 py-4 shadow-piece [grid-template-areas:'name_stat'_'meta_meta'_'act_act'] min-[1100px]:grid-cols-[minmax(0,2.6fr)_120px_150px_70px_90px_170px_250px] min-[1100px]:[grid-template-areas:none] ${
+                  room.is_live ? 'bg-[#fffaf0]' : 'bg-card'
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-[14px] [grid-area:name] min-[1100px]:[grid-area:auto]" role="cell">
-                  <span aria-hidden="true" className="hidden h-10 w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-[8px] border-[1.5px] border-dashed border-velvet-4 text-[10px] text-ivory-mute min-[1100px]:flex">
+                  <span aria-hidden="true" className="hidden h-10 w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-[8px] border-[1.5px] border-dashed border-muted-outline text-[10px] text-ink-3 min-[1100px]:flex">
                     {logo ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={logo} alt="" className="h-full w-full bg-ivory object-contain p-0.5" />
+                      <img src={logo} alt="" className="h-full w-full bg-card object-contain p-0.5" />
                     ) : 'לוגו'}
                   </span>
                   <div className="min-w-0">
-                    <Link href={`/admin/rooms/${room.id}`} className="block truncate font-display text-[21px] font-bold leading-[1.2] text-ivory hover:text-[#ffd2c4]">{room.title}</Link>
-                    <span className="mt-0.5 block truncate text-[14px] text-ivory-mute">{room.client_name || 'ללא לקוח'}</span>
+                    <Link href={`/admin/rooms/${room.id}`} className="block truncate text-[21px] font-semibold leading-[1.2] text-ink hover:text-tomato-text">{room.title}</Link>
+                    <span className="mt-0.5 block truncate text-[14px] text-ink-3">{room.client_name || 'ללא לקוח'}</span>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-x-[18px] gap-y-1.5 [grid-area:meta] min-[1100px]:contents" role="presentation">
-                  <span className="text-[15px] text-ivory-dim" role="cell">{MODE_LABEL[room.game_mode]}</span>
-                  <span className="inline-flex items-center gap-1.5 font-display text-[19px] font-black text-ivory" role="cell">
-                    <CoinIcon size={20} /><span className="num">{fmt(room.starting_coins)}</span><small className="font-sans text-[13px] font-medium text-ivory-mute">{UNIT_LABEL}</small>
+                  <span className="text-[15px] text-ink-2" role="cell">{MODE_LABEL[room.game_mode]}</span>
+                  <span className="inline-flex items-center gap-1.5 text-[19px] font-bold text-ink" role="cell">
+                    <CoinIcon size={20} /><span className="num">{fmt(room.starting_coins)}</span><small className="text-[13px] font-medium text-ink-3">{UNIT_LABEL}</small>
                   </span>
-                  <span className="text-[15px] text-ivory-dim" role="cell"><span className="text-[13px] min-[1100px]:hidden">פריטים </span><span className="num font-display text-[20px] text-ivory">{room.trait_count}</span></span>
-                  <span className="text-[15px] text-ivory-dim" role="cell"><span className="text-[13px] min-[1100px]:hidden">משתתפים </span><span className="num font-display text-[20px] text-ivory">{room.participant_count}</span></span>
+                  <span className="text-[15px] text-ink-2" role="cell"><span className="text-[13px] min-[1100px]:hidden">פריטים </span><span className="num text-[20px] text-ink">{room.trait_count}</span></span>
+                  <span className="text-[15px] text-ink-2" role="cell"><span className="text-[13px] min-[1100px]:hidden">משתתפים </span><span className="num text-[20px] text-ink">{room.participant_count}</span></span>
                 </div>
                 <div className="[grid-area:stat] min-[1100px]:[grid-area:auto]" role="cell"><Status room={room} /></div>
                 <div className="relative flex items-center gap-2 [grid-area:act] min-[1100px]:justify-end min-[1100px]:[grid-area:auto]" role="cell" onClick={e => e.stopPropagation()}>
@@ -224,18 +224,18 @@ export default function RoomsList({ rooms }: { rooms: RoomListItem[] }) {
                         aria-expanded={menuFor === room.id}
                         onClick={() => setMenuFor(menuFor === room.id ? null : room.id)}
                         disabled={busy}
-                        className={`flex h-[38px] w-[38px] items-center justify-center rounded-[10px] border text-ivory-dim transition-colors ${menuFor === room.id ? 'border-ivory-mute text-ivory' : 'border-velvet-4 hover:text-ivory'}`}
+                        className={`press-sm flex h-[38px] w-[38px] items-center justify-center rounded-[10px] border-[2.5px] border-ink bg-card text-ink shadow-piece-sm transition-colors ${menuFor === room.id ? 'bg-sun-tint' : 'hover:bg-sun-tint'}`}
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>
                       </button>
                       {menuFor === room.id && (
-                        <div role="menu" className="ev-rise absolute left-0 top-11 z-10 min-w-[190px] rounded-[12px] border border-velvet-4 bg-velvet-2 p-1.5 shadow-[var(--shadow-menu)]">
-                          <button type="button" role="menuitem" onClick={() => duplicate(room.id)} className="block w-full rounded-[8px] px-3 py-2.5 text-start text-[14px] text-ivory hover:bg-velvet-3">שכפול לסשן חדש</button>
+                        <div role="menu" className="gm-rise absolute left-0 top-11 z-10 min-w-[190px] rounded-[12px] border-[2.5px] border-ink bg-card p-1.5 shadow-piece">
+                          <button type="button" role="menuitem" onClick={() => duplicate(room.id)} className="block w-full rounded-[8px] px-3 py-2.5 text-start text-[14px] text-ink hover:bg-sun-tint">שכפול לסשן חדש</button>
                           {(room.status === 'draft' || room.status === 'ended') && (
-                            <button type="button" role="menuitem" onClick={() => archive(room.id)} className="block w-full rounded-[8px] px-3 py-2.5 text-start text-[14px] text-ivory hover:bg-velvet-3">העברה לארכיון</button>
+                            <button type="button" role="menuitem" onClick={() => archive(room.id)} className="block w-full rounded-[8px] px-3 py-2.5 text-start text-[14px] text-ink hover:bg-sun-tint">העברה לארכיון</button>
                           )}
                           {room.status === 'active' && (
-                            <span className="block px-3 py-2 text-[12px] text-ivory-mute">סשן פעיל אפשר להעביר לארכיון אחרי סיומו.</span>
+                            <span className="block px-3 py-2 text-[12px] text-ink-3">סשן פעיל אפשר להעביר לארכיון אחרי סיומו.</span>
                           )}
                         </div>
                       )}

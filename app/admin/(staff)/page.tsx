@@ -1,7 +1,7 @@
 import { connection } from 'next/server'
 import RoomsList from '@/components/admin/RoomsList'
 import { listRooms } from '@/lib/rooms/service'
-import { Notice } from '@/components/evening/ui'
+import { Notice } from '@/components/game/ui'
 
 export default async function AdminRoomsPage() {
   await connection()

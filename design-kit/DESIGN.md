@@ -1,168 +1,145 @@
 ---
-name: ערב מכירה (Evening Sale)
-description: Live workshop auction for NGG. A theatrical evening sale room on the projector, and a calm coin wallet in every participant's hand.
+name: המכירה הפומבית · משחק קופסה (Modern Board Game)
+description: Live workshop auction for NGG. A friendly modern board game on the projector and in every participant's hand.
 colors:
-  velvet-deepest: "#0d080b"
-  velvet-ground: "#160e12"
-  velvet-raised: "#211519"
-  velvet-line: "#33232a"
-  velvet-line-strong: "#4a333c"
-  ivory: "#f4ecdf"
-  ivory-dim: "#cfc2b1"
-  ivory-mute: "#a39585"
-  hammer-vermilion: "#ff5a36"
-  hammer-vermilion-hover: "#ff6d4d"
-  vermilion-deep: "#d93a1a"
-  ember: "#ffb38a"
-  podium-bronze: "#b98a5e"
-  catalogue-paper: "#efe5d4"
-  ink-on-paper: "#1d1316"
-  ink-soft: "#5b4a4f"
-  error-text: "#ff9d82"
+  ink: "#1f2a37"
+  ink-2: "#3d4a5a"
+  ink-3: "#5b6675"
+  mint: "#dff3e9"
+  mint-line: "#c9dcd2"
+  page: "#eef6f1"
+  card: "#ffffff"
+  zebra: "#f3f8f5"
+  tomato: "#ff6b4a"
+  tomato-hover: "#ff8466"
+  sunflower: "#ffc83d"
+  sunflower-tint: "#fff1c4"
+  sky: "#7cc0ff"
+  lilac: "#c4b5fd"
+  peach: "#ffb48f"
+  leaf: "#9be3bf"
+  error: "#b42318"
+  muted-outline: "#9aa9b5"
 typography:
   display:
-    fontFamily: "Frank Ruhl Libre"
-    fontWeight: 900
-  title:
-    fontFamily: "Frank Ruhl Libre"
+    fontFamily: "Fredoka"
     fontWeight: 700
-  body:
-    fontFamily: "IBM Plex Sans Hebrew"
-    fontWeight: 400
-  label:
-    fontFamily: "IBM Plex Sans Hebrew"
+  title:
+    fontFamily: "Fredoka"
     fontWeight: 600
+  body:
+    fontFamily: "Fredoka"
+    fontWeight: 500
+  fallback:
+    fontFamily: "Heebo"
 rounded:
-  xs: 4px
-  sm: 8px
-  md: 12px
-  lg: 18px
-  xl: 22px
+  sm: 12px
+  md: 18px
+  lg: 24px
+  xl: 32px
   pill: 999px
 ---
 
-# Design System: ערב מכירה
+# Design System: המכירה הפומבית · משחק קופסה
 
 ## Overview
 
-**Creative North Star: "The Evening Sale"**
+**Creative North Star: "The Table Game"**
 
-Every statement is a lot on the block in an evening auction. The facilitator runs the sale, and the projector is the sale-room board under a warm spotlight. Statements and prices are set in a heavy Hebrew serif, like a catalogue. Vermilion is the hammer: it marks the leading bid, the sold stamp and first place, and nothing decorative. The participant's phone is the quiet counterpart: one lot, one number for what you have left, and one big send button.
+The auction is a modern board game played around a table. Every statement is a card, every bid is a token, and money is a sunflower coin. Pieces are white cards with a thick ink outline and an offset hard shadow, so they look like they could be picked up. The room is light, warm and friendly, built for workshop halls with the lights on and for participants who are not used to apps.
 
-The projector is theatre (Experience). The phone and the staff screens are tools (Operate): standard controls, high clarity, and the world shows only through type, palette and a few signature details.
+The projector is the board: one big card for the lot, a big sunflower coin token for the price, players as colored round tokens. The phone is the player's hand: the wallet, the card, the coin and one big button. The staff screens are the game box: the same pieces, calmer, built for setup.
 
 **Key characteristics**
-- A dark velvet ground with a single warm spotlight and a faint grain. Never pure black.
-- Ivory type. A heavy serif for content (statements, numbers, titles) and a clean sans for UI.
-- One accent (vermilion), used sparingly. Its rarity is the point.
-- Catalogue plates in ivory paper for results.
-- Money is coins: a brass coin icon and rolling digits.
+- A light mint ground with a soft dot grid. White cards on top.
+- An ink outline (2.5 to 5px) and an offset hard shadow (3 to 9px, no blur) on every interactive or game piece.
+- A rounded sans-serif (Fredoka) everywhere. No serif.
+- Color carries meaning: sunflower = money and first place, tomato = action and "sold", sky / lilac / peach / leaf = players and places 2 and 3.
+- Text on any colored fill is ink. Never white.
 
-**Rejected:** the previous look (slate-950, glowing gold, glass, emoji), the light NGG design system for these surfaces, and paddle or hammer jargon in the copy.
+**Rejected:** dark backgrounds, serif type, vermilion and velvet (the previous "Evening Sale" direction), gold glow, glass, emoji, and paddle or hammer jargon.
 
 ## Colors
 
 ### Primary
-- **Hammer Vermilion** (#ff5a36): the leading bid, the price on the block, the sold stamp, place 1, primary buttons (with velvet-deepest text, contrast about 6:1). Hover #ff6d4d.
-- **Ember** (#ffb38a): the countdown line head, the "you" marker in the bid ladder, the outbid status.
+- **Sunflower** (#ffc83d): money. The price token, the coin icon, the wallet meter, the live lot card, first place, the amount tags on prize plates, the leading bid row.
+- **Tomato** (#ff6b4a, hover #ff8466): action. Primary buttons ("שליחת הצעה", "סגירת הסבב", "סשן חדש"), the "נמכר" sticker, the lot-number tab, the live dot.
+
+### Secondary (players and places)
+- **Sky** (#7cc0ff): the leading player's token, the category tab, place 2.
+- **Lilac** (#c4b5fd): place 3, and alternate player tokens.
+- **Peach** (#ffb48f) and **Leaf** (#9be3bf): alternate player tokens. Leaf also marks the "live" status pill and the "אתם מובילים" status.
 
 ### Neutral
-- **Velvet Ground** (#160e12): the page and screen background.
-- **Velvet Deepest** (#0d080b): outside the stage, and text on vermilion or ivory buttons.
-- **Velvet Raised** (#211519): cards, bid rows, list rows, inputs on cards.
-- **Velvet Line** (#33232a) and **Line Strong** (#4a333c): borders and dividers, the empty meter track.
-- **Ivory** (#f4ecdf): primary text, a selected tab, a submitted participant mark, place 2.
-- **Ivory Dim** (#cfc2b1): secondary text (about 10:1 on the ground).
-- **Ivory Mute** (#a39585): tertiary text, labels, hints (about 6:1 on the ground). Never go lower.
-- **Catalogue Paper** (#efe5d4) with **Ink on Paper** (#1d1316) and **Ink Soft** (#5b4a4f): result plates and the light wallet bar.
-- **Podium Bronze** (#b98a5e): place 3 only.
-- **Coin brass gradient** (#f6dcae → #cf9a62 → #8a5c3b, stroke #6e4629): the coin icon and the wallet meter fill only.
-- **Error text** (#ff9d82): validation messages and error borders.
+- **Ink** (#1f2a37): all text, all outlines, all hard shadows, the dark band on prize plates, and selected tabs (with white text).
+- **Ink 2** (#3d4a5a): secondary text. **Ink 3** (#5b6675): labels and hints (about 6:1 on white). Never lighter for text.
+- **Mint** (#dff3e9) with a dot grid: the projector and phone background. **Page** (#eef6f1): the staff page background.
+- **Card** (#ffffff): every card, row, input and plate. **Zebra** (#f3f8f5): alternate table rows.
+- **Sunflower tint** (#fff1c4): soft highlight (allocated rows, hover, the checked mode card).
+- **Muted outline** (#9aa9b5): dashed placeholders (pending participants, the logo slot), unselected mode cards and disabled outlines.
+- **Error** (#b42318): validation text and borders.
 
 ### Named rules
-**The One Hammer Rule.** Vermilion appears only where something is winning, sold or primary. If two vermilion things compete on one screen, one of them is wrong.
-**The No Grey Rule.** Secondary text is tinted ivory (dim or mute), never neutral grey.
+**The Ink-On-Color Rule.** Text on tomato, sunflower, sky, lilac, peach or leaf is always ink. White text appears only on ink.
+**The Money Is Sunflower Rule.** Anything that is an amount of coins or ₪ in focus sits on, or next to, sunflower. Nothing else is sunflower except first place.
 
 ## Typography
 
-**Display:** Frank Ruhl Libre 900 (fallback: "David Libre", Georgia, serif)
-**Title:** Frank Ruhl Libre 700
-**Body / UI:** IBM Plex Sans Hebrew 400, 500, 600 and 700 (fallback: Assistant, system-ui, sans-serif)
+**Family:** Fredoka (Google Fonts, has Hebrew), weights 400, 500, 600 and 700. Fallback: Heebo, system-ui, sans-serif.
+Numbers: Fredoka 700 with `font-variant-numeric: tabular-nums`, isolated LTR.
 
-Numbers are always Frank Ruhl Libre 900 with `font-variant-numeric: tabular-nums lining-nums`, isolated LTR.
-
-### Hierarchy: projector (authored on a 1920×1080 canvas)
-- Lot statement: 900, 118px, line-height 1.02, letter-spacing -0.018em, max 2 lines, `text-wrap: balance`
-- Price on the block: 900, 232px, line-height .86, vermilion
-- Slide titles ("הזוכים", "מה הקבוצה מעריכה"): 900, 112px
-- "המכירה פתוחה": 900, 150px. Submission count: 900, 190px
-- Bid ladder: names 28px Plex 600, amounts 40px serif 900
-- Results plates: statement 38px serif 700, names 44px serif 900, amount 36px serif 900
-- Values table: 36px. Podium statement 40px, total 52px, investors 28px
-- Meta row: 26px Plex. Room title 30px serif 700
+### Hierarchy: projector (1920×1080 canvas)
+- Lot statement: 600, 96px, line-height 1.06, max 2 lines, `text-wrap: balance`
+- Price inside the token: 700, 118px. The unit inside it: 600, 28px
+- Slide titles: 700, 112px. "המכירה פתוחה": 700, 150px. Submission count: 700, 190px, tomato
+- Leader name: 700, 58px. Bid ladder: name 28px 500, amount 36px 700
+- Prize plates: statement 38px 600 (white on ink band), names 44px 700, amount tag 36px 700
+- Podium: statement 40px, total 52px, investors 28px. Table: 36px, rows 49px tall
+- Meta row: 26px. Lot tabs: 24 to 26px 700
 
 ### Hierarchy: phone
-- Lot statement: serif 900, 31px, line-height 1.12
-- Wallet amount: serif 900, 34px. Label 14px Plex
-- Highest bid: serif 900, 60px, vermilion. Stepper value: serif 900, 44px
-- Primary button: serif 900, 27px, height 66px
-- Allocation rows: statement 19px Plex 600, amount 24px serif 900
-- Body and hints: 15 to 20px Plex. Nothing below 14px
+- Card statement: 600, 28px. Wallet amount: 700, 34px. Highest bid inside a 96px token: 700, 34px
+- Stepper value: 700, 44px. Primary button: 700, 23px, height 64px
+- Allocation rows: 500, 19px, amount 700, 24px. Body and hints: 14 to 20px. Nothing below 14px
 
 ### Hierarchy: staff
-- Page title: serif 900, 46px. Card title: serif 700, 26px
-- Body: 15 to 16px Plex. Labels: 14px Plex 600. Hints: 13px ivory-mute
-
-**The Serif Is Content Rule.** Frank Ruhl Libre is for content (statements, numbers, names, titles). Controls, labels and helper text are always Plex.
+- Page title: 700, 46px. Card title: 700, 26px. Body: 15 to 16px. Labels: 14px 600. Hints: 13px ink-3
 
 ## Layout
-
-- **Projector:** a fixed 1920×1080 stage (`ProjectorCanvas`) scaled uniformly to fit the viewport, letterboxed on velvet-deepest. Padding 64px 96px 56px.
-  - Round: two columns (main | 430px bid ladder, the ladder on the left in RTL), rows of 56px meta / content / 132px lot queue.
-  - Open allocation: two columns (main | 520px QR card).
-  - Winners: meta / 104px title / a 5×2 plate grid with 22px gaps.
-  - Values: meta / title / a 404px podium / the table.
-- **Phone:** a single column, max 430px. Top: the wallet bar. Middle: content (scrolls in allocation). Bottom: a sticky action area with the primary button. Side padding 14 to 18px.
-- **Staff:** max width 1280px. The list is a grid of rows that collapse into cards below 1100px. The editor is the form beside a 420px sticky preview, stacking below 1100px with the preview on top. The action bar is sticky at the bottom.
-- **Spacing:** 4px base. Groups at 8 to 16px, sections at 18 to 28px.
+The same structure as the approved prototype:
+- **Projector:** a fixed 1920×1080 stage (`ProjectorCanvas`) scaled to fit.
+  - Round: main | 430px ladder card, rows of 56px meta / content / 132px queue.
+  - Open allocation: main | 520px QR card.
+  - Winners: meta / title / a 5×2 plate grid with 22px gaps.
+  - Values: meta / title / a 372px podium / the table card.
+- **Phone:** one column, max 430px. Wallet bar at the top, content in the middle, a sticky action area at the bottom with a translucent white background and an ink top rule.
+- **Staff:** max width 1280px. The list rows become cards below 1100px. The editor is the form beside a 420px sticky preview, stacking below 1100px.
+- **Spacing:** 4px base. Pieces are separated by at least the size of their hard shadow, so shadows never touch neighbours.
 
 ## Elevation & Depth
-
-Depth comes from tone (velvet layers) plus a soft, offset ambient shadow. No glow halos and no glass, except the staff sticky action bar (backdrop blur 12px).
-- Stage / phone frame: `0 30px 80px rgba(0,0,0,.55)`
-- Raised card or plate: `0 24px 50px rgba(0,0,0,.45)`
-- Primary button: `0 12px 30px rgba(255,90,54,.28)`
-- Menus and toasts: `0 18px 40px rgba(0,0,0,.5)`
-- Spotlight: a radial ellipse of warm light (rgba(255,214,170,.13)) at 50% 18% on the projector only. Grain: SVG fractal noise at .18 opacity in overlay blend.
+No blur shadows. Depth comes only from the hard offset shadow in ink: `Npx Npx 0 #1f2a37`.
+- Projector pieces: 6 to 9px. Phone pieces: 3 to 5px. Staff pieces: 3 to 5px.
+- **Pressed state:** translate the element by the shadow size minus 1 to 2px, and reduce the shadow by the same amount. The piece looks pushed into the table.
+- Disabled pieces lose their shadow and take the muted outline.
 
 ## Shapes
-
-Radius 4 / 8 / 12 / 18 / 22 / 999. Phone buttons and steppers 18px. Cards 14 to 20px. Pills 999px. The sold stamp has a 12px border, rotated -9 degrees, with a rough-ink mask. Participant marks are rounded squares holding the name's first letter.
+Radius 12 / 18 / 24 / 32 / pill. Player tokens and the price token are circles. The lot card and phone card tilt slightly (-0.6 to -0.8 degrees). The tabs on the lot card (lot number in tomato, category in sky) sit on the card's top edge and overlap it by 30px. The "נמכר" sticker is a tomato rounded rectangle with an ink outline, rotated -6 to -9 degrees.
 
 ## Motion
-
-Ease-out `cubic-bezier(.16,1,.3,1)` throughout. No bounce, except the stamp's single slam overshoot.
-- **NumberRoller:** each digit is a vertical strip that translates over 700ms.
-- **Bid ladder:** FLIP. Existing rows slide 420ms, and the new row drops in (from -30px with blur 4px to sharp).
-- **The closing moment (signature):** cue "N · פעם ראשונה" at 0ms and "N · פעם שנייה" at 950ms (1s cue animation), then the strike at 1900ms: flash 750ms, content shake 320ms (5px max), stamp slam 420ms (scale 2.3 to 1, rotate -16 to -9 degrees, blur 10 to 0), and a ring expanding 900ms. The leader mark fades out and the stamp takes its place. Play it only after the server confirms the close.
-- **Participant wall:** a submitted mark rises (translateY 46px to 0) over 700ms and turns ivory.
-- **Winners:** plates flip in (rotateY -88 degrees to 0) over 800ms, staggered 90ms in statement order.
-- **Values:** podium bars grow over 900ms in the order 3, 2, 1, 1100ms apart. Totals count up over 900ms (ease-out quart, rounded to the step). Table rows fade in at a 70ms stagger after the podium.
-- **Reduced motion:** every duration goes to near zero and the final state shows immediately.
+Ease-out `cubic-bezier(.16,1,.3,1)`. Timings are the same as the prototype:
+- Number roller: 700ms.
+- Bid ladder: FLIP 420ms.
+- Closing cue: two beats, 950ms apart, in a white outlined card.
+- Strike at 1900ms: a sunflower flash of 750ms, a 320ms shake, a 420ms sticker slam and a 900ms ink ring.
+- Participant wall: a token pops up over 700ms and gets its color.
+- Plates: flip in over 800ms, staggered 90ms.
+- Podium: bars grow in the order 3, 2, 1, each over 900ms, 1100ms apart, with the totals counting up.
+- Buttons press over 100ms.
+- `prefers-reduced-motion`: show the final states only.
 
 ## Components
-
-See COMPONENTS.md for props, states and behavior. The core set: CoinIcon, NumberRoller, WalletBar, ParticipantMark, LotTicket, BidLadder, SoldStamp, CountdownLine, ParticipantWall, PrizePlate, Podium, ValuesTable, StatusPill, Stepper, ModeCard, SessionRow, ItemsEditor, and buttons (primary, secondary, small).
+See COMPONENTS.md.
 
 ## Do's and Don'ts
-
-**Do**
-- Keep one number per phone screen dominant: what you have left, or the price.
-- Show money with the coin icon and rolling digits.
-- Write copy in plain Hebrew: "שליחת הצעה", "סגירת הסבב", "נשארו לך".
-
-**Don't**
-- Don't use emoji, gradient text, glass cards, glowing gold or colored side borders.
-- Don't show more than one wallet figure, and don't use multi-part legends on the phone.
-- Don't use paddle or hammer jargon in labels.
-- Don't let vermilion decorate.
+**Do:** use ink text on every color, keep one dominant number per phone screen, use the coin token for money, keep pieces outlined and shadowed, and write copy in plain Hebrew.
+**Don't:** use white text on yellow or green, blur shadows, gradients on surfaces (the countdown fill is the only gradient), more than three player colors next to each other in one row, serif fonts, dark screens, or jargon.

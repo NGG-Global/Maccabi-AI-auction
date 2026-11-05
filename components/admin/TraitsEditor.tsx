@@ -18,8 +18,8 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { TRAIT_CATEGORIES, type TraitCategory } from '@/lib/types'
-import { Button, FIELD, FIELD_BAD } from '@/components/evening/ui'
-import { lotNo } from '@/components/evening/units'
+import { Button, FIELD, FIELD_BAD } from '@/components/game/ui'
+import { lotNo } from '@/components/game/units'
 
 /** A statement row as edited in the form (key is a client-side id for React/dnd). */
 export interface TraitDraft {
@@ -42,7 +42,7 @@ export function newTraitDraft(): TraitDraft {
   return { key: `new-${Math.random().toString(36).slice(2, 10)}`, title: '', description: '', category: '' }
 }
 
-const OP = 'flex h-9 w-9 items-center justify-center rounded-[9px] text-ivory-mute transition-colors hover:bg-velvet-3 hover:text-ivory disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ivory-mute'
+const OP = 'flex h-9 w-9 items-center justify-center rounded-[9px] text-ink-3 transition-colors hover:bg-sun-tint hover:text-ink disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink-3'
 
 function Row({
   trait, index, count, disabled, bad, onChange, onRemove, onMove,
@@ -62,8 +62,8 @@ function Row({
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`grid grid-cols-[28px_minmax(0,1fr)] items-center gap-2.5 rounded-[14px] border bg-velvet-1 px-2.5 py-2 min-[700px]:grid-cols-[34px_minmax(0,1fr)_150px_auto] ${
-        isDragging ? 'z-10 border-velvet-4 opacity-60 shadow-[var(--shadow-menu)]' : 'border-velvet-3'
+      className={`grid grid-cols-[28px_minmax(0,1fr)] items-center gap-2.5 rounded-[14px] border-2 bg-[#f8fbf9] px-2.5 py-2 min-[700px]:grid-cols-[34px_minmax(0,1fr)_150px_auto] ${
+        isDragging ? 'z-10 border-ink opacity-70 shadow-piece-sm' : 'border-[#b9cfc3]'
       }`}
     >
       <button
@@ -72,7 +72,7 @@ function Row({
         {...listeners}
         tabIndex={-1}
         aria-label={`גרירת פריט ${index + 1} לסידור מחדש`}
-        className={`num flex h-9 touch-none items-center justify-center rounded text-[18px] text-ivory-mute ${disabled ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`}
+        className={`num flex h-9 touch-none items-center justify-center rounded text-[18px] text-ink-3 ${disabled ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`}
       >
         {lotNo(index + 1)}
       </button>
@@ -96,7 +96,7 @@ function Row({
           onChange={e => onChange({ ...trait, category: e.target.value as TraitCategory })}
           disabled={disabled}
           aria-invalid={(bad && !trait.category) || undefined}
-          className={`${FIELD} ${!trait.category ? 'text-ivory-mute' : ''} ${bad && !trait.category ? FIELD_BAD : ''}`}
+          className={`${FIELD} ${!trait.category ? 'text-ink-3' : ''} ${bad && !trait.category ? FIELD_BAD : ''}`}
         >
           <option value="" disabled>קטגוריה</option>
           {TRAIT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -122,7 +122,7 @@ function Row({
           placeholder="תיאור קצר (לא חובה)"
           maxLength={500}
           disabled={disabled}
-          className={`${FIELD} h-9 text-[14px] text-ivory-dim`}
+          className={`${FIELD} h-9 text-[14px] text-ink-2`}
         />
       </label>
     </li>

@@ -23,24 +23,24 @@ interface Props {
 }
 
 const BTN = {
-  lg: 'h-16 w-16 rounded-[18px]',
-  sm: 'h-[52px] w-[52px] rounded-[14px]',
+  lg: 'h-16 w-16 border-[3px] shadow-piece-sm',
+  sm: 'h-[52px] w-[52px] rounded-[14px] border-[2.5px] shadow-piece-xs',
 }
 const ICON = { lg: 'h-[26px] w-[26px]', sm: 'h-[22px] w-[22px]' }
 
 function Minus({ className }: { className: string }) {
-  return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}><path d="M5 12h14" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" /></svg>
+  return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}><path d="M5 12h14" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" /></svg>
 }
 function Plus({ className }: { className: string }) {
-  return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}><path d="M5 12h14M12 5v14" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" /></svg>
+  return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}><path d="M5 12h14M12 5v14" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" /></svg>
 }
 
-/** −, value, +. The row is LTR so the number reads naturally; the caption stays RTL. */
+/** −, value, +. Round white buttons with an ink outline and a hard shadow. The row is LTR so the number reads naturally. */
 export default function Stepper({
   value, onDown, onUp, downDisabled, upDisabled, downLabel, upLabel, size = 'lg', caption,
   inputValue, onInput, inputLabel, coin = size === 'lg', className,
 }: Props) {
-  const btn = `${BTN[size]} inline-flex shrink-0 items-center justify-center border-[1.5px] border-velvet-4 bg-velvet-2 text-ivory transition-[background,transform] duration-150 active:scale-95 disabled:opacity-35 disabled:active:scale-100`
+  const btn = `${BTN[size]} press-sm inline-flex shrink-0 items-center justify-center rounded-full border-ink bg-card text-ink disabled:opacity-35`
   const editable = typeof inputValue === 'string' && onInput
   return (
     <div dir="ltr" className={`flex items-center justify-between gap-2 ${className ?? ''}`}>
@@ -58,13 +58,13 @@ export default function Stepper({
               value={inputValue}
               onChange={e => onInput(e.target.value.replace(/[^\d]/g, ''))}
               aria-label={inputLabel}
-              className={`num w-[6ch] bg-transparent text-center outline-none focus-visible:outline-none focus-visible:underline focus-visible:decoration-vermilion focus-visible:decoration-4 ${size === 'lg' ? 'h-14 text-[44px]' : 'h-[52px] text-[24px]'} leading-none`}
+              className={`num w-[6ch] bg-transparent text-center text-ink outline-none focus-visible:outline-none focus-visible:underline focus-visible:decoration-sun focus-visible:decoration-4 ${size === 'lg' ? 'h-14 text-[44px]' : 'h-[52px] text-[24px]'} leading-none`}
             />
           ) : (
-            <b className={`num ${size === 'lg' ? 'text-[44px]' : 'text-[24px]'} leading-none`}>{value.toLocaleString('en-US')}</b>
+            <b className={`num ${size === 'lg' ? 'text-[44px]' : 'text-[24px]'} leading-none text-ink`}>{value.toLocaleString('en-US')}</b>
           )}
         </span>
-        {caption && <small className="mt-1 text-[15px] text-ivory-mute">{caption}</small>}
+        {caption && <small className="mt-1 text-[15px] text-ink-3">{caption}</small>}
       </div>
       <button type="button" onClick={onUp} disabled={upDisabled} aria-label={upLabel} className={btn}>
         <Plus className={ICON[size]} />

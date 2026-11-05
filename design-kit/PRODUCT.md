@@ -35,7 +35,7 @@ A spending decision instead of a survey: people commit a limited budget, so the 
 
 ## Brand Commitments
 - NGG platform that hosts a client logo per room; the look must sit alongside any client's logo.
-- Visual world approved by Dor (Nov 2026): "ערב מכירה" (Evening Sale), with full freedom from the NGG design system for these surfaces. See DESIGN.md.
+- Visual world approved (Nov 2026): "משחק קופסה מודרני" (Modern Board Game). Light, sans-serif, friendly. Chosen after the dark "Evening Sale" direction was rejected (dark background, serif type, colors). Not bound to the NGG design system. See DESIGN.md.
 
 ## Evidence on Hand
 - Real statements in supabase/seed.sql; Soroka spec (10 traits, test data for 15 fictional participants) from Shahar Vider's email of 20.10.2026. Participant names in mockups are synthetic.

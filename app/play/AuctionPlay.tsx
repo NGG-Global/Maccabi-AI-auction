@@ -7,14 +7,14 @@ import type { AuctionRound, Participant, Bid, PublicRoom } from '@/lib/types'
 import { ROUND_SELECT } from '@/lib/supabase/embeds'
 import { useRoundTimer } from '@/lib/hooks/useRoundTimer'
 import { PlaySkeleton, PlayError, PhoneShell, RulesList } from './PlayShell'
-import WalletBar from '@/components/evening/WalletBar'
-import LotTicket from '@/components/evening/LotTicket'
-import NumberRoller from '@/components/evening/NumberRoller'
-import Stepper from '@/components/evening/Stepper'
-import SoldStamp from '@/components/evening/SoldStamp'
-import CountdownLine from '@/components/evening/CountdownLine'
-import { CTA, ErrorText } from '@/components/evening/ui'
-import { UNIT_LABEL, defaultBidStep, fmt, lotNo } from '@/components/evening/units'
+import WalletBar from '@/components/game/WalletBar'
+import LotTicket from '@/components/game/LotTicket'
+import NumberRoller from '@/components/game/NumberRoller'
+import Stepper from '@/components/game/Stepper'
+import SoldStamp from '@/components/game/SoldStamp'
+import CountdownLine from '@/components/game/CountdownLine'
+import { CTA, ErrorText } from '@/components/game/ui'
+import { UNIT_LABEL, defaultBidStep, fmt, lotNo } from '@/components/game/units'
 
 interface GameState {
   participant: Participant | null
@@ -296,8 +296,8 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
       />
       {bidError && <ErrorText>{bidError}</ErrorText>}
       <button type="submit" disabled={!canBid} className={CTA}>{ctaLabel}</button>
-      <p className="m-0 min-h-[22px] text-center text-[15px] text-ivory-mute">
-        {bidSuccess ? <span className="text-ember">ההצעה נשלחה</span> : 'המטבעות יורדים מהיתרה רק אם תזכו בפריט.'}
+      <p className="m-0 min-h-[22px] text-center text-[15px] text-ink-3">
+        {bidSuccess ? <span className="font-semibold text-tomato-text">ההצעה נשלחה</span> : 'המטבעות יורדים מהיתרה רק אם תזכו בפריט.'}
       </p>
     </form>
   ) : undefined
@@ -308,12 +308,12 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
 
       {/* Waiting */}
       {!currentRound && (
-        <div className="ev-fade flex flex-1 flex-col justify-center gap-6 py-6">
+        <div className="gm-fade flex flex-1 flex-col justify-center gap-6 py-6">
           <div className="text-center">
-            <p className="m-0 font-display text-[36px] font-black leading-tight text-ivory">ממתינים להתחלה</p>
-            <p className="mt-2 mb-0 text-[17px] text-ivory-dim">הפריט הבא ייפתח בקרוב</p>
+            <p className="m-0 text-[34px] font-bold leading-tight text-ink">ממתינים להתחלה</p>
+            <p className="mt-2 mb-0 text-[17px] text-ink-2">הפריט הבא ייפתח בקרוב</p>
           </div>
-          <div className="rounded-[22px] border border-velvet-3 bg-velvet-2 px-5 py-5">
+          <div className="rounded-[24px] border-[3px] border-ink bg-card px-5 py-5 shadow-piece-md">
             <RulesList rules={[
               'בכל סבב מוצג פריט אחד.',
               'שולחים הצעה ומעלים אותה כל עוד הסבב פתוח.',
@@ -326,31 +326,31 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
 
       {/* Round closed result */}
       {isClosed && currentRound && (
-        <div key={`closed-${currentRound.id}`} className="ev-rise flex flex-1 flex-col gap-4">
+        <div key={`closed-${currentRound.id}`} className="gm-rise flex flex-1 flex-col gap-4">
           <LotTicket index1={lotIndex} category={currentRound.trait?.category} title={currentRound.trait?.title ?? ''} />
           <div className="my-auto flex flex-col items-center gap-3 px-2 py-6 text-center">
             {winnerName ? (
               <>
                 <SoldStamp size="phone" text={iWon ? 'נמכר לך' : 'נמכר'} animate />
-                <h4 className="mt-4 mb-0 font-display text-[36px] font-black leading-[1.1] text-ivory">
+                <h4 className="mt-5 mb-0 text-[34px] font-bold leading-[1.1] text-ink">
                   {iWon ? `זכית בפריט ${lotNo(lotIndex)}` : `ל${winnerName}`}
                 </h4>
-                <p className="m-0 text-[19px] leading-[1.45] text-ivory-dim">
+                <p className="m-0 text-[19px] leading-[1.45] text-ink-2">
                   {iWon
                     ? <><span className="num">{fmt(closingPrice ?? 0)}</span> {UNIT_LABEL} ירדו מהיתרה שלך.</>
                     : <>במחיר <span className="num">{fmt(closingPrice ?? 0)}</span> {UNIT_LABEL}. לא הוצאת כלום בסבב הזה.</>}
                 </p>
                 {!iWon && myBid && myBid.amount === closingPrice && (
-                  <p className="m-0 text-[15px] text-ember">שוויון: זוכה מי שהציע את הסכום ראשון</p>
+                  <p className="m-0 text-[15px] font-semibold text-tomato-text">שוויון: זוכה מי שהציע את הסכום ראשון</p>
                 )}
               </>
             ) : (
               <>
-                <SoldStamp size="phone" text="לא נמכרה" animate />
-                <p className="mt-4 mb-0 text-[19px] leading-[1.45] text-ivory-dim">לא נשלחו הצעות על הפריט הזה.</p>
+                <SoldStamp size="phone" text="לא נמכרה" animate muted />
+                <p className="mt-5 mb-0 text-[19px] leading-[1.45] text-ink-2">לא נשלחו הצעות על הפריט הזה.</p>
               </>
             )}
-            <p className="mt-4 mb-0 text-[15px] text-ivory-mute">הפריט הבא ייפתח בקרוב</p>
+            <p className="mt-4 mb-0 text-[15px] text-ink-3">הפריט הבא ייפתח בקרוב</p>
           </div>
           <ProfileLink slug={room.slug} />
         </div>
@@ -358,23 +358,23 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
 
       {/* Open round */}
       {isOpen && currentRound && (
-        <div key={`open-${currentRound.id}`} className="ev-rise flex flex-col gap-4">
+        <div key={`open-${currentRound.id}`} className="gm-rise flex flex-col gap-4">
           <LotTicket index1={lotIndex} category={currentRound.trait?.category} title={currentRound.trait?.title ?? ''} description={currentRound.trait?.description} />
 
-          <div className="flex items-end justify-between gap-3 px-1">
-            <span className="font-display text-[60px] font-black leading-[.9] text-vermilion">
+          <div className="flex items-center gap-[14px] px-1">
+            <span className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-[3px] border-ink bg-sun text-[34px] font-bold text-ink shadow-piece">
               <NumberRoller value={highest} />
             </span>
-            <span className="text-start text-[17px] leading-[1.35] text-ivory-dim">
-              <b className="block text-[20px] font-bold text-ivory">
+            <span className="text-start text-[17px] leading-[1.35] text-ink-3">
+              <b className="block text-[21px] font-semibold text-ink">
                 {highest === 0 ? 'עדיין אין הצעות' : roundStats.isLeading ? 'ההצעה שלך' : leaderName ?? '…'}
               </b>
               {highest === 0 ? 'פתחו את המכירה' : roundStats.isLeading ? 'היא הגבוהה כרגע' : 'ההצעה הגבוהה'}
             </span>
           </div>
 
-          <span className={`self-start rounded-full px-[14px] py-[6px] text-[17px] font-bold ${
-            status.lead ? 'bg-[rgba(255,90,54,.18)] text-[#ffd2c4]' : 'bg-[rgba(255,179,138,.14)] text-ember'
+          <span className={`self-start rounded-full border-2 border-ink px-[14px] py-[6px] text-[17px] font-semibold ${
+            status.lead ? 'bg-leaf text-ink' : 'bg-sun-tint text-sun-text'
           }`}>
             {status.text}
           </span>
@@ -383,9 +383,9 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
             <CountdownLine timer={timer} roundSeconds={room.default_round_seconds} size="phone" />
           )}
 
-          <p className="m-0 text-[15px] text-ivory-mute">
+          <p className="m-0 text-[15px] text-ink-3">
             {roundStats.bidderCount > 0
-              ? <><span className="num text-ivory-dim">{roundStats.bidderCount}</span> שלחו הצעה בסבב הזה</>
+              ? <><span className="num text-ink-2">{roundStats.bidderCount}</span> שלחו הצעה בסבב הזה</>
               : 'אף אחד עדיין לא שלח הצעה בסבב הזה'}
           </p>
 
@@ -399,7 +399,7 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
 function ProfileLink({ slug }: { slug: string }) {
   return (
     <p className="m-0 mt-auto pt-2 text-center text-[14px]">
-      <a href={`/profile?room=${encodeURIComponent(slug)}`} className="text-ivory-mute underline decoration-velvet-4 underline-offset-4 transition-colors hover:text-ivory">
+      <a href={`/profile?room=${encodeURIComponent(slug)}`} className="text-ink-3 underline decoration-ink/30 underline-offset-4 transition-colors hover:text-ink">
         הפרופיל האישי שלכם
       </a>
     </p>

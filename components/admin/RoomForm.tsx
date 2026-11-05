@@ -6,10 +6,10 @@ import type { GameMode, Room, Trait } from '@/lib/types'
 import { isValidSlug, slugify, suggestSlug } from '@/lib/rooms/slug'
 import TraitsEditor, { newTraitDraft, type TraitDraft } from './TraitsEditor'
 import LogoUploader from './LogoUploader'
-import CoinIcon from '@/components/evening/CoinIcon'
-import WalletBar from '@/components/evening/WalletBar'
-import { Button, Card, CardTitle, ErrorText, FIELD, FIELD_BAD, Hint, LinkButton, Notice, Toast } from '@/components/evening/ui'
-import { UNIT_LABEL, defaultBidStep, fmt, lotNo } from '@/components/evening/units'
+import CoinIcon from '@/components/game/CoinIcon'
+import WalletBar from '@/components/game/WalletBar'
+import { Button, Card, CardTitle, ErrorText, FIELD, FIELD_BAD, Hint, LinkButton, Notice, Toast } from '@/components/game/ui'
+import { UNIT_LABEL, defaultBidStep, fmt, lotNo } from '@/components/game/units'
 
 interface Props {
   /** null when creating a new room */
@@ -58,7 +58,7 @@ function Field({ label, htmlFor, hint, error, errorId, children, className = '' 
 }) {
   return (
     <div className={`flex min-w-0 flex-col gap-[7px] ${className}`}>
-      <label htmlFor={htmlFor} className="text-[14px] font-semibold text-ivory-dim">{label}</label>
+      <label htmlFor={htmlFor} className="text-[14px] font-semibold text-ink-2">{label}</label>
       {children}
       {hint && <Hint>{hint}</Hint>}
       {error && <ErrorText id={errorId}>{error}</ErrorText>}
@@ -288,18 +288,18 @@ export default function RoomForm({ room, traits, locked, isLive, participantCoun
               return (
                 <label
                   key={mode}
-                  className={`relative flex cursor-pointer flex-col gap-1.5 rounded-[16px] border-[1.5px] px-5 py-[18px] transition-[border-color,background] has-[input:disabled]:cursor-default has-[input:disabled]:opacity-50 has-[input:focus-visible]:outline has-[input:focus-visible]:outline-[3px] has-[input:focus-visible]:outline-offset-[3px] has-[input:focus-visible]:outline-vermilion ${
-                    selected ? 'border-vermilion bg-[#26171a] text-ivory-dim' : 'border-velvet-4 bg-velvet-1 text-ivory-mute'
+                  className={`relative flex cursor-pointer flex-col gap-1.5 rounded-[16px] border-[2.5px] px-5 py-[18px] transition-[border-color,background,box-shadow] has-[input:disabled]:cursor-default has-[input:disabled]:opacity-50 has-[input:focus-visible]:outline has-[input:focus-visible]:outline-[3px] has-[input:focus-visible]:outline-offset-[3px] has-[input:focus-visible]:outline-ink ${
+                    selected ? 'border-ink bg-sun-tint text-ink-2 shadow-piece' : 'border-muted-outline bg-card text-ink-3'
                   }`}
                 >
                   <input type="radio" name="game_mode" value={mode} checked={selected} onChange={() => setGameMode(mode)} disabled={gameLocked} className="sr-only" />
                   {mode === 'auction' ? (
-                    <svg className="mb-1.5 h-16 w-[120px]" viewBox="0 0 120 64" aria-hidden="true"><rect x="38" y="8" width="44" height="34" rx="6" fill="currentColor" opacity=".9" /><rect x="8" y="14" width="22" height="22" rx="4" fill="currentColor" opacity=".25" /><rect x="90" y="14" width="22" height="22" rx="4" fill="currentColor" opacity=".25" /><rect x="46" y="50" width="28" height="6" rx="3" fill="var(--color-vermilion)" /></svg>
+                    <svg className="mb-1.5 h-16 w-[120px]" viewBox="0 0 120 64" aria-hidden="true"><rect x="38" y="8" width="44" height="34" rx="6" fill="currentColor" opacity=".9" /><rect x="8" y="14" width="22" height="22" rx="4" fill="currentColor" opacity=".25" /><rect x="90" y="14" width="22" height="22" rx="4" fill="currentColor" opacity=".25" /><rect x="46" y="50" width="28" height="6" rx="3" fill="var(--color-tomato)" /></svg>
                   ) : (
-                    <svg className="mb-1.5 h-16 w-[120px]" viewBox="0 0 120 64" aria-hidden="true"><rect x="8" y="30" width="16" height="26" rx="3" fill="currentColor" opacity=".35" /><rect x="30" y="16" width="16" height="40" rx="3" fill="var(--color-vermilion)" /><rect x="52" y="38" width="16" height="18" rx="3" fill="currentColor" opacity=".35" /><rect x="74" y="24" width="16" height="32" rx="3" fill="currentColor" opacity=".6" /><rect x="96" y="44" width="16" height="12" rx="3" fill="currentColor" opacity=".35" /></svg>
+                    <svg className="mb-1.5 h-16 w-[120px]" viewBox="0 0 120 64" aria-hidden="true"><rect x="8" y="30" width="16" height="26" rx="3" fill="currentColor" opacity=".35" /><rect x="30" y="16" width="16" height="40" rx="3" fill="var(--color-tomato)" /><rect x="52" y="38" width="16" height="18" rx="3" fill="currentColor" opacity=".35" /><rect x="74" y="24" width="16" height="32" rx="3" fill="currentColor" opacity=".6" /><rect x="96" y="44" width="16" height="12" rx="3" fill="currentColor" opacity=".35" /></svg>
                   )}
-                  <span className="font-display text-[24px] font-black text-ivory">{label}</span>
-                  <span className="text-[15px] leading-[1.5] text-ivory-dim">{desc}</span>
+                  <span className="text-[24px] font-bold text-ink">{label}</span>
+                  <span className="text-[15px] leading-[1.5] text-ink-2">{desc}</span>
                 </label>
               )
             })}
@@ -352,7 +352,7 @@ export default function RoomForm({ room, traits, locked, isLive, participantCoun
               </div>
             )}
           </div>
-          <p className="m-0 rounded-[12px] bg-velvet-1 px-[14px] py-3 text-[15px] leading-[1.5] text-ivory-dim">{ruleLine}</p>
+          <p className="m-0 rounded-[12px] border-2 border-dashed border-[#b9cfc3] bg-zebra px-[14px] py-3 text-[15px] leading-[1.5] text-ink-2">{ruleLine}</p>
         </Card>
 
         <Card>
@@ -369,8 +369,8 @@ export default function RoomForm({ room, traits, locked, isLive, participantCoun
 
         {/* ── Sticky action bar ── */}
         {!readOnly && (
-          <div className="sticky bottom-3 z-[4] flex flex-wrap items-center justify-end gap-[10px] rounded-[18px] border border-velvet-3 bg-[rgba(22,14,18,.86)] px-4 py-[14px] shadow-[0_18px_40px_rgba(0,0,0,.45)] backdrop-blur-[12px]">
-            <span role="status" className={`me-auto text-[14px] font-semibold ${barMessage ? 'text-error' : 'text-ivory-dim'}`}>
+          <div className="sticky bottom-3 z-[4] flex flex-wrap items-center justify-end gap-[10px] rounded-[18px] border-[2.5px] border-ink bg-white/92 px-4 py-[14px] shadow-piece-md">
+            <span role="status" className={`me-auto text-[14px] font-semibold ${barMessage ? 'text-error' : 'text-ink-2'}`}>
               {barMessage ?? (locked
                 ? `הסשן ${isLive ? 'חי' : 'הופעל'} ויש בו ${participantCount} משתתפים${roundCount > 0 ? ` ו־${roundCount} סבבים` : ''}, לכן הגדרות המשחק והפריטים נעולים. אפשר לשנות שם, לקוח ולוגו.`
                 : '')}
@@ -390,41 +390,41 @@ export default function RoomForm({ room, traits, locked, isLive, participantCoun
       {/* ── Preview + more actions ── */}
       <aside className="flex flex-col gap-[18px] min-[1100px]:sticky min-[1100px]:top-[18px] min-[1100px]:order-none max-[1099px]:order-first" aria-label="תצוגה מקדימה">
         <div>
-          <p className="m-0 mb-2 text-[13px] font-semibold text-ivory-mute">כך זה ייראה במסך המוקרן</p>
-          <div className="stage-atmos relative flex aspect-video flex-col justify-between overflow-hidden rounded-[14px] px-[6%] py-[5%] shadow-[0_20px_50px_rgba(0,0,0,.5),0_0_0_1px_var(--color-velvet-3)]" aria-hidden="true">
-            <div className="flex justify-between gap-3 text-[13px] text-ivory-dim">
-              <b className="truncate font-display text-ivory">{previewTitle}</b>
+          <p className="m-0 mb-2 text-[13px] font-semibold text-ink-3">כך זה ייראה במסך המוקרן</p>
+          <div className="bg-dots-fine relative flex aspect-video flex-col justify-between overflow-hidden rounded-[14px] border-[2.5px] border-ink px-[6%] py-[5%] shadow-piece-md" aria-hidden="true">
+            <div className="flex justify-between gap-3 text-[13px] text-ink-2">
+              <b className="truncate font-bold text-ink">{previewTitle}</b>
               <span className="shrink-0">{gameMode === 'auction' ? `פריט 01 מתוך ${lotNo(Math.max(filledCount, 1))}` : clientName || ''}</span>
             </div>
-            <p className={`m-0 font-display text-[30px] font-black leading-[1.05] [text-wrap:balance] ${gameMode === 'auction' && !firstTitle ? 'font-bold text-ivory-mute' : 'text-ivory'}`}>
+            <p className={`m-0 text-[30px] font-semibold leading-[1.05] [text-wrap:balance] ${gameMode === 'auction' && !firstTitle ? 'text-ink-3' : 'text-ink'}`}>
               {gameMode === 'auction' ? (firstTitle || 'הפריט הראשון יופיע כאן') : 'המכירה פתוחה'}
             </p>
             <div className="flex items-end justify-between gap-3">
               {gameMode === 'auction' ? (
                 <>
-                  <span className="num font-display text-[56px] leading-[.85] text-vermilion">0</span>
-                  <span className="text-[13px] text-ivory-dim">{UNIT_LABEL} · ההצעה הגבוהה</span>
+                  <span className="num flex h-[72px] w-[72px] items-center justify-center rounded-full border-[3px] border-ink bg-sun text-[32px] text-ink shadow-piece-sm">0</span>
+                  <span className="text-[13px] text-ink-2">{UNIT_LABEL} · ההצעה הגבוהה</span>
                 </>
               ) : (
                 <>
-                  <span className="text-[13px] text-ivory-dim"><span className="num">{fmt(coins)}</span> {UNIT_LABEL} לכל אחד, {filledCount} {filledCount === 1 ? 'פריט' : 'פריטים'}</span>
-                  <span className="num font-display text-[44px] leading-[.85] text-vermilion">0</span>
+                  <span className="text-[13px] text-ink-2"><span className="num">{fmt(coins)}</span> {UNIT_LABEL} לכל אחד, {filledCount} {filledCount === 1 ? 'פריט' : 'פריטים'}</span>
+                  <span className="num text-[44px] leading-[.85] text-tomato">0</span>
                 </>
               )}
             </div>
           </div>
         </div>
         <div>
-          <p className="m-0 mb-2 text-[13px] font-semibold text-ivory-mute">וכך בטלפון של המשתתף</p>
-          <div className="mx-auto max-w-[300px] rounded-[30px] border-[7px] border-[#2a1c22] bg-velvet-1 px-2 pb-[14px] pt-1" aria-hidden="true">
+          <p className="m-0 mb-2 text-[13px] font-semibold text-ink-3">וכך בטלפון של המשתתף</p>
+          <div className="bg-dots-fine mx-auto max-w-[360px] rounded-[30px] border-[7px] border-ink px-2 pb-[14px] pt-1" aria-hidden="true">
             <WalletBar remaining={coins} total={coins} unitLabel={UNIT_LABEL} label={gameMode === 'auction' ? 'נשארו לך' : 'נשארו לך לחלק'} name="דנה" className="mt-3" />
           </div>
           <Hint className="mt-[14px] block">קישור ההצטרפות וקוד ה־QR נוצרים ברגע שהסשן נשמר.</Hint>
         </div>
 
         {room && (
-          <div className="flex flex-col gap-2 rounded-[16px] border border-velvet-3 bg-velvet-2 p-4">
-            <p className="m-0 text-[13px] font-semibold text-ivory-mute">פעולות נוספות</p>
+          <div className="flex flex-col gap-2 rounded-[20px] border-[2.5px] border-ink bg-card p-4 shadow-piece">
+            <p className="m-0 text-[13px] font-semibold text-ink-3">פעולות נוספות</p>
             {isLive && (
               <LinkButton href={`/admin/rooms/${room.id}/live`} size="sm">למסך המוקרן</LinkButton>
             )}

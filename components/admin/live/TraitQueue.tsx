@@ -18,7 +18,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Trait } from '@/lib/types'
-import { lotNo } from '@/components/evening/units'
+import { lotNo } from '@/components/game/units'
 
 interface Props {
   queue: Trait[]
@@ -37,12 +37,12 @@ function SortableItem({ trait, index, disabled }: { trait: Trait; index: number;
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`flex select-none items-center gap-2 rounded-[10px] border px-2.5 py-2 text-[14px] transition-colors ${
+      className={`flex select-none items-center gap-2 rounded-[12px] border-2 px-2.5 py-2 text-[14px] transition-colors ${
         isDragging
-          ? 'z-50 border-velvet-4 bg-velvet-3 opacity-60 shadow-[var(--shadow-menu)]'
+          ? 'z-50 border-ink bg-card opacity-70 shadow-piece-sm'
           : index === 0
-          ? 'border-[rgba(255,90,54,.45)] bg-[rgba(255,90,54,.1)]'
-          : 'border-transparent bg-velvet-1 hover:border-velvet-3'
+          ? 'border-ink bg-sun-tint'
+          : 'border-mint-line bg-zebra hover:border-ink'
       }`}
     >
       <button
@@ -62,11 +62,11 @@ function SortableItem({ trait, index, disabled }: { trait: Trait; index: number;
           </span>
         ))}
       </button>
-      <span className={`num w-6 shrink-0 text-center text-[13px] ${index === 0 ? 'text-vermilion' : 'text-ivory-mute'}`}>
+      <span className={`num w-6 shrink-0 text-center text-[13px] ${index === 0 ? 'text-ink' : 'text-ink-3'}`}>
         {lotNo(index + 1)}
       </span>
-      <span className={`flex-1 truncate font-medium ${index === 0 ? 'text-ivory' : 'text-ivory-dim'}`}>{trait.title}</span>
-      {index === 0 && <span className="shrink-0 text-[11px] font-bold text-vermilion">הבא</span>}
+      <span className={`flex-1 truncate font-medium ${index === 0 ? 'text-ink' : 'text-ink-2'}`}>{trait.title}</span>
+      {index === 0 && <span className="shrink-0 text-[11px] font-bold text-tomato-text">הבא</span>}
     </div>
   )
 }
@@ -89,12 +89,12 @@ export function TraitQueue({ queue, usedTraits, disabled, onReorder }: Props) {
   return (
     <div className="flex flex-col">
       <div className="mb-2 flex items-center justify-between">
-        <p className="m-0 text-[13px] font-semibold text-ivory-mute">סדר הפריטים הבאים</p>
-        {queue.length > 0 && <span className="text-[12px] text-ivory-mute">{queue.length} נותרו</span>}
+        <p className="m-0 text-[13px] font-semibold text-ink-3">סדר הפריטים הבאים</p>
+        {queue.length > 0 && <span className="text-[12px] text-ink-3">{queue.length} נותרו</span>}
       </div>
 
       {queue.length === 0 ? (
-        <div className="rounded-[10px] border border-dashed border-velvet-4 px-3 py-4 text-center text-[13px] text-ivory-mute">
+        <div className="rounded-[12px] border-2 border-dashed border-muted-outline px-3 py-4 text-center text-[13px] text-ink-3">
           כל הפריטים נמכרו
         </div>
       ) : (
@@ -111,12 +111,12 @@ export function TraitQueue({ queue, usedTraits, disabled, onReorder }: Props) {
 
       {usedTraits.length > 0 && (
         <div className="mt-3">
-          <p className="m-0 mb-1.5 text-[12px] text-ivory-mute">נמכרו</p>
+          <p className="m-0 mb-1.5 text-[12px] text-ink-3">נמכרו</p>
           <div className="flex flex-col gap-1">
             {usedTraits.map(t => (
-              <div key={t.id} className="flex items-center gap-2 rounded-[8px] px-2.5 py-1.5 text-[13px] text-ivory-mute">
-                <span className="shrink-0 text-vermilion">·</span>
-                <span className="truncate line-through decoration-velvet-4">{t.title}</span>
+              <div key={t.id} className="flex items-center gap-2 rounded-[8px] px-2.5 py-1.5 text-[13px] text-ink-3">
+                <span className="shrink-0 text-tomato">·</span>
+                <span className="truncate line-through decoration-muted-outline">{t.title}</span>
               </div>
             ))}
           </div>

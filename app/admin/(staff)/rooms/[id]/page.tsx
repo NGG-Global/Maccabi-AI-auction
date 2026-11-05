@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import RoomForm from '@/components/admin/RoomForm'
 import { getRoomDetail } from '@/lib/rooms/service'
-import StatusPill from '@/components/evening/StatusPill'
+import StatusPill from '@/components/game/StatusPill'
 
 interface Props { params: Promise<{ id: string }> }
 
@@ -22,13 +22,13 @@ export default async function EditRoomPage({ params }: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      <Link href="/admin" className="inline-flex items-center gap-1.5 self-start text-[15px] font-semibold text-ivory-dim hover:text-ivory">
+      <Link href="/admin" className="inline-flex items-center gap-1.5 self-start text-[15px] font-semibold text-ink-2 hover:text-ink">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
         חזרה לסשנים
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-wrap items-center gap-[14px]">
-          <h1 className="m-0 font-display text-[46px] font-black leading-[1.05] tracking-[-.01em] text-ivory">{room.title}</h1>
+          <h1 className="m-0 text-[46px] font-bold leading-[1.05] text-ink">{room.title}</h1>
           {detail.is_live && room.active_until ? (
             <StatusPill kind="live">חי · עד {hhmm(room.active_until)}</StatusPill>
           ) : room.status === 'ended' ? (
@@ -41,7 +41,7 @@ export default async function EditRoomPage({ params }: Props) {
             <StatusPill kind="draft">טיוטה</StatusPill>
           )}
         </div>
-        <p className="m-0 text-[14px] text-ivory-mute">
+        <p className="m-0 text-[14px] text-ink-3">
           {room.client_name ? `${room.client_name} · ` : ''}
           נוצר {new Date(room.created_at).toLocaleDateString('he-IL')}
           {room.created_by_email ? ` על ידי ${room.created_by_email}` : ''}

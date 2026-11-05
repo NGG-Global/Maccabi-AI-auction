@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>שלושה כיווני עיצוב — המכירה הפומבית</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --page:#eeeef0; --text:#16161c; --muted:#5b5b66; --line:#d9d9de;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:"Heebo",system-ui,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+::selection{background:#16161c;color:#fff}
+.num{font-variant-numeric:tabular-nums lining-nums;direction:ltr;unicode-bidi:isolate;display:inline-block}
+.wrap{max-width:1500px;margin:0 auto;padding:28px 24px 64px}
+.intro{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 32px;margin-bottom:28px}
+.intro h1{margin:0;font-size:34px;font-weight:900;letter-spacing:-.01em}
+.intro p{margin:6px 0 0;font-size:16px;line-height:1.55;color:var(--muted);max-width:70ch}
+.jump{display:flex;gap:8px;flex-wrap:wrap}
+.jump a{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--text);text-decoration:none;font-weight:700;font-size:15px}
+.jump a:hover{border-color:#9a9aa6}
+.dir{background:#fff;border:1px solid var(--line);border-radius:24px;padding:24px;margin-bottom:28px}
+.dir-head{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 18px;align-items:start;margin-bottom:20px}
+.letter{grid-row:span 2;width:56px;height:56px;border-radius:16px;background:#16161c;color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900}
+.dir-head h2{margin:0;font-size:28px;font-weight:900;line-height:1.15}
+.dir-head .lead{margin:0;font-size:16px;line-height:1.55;color:var(--muted);max-width:80ch}
+.facts{grid-column:2;display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:6px;font-size:14px;color:var(--muted)}
+.facts b{color:var(--text);font-weight:700}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+@media (max-width:1000px){.pair{grid-template-columns:minmax(0,1fr)}.phone-slot{max-width:300px;margin:0 auto;width:100%}}
+.cap{font-size:13px;font-weight:600;color:var(--muted);margin:0 0 8px}
+.frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.06),0 10px 30px rgba(0,0,0,.10);border:1px solid var(--line)}
+.stage{position:absolute;top:0;left:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;direction:rtl}
+.phone-slot{position:relative}
+.phone-box{position:relative;width:100%;overflow:hidden}
+.phone{position:absolute;top:0;left:0;width:390px;height:800px;transform-origin:0 0;border-radius:46px;overflow:hidden;border:9px solid #1a1a20;direction:rtl}
+.verdict{margin:18px 0 0;padding:14px 16px;border-radius:14px;background:#f6f6f8;font-size:15px;line-height:1.55;color:#33333c}
+.verdict b{color:var(--text)}
+
+/* ═══════════ A · אולפן חי ═══════════ */
+.A{--ink:#12121a;--soft:#5a5a66;--mute:#8a8a96;--bg:#ffffff;--tint:#f5f5f8;--line:#ececf1;--mag:#EC2A8C;--mag-d:#c4166f;--mag-t:#fdeaf4;
+  font-family:"Heebo",system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+.A.stage::before{content:"";position:absolute;inset:0 0 auto 0;height:8px;background:linear-gradient(90deg,#c9c9cf,#f4f4f6 30%,#a9a9b2 55%,#ededf0 80%,#bdbdc4)}
+.A .in{position:absolute;inset:0;padding:60px 88px 52px;display:grid;grid-template-columns:minmax(0,1fr) 470px;grid-template-rows:72px minmax(0,1fr) 112px;gap:28px 64px}
+.A .top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}
+.A .room{display:flex;align-items:center;gap:20px}
+.A .logo{width:150px;height:56px;border:2px dashed #d0d0d8;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--mute)}
+.A .room b{font-size:32px;font-weight:800}
+.A .room span{font-size:24px;color:var(--soft)}
+.A .live{display:flex;align-items:center;gap:16px}
+.A .pill{display:inline-flex;align-items:center;gap:10px;height:52px;padding:0 22px;border-radius:999px;background:var(--mag-t);color:var(--mag-d);font-size:24px;font-weight:800}
+.A .pill i{width:12px;height:12px;border-radius:50%;background:var(--mag);box-shadow:0 0 0 6px rgba(236,42,140,.18)}
+.A .clock{height:64px;padding:0 26px;border-radius:18px;background:var(--ink);color:#fff;display:flex;align-items:center;gap:12px;font-size:40px;font-weight:800}
+.A .clock svg{width:30px;height:30px}
+.A .main{display:flex;flex-direction:column;justify-content:center;gap:26px;min-width:0}
+.A .chips{display:flex;gap:12px}
+.A .chip{height:46px;padding:0 18px;border-radius:999px;background:var(--tint);display:inline-flex;align-items:center;font-size:22px;font-weight:700;color:var(--soft)}
+.A .chip.o{background:none;border:2px solid var(--line)}
+.A .st{margin:0;font-size:102px;line-height:1.02;font-weight:800;letter-spacing:-.025em;max-width:1180px;text-wrap:balance}
+.A .price{display:flex;align-items:flex-end;gap:56px;margin-top:8px}
+.A .price .lab{font-size:28px;font-weight:600;color:var(--soft);margin-bottom:6px}
+.A .price .v{display:flex;align-items:baseline;gap:18px}
+.A .price .v b{font-size:250px;line-height:.82;font-weight:900;color:var(--mag);letter-spacing:-.03em}
+.A .price .v span{font-size:36px;font-weight:700;color:var(--soft)}
+.A .lead{display:flex;align-items:center;gap:18px;padding-bottom:18px}
+.A .av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;flex:0 0 auto}
+.A .lead .av{width:96px;height:96px;background:var(--mag);color:#fff;font-size:46px;box-shadow:0 10px 24px rgba(236,42,140,.3)}
+.A .lead b{display:block;font-size:48px;font-weight:800;line-height:1}
+.A .lead span{font-size:24px;color:var(--soft)}
+.A .bar{height:14px;border-radius:14px;background:var(--tint);overflow:hidden;margin-top:16px}
+.A .bar i{display:block;height:100%;width:84%;background:linear-gradient(270deg,#f58cc0,var(--mag));border-radius:14px}
+.A .side{background:#fff;border:2px solid var(--line);border-radius:30px;padding:30px 28px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px rgba(18,18,26,.06)}
+.A .side h3{margin:0 0 6px;font-size:32px;font-weight:800}
+.A .bid{display:flex;align-items:center;gap:16px;height:82px;padding:0 16px;border-radius:20px}
+.A .bid .av{width:54px;height:54px;font-size:26px}
+.A .bid .n{flex:1;font-size:28px;font-weight:600}
+.A .bid .a{font-size:38px;font-weight:800}
+.A .bid.top{background:var(--mag-t)}.A .bid.top .a{color:var(--mag-d)}
+.A .q{grid-column:1/-1;display:flex;align-items:center;gap:12px}
+.A .qi{flex:1 1 0;height:100px;border-radius:22px;background:var(--tint);padding:14px 18px;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+.A .qi b{font-size:22px;font-weight:800;color:var(--mute)}
+.A .qi span{font-size:19px;font-weight:600;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.A .qi em{font-style:normal;font-size:17px;font-weight:800;color:var(--mag-d)}
+.A .qi.now{background:var(--ink)}.A .qi.now b,.A .qi.now span{color:#fff}
+.A .close{flex:0 0 auto;height:100px;padding:0 44px;border:0;border-radius:24px;background:var(--ink);color:#fff;font:inherit;font-size:34px;font-weight:800}
+/* A phone */
+.A.phone{background:#fff}
+.A .ph{position:absolute;inset:0;display:flex;flex-direction:column}
+.A .wb{margin:22px 14px 6px;padding:14px 16px 18px;border-radius:24px;background:var(--tint);display:flex;align-items:center;gap:12px;position:relative}
+.A .coin{width:38px;height:38px;flex:0 0 auto}
+.A .wb .f{flex:1}.A .wb small{display:block;font-size:14px;color:var(--soft)}
+.A .wb .v{display:flex;align-items:baseline;gap:6px}.A .wb .v b{font-size:34px;font-weight:900;line-height:1.05}.A .wb .v span{font-size:15px;font-weight:600;color:var(--soft)}
+.A .wb .me{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:16px;font-weight:700}.A .wb .me small{font-weight:500}
+.A .wb .m{position:absolute;inset-inline:16px;bottom:8px;height:5px;border-radius:5px;background:#e3e3ea;overflow:hidden}.A .wb .m i{display:block;height:100%;width:64%;background:var(--mag);border-radius:5px}
+.A .pb{flex:1;padding:8px 16px;display:flex;flex-direction:column;gap:14px}
+.A .card{border:2px solid var(--line);border-radius:24px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.A .card .r{display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:var(--mute)}
+.A .card p{margin:0;font-size:28px;line-height:1.15;font-weight:800;letter-spacing:-.01em}
+.A .hi{display:flex;align-items:flex-end;justify-content:space-between;padding:0 4px}
+.A .hi b{font-size:64px;font-weight:900;line-height:.85;color:var(--mag)}
+.A .hi span{font-size:17px;color:var(--soft);text-align:start}.A .hi span strong{display:block;color:var(--ink);font-size:20px}
+.A .tag{align-self:flex-start;height:34px;padding:0 14px;border-radius:999px;background:#fff4e5;color:#a35a00;font-size:16px;font-weight:700;display:flex;align-items:center}
+.A .pf{padding:14px 16px 20px;display:flex;flex-direction:column;gap:12px}
+.A .stp{display:flex;align-items:center;justify-content:space-between;direction:ltr}
+.A .sb{width:64px;height:64px;border-radius:50%;background:var(--tint);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.A .stp .x{display:flex;flex-direction:column;align-items:center;direction:rtl}.A .stp .x b{font-size:44px;font-weight:900;line-height:1}.A .stp .x small{font-size:14px;color:var(--soft)}
+.A .cta{height:64px;border-radius:20px;background:var(--mag);color:#fff;display:flex;align-items:center;justify-content:center;font-size:23px;font-weight:800}
+.A .fine{margin:0;text-align:center;font-size:14px;color:var(--soft)}
+
+/* ═══════════ B · אינפוגרפיקה ═══════════ */
+.B{--ink:#1b1d22;--soft:#585c66;--mute:#8b8f99;--bg:#f7f6f3;--rule:#dcd9d2;--card:#ffffff;
+  --lead:#3550dc;--rel:#0e9384;--jud:#e09a06;--learn:#e2574c;
+  font-family:"IBM Plex Sans Hebrew",system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+.B .in{position:absolute;inset:0;padding:60px 88px 52px;display:grid;grid-template-columns:minmax(0,1fr) 460px;grid-template-rows:64px auto minmax(0,1fr) 120px;gap:24px 72px}
+.B .top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:14px}
+.B .top b{font-size:30px;font-weight:700}.B .top span{font-size:24px;color:var(--soft);margin-inline-start:16px}
+.B .tm{display:flex;align-items:baseline;gap:14px}.B .tm small{font-size:22px;color:var(--soft)}.B .tm b{font-size:48px;font-weight:600}
+.B .head{grid-column:1/-1;display:flex;flex-direction:column;gap:14px}
+.B .cat{display:flex;align-items:center;gap:12px;font-size:24px;font-weight:600;color:var(--soft)}
+.B .cat i{width:22px;height:22px;background:var(--rel);border-radius:4px}
+.B .st{margin:0;font-size:84px;line-height:1.06;font-weight:600;letter-spacing:-.02em;max-width:1500px}
+.B .chart{position:relative;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:end}
+.B .chart svg{width:100%;height:100%;overflow:visible}
+.B .big{display:flex;flex-direction:column;gap:6px;padding-bottom:10px}
+.B .big b{font-size:210px;line-height:.82;font-weight:700;color:var(--rel);letter-spacing:-.03em}
+.B .big span{font-size:26px;color:var(--soft)}
+.B .big strong{font-size:34px;font-weight:600}
+.B .side{grid-row:3;grid-column:2;display:flex;flex-direction:column;gap:16px;border-inline-start:2px solid var(--rule);padding-inline-start:44px}
+.B .side h3{margin:0;font-size:28px;font-weight:600}
+.B .hb{display:grid;grid-template-columns:96px minmax(0,1fr) 80px;align-items:center;gap:14px;font-size:24px}
+.B .hb .t{height:30px;background:#ebe8e1;border-radius:3px;overflow:hidden}
+.B .hb .t i{display:block;height:100%;background:#a7abb4;margin-inline-start:0}
+.B .hb.top .t i{background:var(--rel)}.B .hb.top{font-weight:700}
+.B .hb .a{font-weight:600;text-align:start}
+.B .prog{grid-column:1/-1;display:flex;align-items:stretch;gap:8px}
+.B .seg{flex:1 1 0;border-top:10px solid;padding-top:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.B .seg b{font-size:20px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.B .seg span{font-size:18px;color:var(--soft)}
+.B .seg.wait{opacity:.38}
+.B .seg.now b{font-weight:700}
+.B .close{flex:0 0 auto;align-self:center;height:92px;padding:0 40px;border:0;border-radius:6px;background:var(--ink);color:#fff;font:inherit;font-size:32px;font-weight:600;margin-inline-start:16px}
+/* B phone */
+.B.phone{background:var(--bg)}
+.B .ph{position:absolute;inset:0;display:flex;flex-direction:column}
+.B .wb{margin:22px 16px 6px;display:flex;flex-direction:column;gap:8px;padding:16px 0 10px;border-bottom:2px solid var(--ink)}
+.B .wb .r{display:flex;justify-content:space-between;align-items:baseline}
+.B .wb .r b{font-size:36px;font-weight:700;line-height:1}.B .wb .r small{font-size:14px;color:var(--soft)}
+.B .wb .r .me{font-size:16px;font-weight:600}
+.B .wb .m{height:10px;background:#e3dfd6;display:flex}.B .wb .m i{display:block;height:100%}
+.B .wb .lg{display:flex;gap:16px;font-size:13px;color:var(--soft)}
+.B .pb{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:14px}
+.B .card{background:var(--card);border-top:8px solid var(--rel);padding:16px 18px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.B .card .r{font-size:14px;color:var(--soft);font-weight:600}
+.B .card p{margin:0;font-size:26px;line-height:1.2;font-weight:600}
+.B .hi{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.B .hi b{font-size:60px;font-weight:700;line-height:.85;color:var(--rel)}
+.B .hi span{font-size:16px;color:var(--soft);text-align:start}.B .hi span strong{display:block;color:var(--ink);font-size:19px}
+.B .mini{height:60px}
+.B .pf{padding:14px 16px 20px;display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--rule)}
+.B .stp{display:flex;align-items:center;justify-content:space-between;direction:ltr}
+.B .sb{width:64px;height:64px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.B .stp .x{display:flex;flex-direction:column;align-items:center;direction:rtl}.B .stp .x b{font-size:42px;font-weight:700;line-height:1}.B .stp .x small{font-size:14px;color:var(--soft)}
+.B .cta{height:62px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600}
+.B .fine{margin:0;text-align:center;font-size:14px;color:var(--soft)}
+
+/* ═══════════ C · משחק קופסה ═══════════ */
+.C{--ink:#1f2a37;--soft:#4b5563;--bg:#dff3e9;--tomato:#ff6b4a;--sun:#ffc83d;--sky:#7cc0ff;--lilac:#c4b5fd;--peach:#ffb48f;
+  font-family:"Fredoka","Heebo",system-ui,sans-serif;color:var(--ink);
+  background-color:var(--bg);background-image:radial-gradient(rgba(31,42,55,.10) 2px,transparent 2.5px);background-size:30px 30px}
+.C .in{position:absolute;inset:0;padding:56px 84px 52px;display:grid;grid-template-columns:minmax(0,1fr) 460px;grid-template-rows:72px minmax(0,1fr) 120px;gap:28px 60px}
+.C .bx{background:#fff;border:4px solid var(--ink);border-radius:30px;box-shadow:8px 8px 0 var(--ink)}
+.C .top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}
+.C .room{display:flex;align-items:center;gap:16px;height:72px;padding:0 26px;font-size:30px;font-weight:600}
+.C .room span{color:var(--soft);font-weight:500;font-size:24px}
+.C .tmr{display:flex;align-items:center;gap:12px;height:72px;padding:0 26px;background:var(--sun);font-size:40px;font-weight:700}
+.C .tmr svg{width:34px;height:34px}
+.C .main{display:flex;flex-direction:column;justify-content:center;gap:34px;min-width:0}
+.C .lot{position:relative;padding:44px 48px 40px;transform:rotate(-1deg)}
+.C .lot .tab{position:absolute;top:-30px;right:44px;height:56px;padding:0 22px;background:var(--tomato);border:4px solid var(--ink);border-radius:18px;display:flex;align-items:center;font-size:26px;font-weight:700}
+.C .lot .tab2{right:auto;left:44px;background:var(--sky)}
+.C .st{margin:0;font-size:92px;line-height:1.05;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+.C .price{display:flex;align-items:center;gap:40px}
+.C .tok{width:290px;height:290px;border-radius:50%;background:var(--sun);border:5px solid var(--ink);box-shadow:8px 8px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 auto;position:relative}
+.C .tok::before{content:"";position:absolute;inset:18px;border-radius:50%;border:4px dashed rgba(31,42,55,.35)}
+.C .tok b{font-size:120px;font-weight:700;line-height:.9}
+.C .tok span{font-size:28px;font-weight:600}
+.C .ld{display:flex;flex-direction:column;gap:14px}
+.C .ld small{font-size:28px;color:var(--soft);font-weight:500}
+.C .ldr{display:flex;align-items:center;gap:18px}
+.C .av{border-radius:50%;border:4px solid var(--ink);display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto}
+.C .ldr .av{width:100px;height:100px;font-size:48px;background:var(--sky)}
+.C .ldr b{font-size:56px;font-weight:700}
+.C .side{padding:30px 28px;display:flex;flex-direction:column;gap:14px}
+.C .side h3{margin:0 0 4px;font-size:34px;font-weight:700}
+.C .bid{display:flex;align-items:center;gap:14px;height:80px;padding:0 14px;border:3px solid var(--ink);border-radius:22px}
+.C .bid .av{width:52px;height:52px;font-size:24px;border-width:3px}
+.C .bid .n{flex:1;font-size:28px;font-weight:500}
+.C .bid .a{font-size:36px;font-weight:700}
+.C .bid.top{background:var(--sun)}
+.C .q{grid-column:1/-1;display:flex;align-items:flex-end;gap:14px}
+.C .qi{position:relative;flex:1 1 0;height:104px;background:#fff;border:3px solid var(--ink);border-radius:20px;padding:12px 16px;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+.C .qi b{font-size:24px;font-weight:700}
+.C .qi span{font-size:19px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.C .qi.now{background:var(--sun);transform:translateY(-12px);box-shadow:6px 6px 0 var(--ink)}
+.C .qi.now span{color:var(--ink)}
+.C .qi .stk{position:absolute;top:-16px;left:10px;background:var(--tomato);border:3px solid var(--ink);border-radius:12px;padding:0 10px;font-size:17px;font-weight:700;transform:rotate(-6deg)}
+.C .close{flex:0 0 auto;height:104px;padding:0 40px;background:var(--tomato);border:4px solid var(--ink);border-radius:26px;box-shadow:6px 6px 0 var(--ink);font:inherit;font-size:34px;font-weight:700;color:var(--ink)}
+/* C phone */
+.C .ph{position:absolute;inset:0;display:flex;flex-direction:column}
+.C .wb{margin:22px 14px 6px;padding:12px 14px 16px;display:flex;align-items:center;gap:12px;position:relative;border-radius:24px;border-width:3px;box-shadow:5px 5px 0 var(--ink)}
+.C .wb .ct{width:44px;height:44px;border-radius:50%;background:var(--sun);border:3px solid var(--ink);flex:0 0 auto}
+.C .wb .f{flex:1}.C .wb small{display:block;font-size:14px;color:var(--soft)}
+.C .wb .v{display:flex;align-items:baseline;gap:6px}.C .wb .v b{font-size:34px;font-weight:700;line-height:1.05}.C .wb .v span{font-size:15px;font-weight:500}
+.C .wb .me{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:16px;font-weight:600}.C .wb .me small{font-weight:500}
+.C .wb .m{position:absolute;inset-inline:14px;bottom:7px;height:7px;border-radius:7px;background:#e8efe9;overflow:hidden}.C .wb .m i{display:block;height:100%;width:64%;background:var(--sun);border-radius:7px}
+.C .pb{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:16px}
+.C .card{position:relative;padding:22px 18px 16px;border-radius:24px;border-width:3px;box-shadow:5px 5px 0 var(--ink);transform:rotate(-.6deg)}
+.C .card .tb{position:absolute;top:-16px;right:16px;background:var(--tomato);border:3px solid var(--ink);border-radius:12px;padding:0 10px;font-size:15px;font-weight:700}
+.C .card p{margin:0;font-size:27px;line-height:1.15;font-weight:600}
+.C .hi{display:flex;align-items:center;gap:12px}
+.C .hi .t{width:86px;height:86px;border-radius:50%;background:var(--sun);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;box-shadow:4px 4px 0 var(--ink)}
+.C .hi span{font-size:17px;color:var(--soft)}.C .hi span strong{display:block;color:var(--ink);font-size:21px}
+.C .pf{padding:12px 16px 22px;display:flex;flex-direction:column;gap:12px}
+.C .stp{display:flex;align-items:center;justify-content:space-between;direction:ltr}
+.C .sb{width:62px;height:62px;border-radius:50%;background:#fff;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);display:flex;align-items:center;justify-content:center}
+.C .stp .x{display:flex;flex-direction:column;align-items:center;direction:rtl}.C .stp .x b{font-size:42px;font-weight:700;line-height:1}.C .stp .x small{font-size:14px;color:var(--soft)}
+.C .cta{height:64px;border-radius:20px;background:var(--tomato);border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
+.C .fine{margin:0;text-align:center;font-size:14px;color:var(--soft)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 9v4l2.5 2M9 2.5h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="minus" viewBox="0 0 24 24"><path d="M5 12h14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></symbol>
+    <symbol id="plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></symbol>
+    <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f4f6"/><stop offset=".5" stop-color="#bdbdc4"/><stop offset="1" stop-color="#8d8d97"/></linearGradient>
+    <symbol id="coinA" viewBox="0 0 38 38"><circle cx="19" cy="19" r="17" fill="url(#silver)" stroke="#8d8d97" stroke-width="1.5"/><circle cx="19" cy="19" r="11.5" fill="none" stroke="#EC2A8C" stroke-width="2.5"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="intro">
+    <div>
+      <h1>שלושה כיווני עיצוב, אותו מסך</h1>
+      <p>בכל כיוון מוצג אותו רגע: סבב פתוח במכירה הפומבית, על המסך המוקרן ובטלפון של משתתף. כל השלושה בהירים ובגופנים בלי סריפים. אחרי שתבחרו כיוון, הוא יחול על כל המסכים, כולל התוצאות וניהול הסשנים.</p>
+    </div>
+    <nav class="jump" aria-label="מעבר לכיוון">
+      <a href="#dir-a">א · אולפן חי</a><a href="#dir-b">ב · אינפוגרפיקה</a><a href="#dir-c">ג · משחק קופסה</a>
+    </nav>
+  </header>
+
+  <!-- ═══════ A ═══════ -->
+  <section class="dir" id="dir-a" aria-labelledby="h-a">
+    <div class="dir-head">
+      <span class="letter" aria-hidden="true">א</span>
+      <h2 id="h-a">אולפן חי</h2>
+      <p class="lead">לבן ונקי, בצבעי NGG: מג'נטה כצבע מדגיש ואפור מתכתי. גופן Heebo כבד, מספרים ענקיים, והרגשה של מוצר חי ומקצועי.</p>
+      <div class="facts"><span><b>גופן:</b> Heebo</span><span><b>צבעים:</b> לבן, דיו כהה, מג'נטה</span><span><b>מתאים ל:</b> כל לקוח, כל אולם</span></div>
+    </div>
+    <div class="pair">
+      <div>
+        <p class="cap">המסך המוקרן</p>
+        <div class="frame"><div class="stage A" data-fit>
+          <div class="in">
+            <div class="top">
+              <div class="room"><span class="logo">לוגו הלקוח</span><b>היגדים ניהוליים</b><span>סדנת מנהיגות · קבוצה 3</span></div>
+              <div class="live"><span class="pill"><i></i>סבב פתוח · 38 משתתפים</span><span class="clock"><svg aria-hidden="true"><use href="#clock"/></svg><span class="num">0:38</span></span></div>
+            </div>
+            <div class="main">
+              <div class="chips"><span class="chip">פריט 3 מתוך 7</span><span class="chip o">יחסים</span></div>
+              <h3 class="st">ליצור מרחב בטוח לחשיבה משותפת</h3>
+              <div>
+                <div class="price">
+                  <div><div class="lab">ההצעה הגבוהה</div><div class="v"><b class="num">420</b><span>מטבעות</span></div></div>
+                  <div class="lead"><span class="av" aria-hidden="true">נ</span><div><b>נועה</b><span>מובילה עכשיו</span></div></div>
+                </div>
+                <div class="bar"><i></i></div>
+              </div>
+            </div>
+            <aside class="side">
+              <h3>הצעות אחרונות</h3>
+              <div class="bid top"><span class="av" style="background:#EC2A8C;color:#fff">נ</span><span class="n">נועה</span><span class="a num">420</span></div>
+              <div class="bid"><span class="av" style="background:#e7f0ff;color:#2a4fb5">א</span><span class="n">אורי</span><span class="a num">380</span></div>
+              <div class="bid"><span class="av" style="background:#e8f7ef;color:#1d7a4d">ת</span><span class="n">תמר</span><span class="a num">360</span></div>
+              <div class="bid"><span class="av" style="background:#fff2e0;color:#a35a00">י</span><span class="n">יואב</span><span class="a num">300</span></div>
+              <div class="bid"><span class="av" style="background:#f2ecff;color:#5b3fb5">ר</span><span class="n">רון</span><span class="a num">260</span></div>
+            </aside>
+            <div class="q">
+              <div class="qi"><b>01</b><em>נמכר · 360</em></div>
+              <div class="qi"><b>02</b><em>נמכר · 510</em></div>
+              <div class="qi now"><b>03</b><span>ליצור מרחב בטוח…</span></div>
+              <div class="qi"><b>04</b><span>להניע ללא סמכות</span></div>
+              <div class="qi"><b>05</b><span>למפות</span></div>
+              <div class="qi"><b>06</b><span>לתעדף</span></div>
+              <div class="qi"><b>07</b><span>לייצר בסיס להחלטה</span></div>
+              <button class="close" type="button">סגירת הסבב</button>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <div class="phone-slot">
+        <p class="cap">הטלפון של המשתתף</p>
+        <div class="phone-box"><div class="phone A" data-phone>
+          <div class="ph">
+            <div class="wb"><svg class="coin" aria-hidden="true"><use href="#coinA"/></svg><div class="f"><small>נשארו לך</small><div class="v"><b class="num">640</b><span>מטבעות</span></div></div><div class="me">אורי<small>מתוך <span class="num">1,000</span></small></div><div class="m"><i></i></div></div>
+            <div class="pb">
+              <div class="card"><div class="r"><span>פריט 3 מתוך 7</span><span>יחסים</span></div><p>ליצור מרחב בטוח לחשיבה משותפת</p></div>
+              <div class="hi"><b class="num">420</b><span><strong>נועה</strong>ההצעה הגבוהה</span></div>
+              <span class="tag">עקפו אותך</span>
+            </div>
+            <div class="pf">
+              <div class="stp"><span class="sb"><svg width="24" height="24" aria-hidden="true"><use href="#minus"/></svg></span><div class="x"><b class="num">440</b><small>ההצעה שלך</small></div><span class="sb"><svg width="24" height="24" aria-hidden="true"><use href="#plus"/></svg></span></div>
+              <div class="cta">שליחת הצעה · 440 מטבעות</div>
+              <p class="fine">המטבעות יורדים מהיתרה רק אם תזכו.</p>
+            </div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <p class="verdict"><b>למה לבחור בו:</b> הכי קרוב למותג NGG, קריא באולם מואר, והלוגו של כל לקוח משתלב בו. <b>הסיכון:</b> אם התנועה והקנה מידה לא יבוצעו טוב, הוא עלול להיראות כמו עוד כלי סקרים.</p>
+  </section>
+
+  <!-- ═══════ B ═══════ -->
+  <section class="dir" id="dir-b" aria-labelledby="h-b">
+    <div class="dir-head">
+      <span class="letter" aria-hidden="true">ב</span>
+      <h2 id="h-b">אינפוגרפיקה</h2>
+      <p class="lead">סגנון שוויצרי נקי. לכל קטגוריה צבע קבוע, ההצעות מצוירות כגרף שמטפס, ובצד רואים מי הציע כמה. המסך מספר את הסיפור של הסבב ולא רק את המחיר.</p>
+      <div class="facts"><span><b>גופן:</b> IBM Plex Sans Hebrew</span><span><b>צבעים:</b> נייר, דיו, ארבעה צבעי קטגוריה</span><span><b>מתאים ל:</b> הנהלות, שלב הדיון</span></div>
+    </div>
+    <div class="pair">
+      <div>
+        <p class="cap">המסך המוקרן</p>
+        <div class="frame"><div class="stage B" data-fit>
+          <div class="in">
+            <div class="top"><div><b>היגדים ניהוליים</b><span>סדנת מנהיגות · קבוצה 3 · 38 משתתפים</span></div><div class="tm"><small>זמן שנותר</small><b class="num">0:38</b></div></div>
+            <div class="head">
+              <div class="cat"><i></i>יחסים · פריט 3 מתוך 7</div>
+              <h3 class="st">ליצור מרחב בטוח לחשיבה משותפת</h3>
+            </div>
+            <div class="chart">
+              <svg viewBox="0 0 900 420" role="img" aria-label="מהלך ההצעות בסבב: מ־180 עד 420">
+                <g stroke="#dcd9d2" stroke-width="2"><line x1="0" y1="60" x2="900" y2="60"/><line x1="0" y1="180" x2="900" y2="180"/><line x1="0" y1="300" x2="900" y2="300"/><line x1="0" y1="400" x2="900" y2="400" stroke="#1b1d22"/></g>
+                <g font-family="IBM Plex Sans Hebrew" font-size="20" fill="#8b8f99"><text x="900" y="52" text-anchor="end">400</text><text x="900" y="172" text-anchor="end">300</text><text x="900" y="292" text-anchor="end">200</text></g>
+                <path d="M20 340 H140 V316 H260 V292 H380 V256 H500 V220 H620 V172 H740 V124 H860 V100" fill="none" stroke="#0e9384" stroke-width="6" stroke-linejoin="round"/>
+                <path d="M20 340 H140 V316 H260 V292 H380 V256 H500 V220 H620 V172 H740 V124 H860 V100 V400 H20 Z" fill="#0e9384" opacity=".08"/>
+                <g fill="#fff" stroke="#0e9384" stroke-width="4"><circle cx="140" cy="316" r="9"/><circle cx="260" cy="292" r="9"/><circle cx="380" cy="256" r="9"/><circle cx="500" cy="220" r="9"/><circle cx="620" cy="172" r="9"/><circle cx="740" cy="124" r="9"/></g>
+                <circle cx="860" cy="100" r="16" fill="#0e9384"/>
+                <g font-family="IBM Plex Sans Hebrew" font-size="22" font-weight="600" fill="#585c66" text-anchor="middle"><text x="140" y="300">ר</text><text x="260" y="276">י</text><text x="380" y="240">ת</text><text x="500" y="204">נ</text><text x="620" y="156">ת</text><text x="740" y="108">א</text><text x="860" y="76" fill="#0e9384" font-size="26">נועה</text></g>
+              </svg>
+              <div class="big"><span>ההצעה הגבוהה</span><b class="num">420</b><strong>נועה · מטבעות</strong></div>
+            </div>
+            <aside class="side">
+              <h3>ההצעה הגבוהה של כל אחד</h3>
+              <div class="hb top"><span>נועה</span><span class="t"><i style="width:100%"></i></span><span class="a num">420</span></div>
+              <div class="hb"><span>אורי</span><span class="t"><i style="width:90%"></i></span><span class="a num">380</span></div>
+              <div class="hb"><span>תמר</span><span class="t"><i style="width:86%"></i></span><span class="a num">360</span></div>
+              <div class="hb"><span>יואב</span><span class="t"><i style="width:71%"></i></span><span class="a num">300</span></div>
+              <div class="hb"><span>רון</span><span class="t"><i style="width:43%"></i></span><span class="a num">180</span></div>
+            </aside>
+            <div class="prog">
+              <div class="seg" style="border-color:#3550dc"><b>להניע אנשים וצוותים</b><span>נמכר · 360</span></div>
+              <div class="seg" style="border-color:#0e9384"><b>לפתח אנשים</b><span>נמכר · 510</span></div>
+              <div class="seg now" style="border-color:#0e9384"><b>ליצור מרחב בטוח</b><span>על הדוכן</span></div>
+              <div class="seg wait" style="border-color:#3550dc"><b>להניע ללא סמכות</b><span>ממתין</span></div>
+              <div class="seg wait" style="border-color:#e09a06"><b>למפות</b><span>ממתין</span></div>
+              <div class="seg wait" style="border-color:#e09a06"><b>לתעדף</b><span>ממתין</span></div>
+              <div class="seg wait" style="border-color:#e09a06"><b>בסיס להחלטה</b><span>ממתין</span></div>
+              <button class="close" type="button">סגירת הסבב</button>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <div class="phone-slot">
+        <p class="cap">הטלפון של המשתתף</p>
+        <div class="phone-box"><div class="phone B" data-phone>
+          <div class="ph">
+            <div class="wb">
+              <div class="r"><div><small>נשארו לך</small><br><b class="num">640</b> <small>מתוך <span class="num">1,000</span> מטבעות</small></div><span class="me">אורי</span></div>
+              <div class="m"><i style="width:36%;background:#585c66"></i><i style="width:0"></i></div>
+              <div class="lg"><span>שולם 360</span><span>פנוי 640</span></div>
+            </div>
+            <div class="pb">
+              <div class="card"><span class="r">יחסים · פריט 3 מתוך 7</span><p>ליצור מרחב בטוח לחשיבה משותפת</p></div>
+              <div class="hi"><b class="num">420</b><span><strong>נועה</strong>ההצעה הגבוהה · עקפו אותך</span></div>
+              <svg class="mini" viewBox="0 0 340 60" aria-hidden="true"><path d="M0 52 H50 V46 H100 V40 H150 V32 H200 V24 H250 V14 H300 V8 H340" fill="none" stroke="#0e9384" stroke-width="3"/><line x1="0" y1="58" x2="340" y2="58" stroke="#dcd9d2" stroke-width="2"/></svg>
+            </div>
+            <div class="pf">
+              <div class="stp"><span class="sb"><svg width="24" height="24" aria-hidden="true"><use href="#minus"/></svg></span><div class="x"><b class="num">440</b><small>ההצעה שלך</small></div><span class="sb"><svg width="24" height="24" aria-hidden="true"><use href="#plus"/></svg></span></div>
+              <div class="cta">שליחת הצעה · 440 מטבעות</div>
+              <p class="fine">המטבעות יורדים מהיתרה רק אם תזכו.</p>
+            </div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <p class="verdict"><b>למה לבחור בו:</b> הכי חכם ורציני. הקבוצה רואה איך הערכים נבנים, וזה מזין את הדיון. <b>הסיכון:</b> פחות אנרגיה של משחק, ובטלפון של משתתפים לא טכנולוגיים הגרפים עלולים להיות עמוסים.</p>
+  </section>
+
+  <!-- ═══════ C ═══════ -->
+  <section class="dir" id="dir-c" aria-labelledby="h-c">
+    <div class="dir-head">
+      <span class="letter" aria-hidden="true">ג</span>
+      <h2 id="h-c">משחק קופסה מודרני</h2>
+      <p class="lead">צבעים שמחים על רקע מנטה, קווי מתאר עבים וצללים מוזזים, כרטיסים ואסימונים שמרגישים מוחשיים. גופן מעוגל וידידותי.</p>
+      <div class="facts"><span><b>גופן:</b> Fredoka</span><span><b>צבעים:</b> מנטה, עגבנייה, חמנייה, תכלת</span><span><b>מתאים ל:</b> צוותי שטח, קהל לא טכנולוגי</span></div>
+    </div>
+    <div class="pair">
+      <div>
+        <p class="cap">המסך המוקרן</p>
+        <div class="frame"><div class="stage C" data-fit>
+          <div class="in">
+            <div class="top">
+              <div class="room bx">היגדים ניהוליים <span>· סדנת מנהיגות · 38 משתתפים</span></div>
+              <div class="tmr bx"><svg aria-hidden="true"><use href="#clock"/></svg><span class="num">0:38</span></div>
+            </div>
+            <div class="main">
+              <div class="lot bx"><span class="tab">פריט 3 מתוך 7</span><span class="tab tab2">יחסים</span><h3 class="st">ליצור מרחב בטוח לחשיבה משותפת</h3></div>
+              <div class="price">
+                <div class="tok"><b class="num">420</b><span>מטבעות</span></div>
+                <div class="ld"><small>ההצעה הגבוהה</small><div class="ldr"><span class="av" aria-hidden="true">נ</span><b>נועה מובילה!</b></div></div>
+              </div>
+            </div>
+            <aside class="side bx">
+              <h3>הצעות אחרונות</h3>
+              <div class="bid top"><span class="av" style="background:#7cc0ff">נ</span><span class="n">נועה</span><span class="a num">420</span></div>
+              <div class="bid"><span class="av" style="background:#c4b5fd">א</span><span class="n">אורי</span><span class="a num">380</span></div>
+              <div class="bid"><span class="av" style="background:#ffb48f">ת</span><span class="n">תמר</span><span class="a num">360</span></div>
+              <div class="bid"><span class="av" style="background:#9be3bf">י</span><span class="n">יואב</span><span class="a num">300</span></div>
+              <div class="bid"><span class="av" style="background:#ffd97a">ר</span><span class="n">רון</span><span class="a num">260</span></div>
+            </aside>
+            <div class="q">
+              <div class="qi"><span class="stk">נמכר 360</span><b>01</b><span>להניע אנשים</span></div>
+              <div class="qi"><span class="stk">נמכר 510</span><b>02</b><span>לפתח אנשים</span></div>
+              <div class="qi now"><b>03</b><span>ליצור מרחב בטוח</span></div>
+              <div class="qi"><b>04</b><span>להניע ללא סמכות</span></div>
+              <div class="qi"><b>05</b><span>למפות</span></div>
+              <div class="qi"><b>06</b><span>לתעדף</span></div>
+              <div class="qi"><b>07</b><span>בסיס להחלטה</span></div>
+              <button class="close" type="button">סגירת הסבב</button>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <div class="phone-slot">
+        <p class="cap">הטלפון של המשתתף</p>
+        <div class="phone-box"><div class="phone C" data-phone>
+          <div class="ph">
+            <div class="wb bx"><span class="ct" aria-hidden="true"></span><div class="f"><small>נשארו לך</small><div class="v"><b class="num">640</b><span>מטבעות</span></div></div><div class="me">אורי<small>מתוך <span class="num">1,000</span></small></div><div class="m"><i></i></div></div>
+            <div class="pb">
+              <div class="card bx"><span class="tb">פריט 3</span><p>ליצור מרחב בטוח לחשיבה משותפת</p></div>
+              <div class="hi"><span class="t num">420</span><span><strong>נועה מובילה</strong>עקפו אותך, אפשר להציע שוב</span></div>
+            </div>
+            <div class="pf">
+              <div class="stp"><span class="sb"><svg width="24" height="24" aria-hidden="true"><use href="#minus"/></svg></span><div class="x"><b class="num">440</b><small>ההצעה שלך</small></div><span class="sb"><svg width="24" height="24" aria-hidden="true"><use href="#plus"/></svg></span></div>
+              <div class="cta">שליחת הצעה · 440 מטבעות</div>
+              <p class="fine">המטבעות יורדים מהיתרה רק אם תזכו.</p>
+            </div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <p class="verdict"><b>למה לבחור בו:</b> הכי חם ונגיש, ומשתתפים לא טכנולוגיים מבינים אותו מיד. <b>הסיכון:</b> מול הנהלה בכירה הוא עלול להיראות קליל מדי, והצבעים הרבים מתחרים בלוגו של הלקוח.</p>
+  </section>
+</div>
+
+<script>
+(() => {
+  const fitAll = () => {
+    document.querySelectorAll('[data-fit]').forEach((st) => {
+      const f = st.parentElement.getBoundingClientRect();
+      const s = Math.min(f.width / 1920, f.height / 1080);
+      st.style.transform = `scale(${s})`;
+    });
+    document.querySelectorAll('[data-phone]').forEach((ph) => {
+      const box = ph.parentElement, w = box.getBoundingClientRect().width;
+      const s = Math.min(1, w / 390);
+      ph.style.transform = `scale(${s})`;
+      box.style.height = (800 * s) + 'px';
+    });
+  };
+  new ResizeObserver(fitAll).observe(document.body);
+  fitAll();
+})();
+</script>
+</body>
+</html>
