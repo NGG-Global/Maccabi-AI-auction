@@ -53,16 +53,3 @@ export function RoomPausedNotice() {
   return <Notice tone="error">הסשן אינו פעיל כרגע. המתינו שהמנחה יפעיל אותו.</Notice>
 }
 
-/** A line of game rules, same language on the join screen and the waiting screens. */
-export function RulesList({ rules }: { rules: string[] }) {
-  return (
-    <ol className="m-0 flex list-none flex-col gap-3 p-0">
-      {rules.map((text, i) => (
-        <li key={text} className="flex items-start gap-3 text-[16px] leading-relaxed text-ink-2">
-          <span aria-hidden="true" className="num mt-[2px] flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-sun text-[14px] text-ink">{i + 1}</span>
-          <span>{text}</span>
-        </li>
-      ))}
-    </ol>
-  )
-}

@@ -13,7 +13,7 @@ import type { LiveShellProps } from './LiveWrapper'
 import StageMeta from './StageMeta'
 import StageButton, { StageConfirm } from './StageButton'
 import LobbyScene from './LobbyScene'
-import { WinnersBoard, ValuesSlide } from './ResultsSlides'
+import { WinnersBoard, ValuesSlide, TotalsChart } from './ResultsSlides'
 import StatusPill from '@/components/game/StatusPill'
 import { Button } from '@/components/game/ui'
 import { UNIT_LABEL, fmt } from '@/components/game/units'
@@ -31,7 +31,13 @@ interface BidRow extends AllocationBidRow {
 interface Person { id: string; display_name: string }
 
 type Phase = 'waiting' | 'open' | 'closed'
-type Slide = 'winners' | 'values'
+type Slide = 'winners' | 'values' | 'chart'
+
+const SLIDES: Array<[Slide, string]> = [
+  ['winners', 'הזוכים'],
+  ['values', 'מה הקבוצה מעריכה'],
+  ['chart', 'סך ההשקעה בכל פריט'],
+]
 
 /**
  * Facilitator controls + projected display for the budget-allocation mode.
@@ -127,12 +133,16 @@ export default function AllocationDashboard({ room, traits, drawerOpen, onDrawer
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keyboard: the two results slides switch with the arrow keys.
+  // Keyboard: the results slides step with the arrow keys (left = next in RTL).
   useEffect(() => {
     if (phase !== 'closed') return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') setSlide('values')
-      if (e.key === 'ArrowRight') setSlide('winners')
+      const step = e.key === 'ArrowLeft' ? 1 : e.key === 'ArrowRight' ? -1 : 0
+      if (!step) return
+      setSlide(cur => {
+        const i = SLIDES.findIndex(([id]) => id === cur)
+        return SLIDES[Math.min(SLIDES.length - 1, Math.max(0, i + step))][0]
+      })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -208,8 +218,9 @@ export default function AllocationDashboard({ room, traits, drawerOpen, onDrawer
         </div>
         {phase === 'closed' && (
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => setSlide('winners')} aria-pressed={slide === 'winners'} className={slide === 'winners' ? '!bg-ink !text-white' : ''}>הזוכים</Button>
-            <Button size="sm" onClick={() => setSlide('values')} aria-pressed={slide === 'values'} className={slide === 'values' ? '!bg-ink !text-white' : ''}>מה הקבוצה מעריכה</Button>
+            {SLIDES.map(([id, label]) => (
+              <Button key={id} size="sm" onClick={() => setSlide(id)} aria-pressed={slide === id} className={slide === id ? '!bg-ink !text-white' : ''}>{label}</Button>
+            ))}
             <Button size="sm" onClick={() => setReplay(k => k + 1)}>הפעלת החשיפה מחדש</Button>
           </div>
         )}
@@ -248,7 +259,7 @@ export default function AllocationDashboard({ room, traits, drawerOpen, onDrawer
           live={phase === 'open'}
           end={phase === 'closed' ? (
             <div className="flex gap-1 rounded-full border-[3px] border-ink bg-card p-1 shadow-piece-sm" role="tablist" aria-label="שקפי התוצאות">
-              {([['winners', 'הזוכים'], ['values', 'מה הקבוצה מעריכה']] as const).map(([id, label]) => (
+              {SLIDES.map(([id, label]) => (
                 <button
                   key={id}
                   type="button"
@@ -304,12 +315,12 @@ export default function AllocationDashboard({ room, traits, drawerOpen, onDrawer
 
         {phase === 'closed' && (
           <div className={`grid min-h-0 flex-1 ${slide === 'winners' ? 'grid-rows-[104px_minmax(0,1fr)] gap-y-[22px] pt-[22px]' : 'grid-rows-[96px_minmax(0,1fr)] gap-y-3 pt-2'}`}>
-            <h1 className="m-0 self-end text-[112px] font-bold leading-none tracking-[-.015em] text-ink">
-              {slide === 'winners' ? 'הזוכים' : 'מה הקבוצה מעריכה'}
+            <h1 className={`m-0 self-end font-bold leading-none tracking-[-.015em] text-ink ${slide === 'chart' ? 'text-[96px]' : 'text-[112px]'}`}>
+              {SLIDES.find(([id]) => id === slide)?.[1]}
             </h1>
-            {slide === 'winners'
-              ? <WinnersBoard results={inOrder} replayKey={replay} />
-              : <ValuesSlide ranked={ranked} replayKey={replay} />}
+            {slide === 'winners' ? <WinnersBoard results={inOrder} replayKey={replay} />
+              : slide === 'values' ? <ValuesSlide ranked={ranked} replayKey={replay} />
+              : <TotalsChart ranked={ranked} replayKey={replay} />}
           </div>
         )}
       </div>

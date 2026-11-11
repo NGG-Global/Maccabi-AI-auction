@@ -11,7 +11,7 @@ import RoomBrand from '@/components/shared/RoomBrand'
 import WalletBar from '@/components/game/WalletBar'
 import ParticipantMark from '@/components/game/ParticipantMark'
 import { PlaySkeleton, PlayError } from '@/app/play/PlayShell'
-import { UNIT_LABEL, fmt, lotNo } from '@/components/game/units'
+import { UNIT_LABEL, fmt } from '@/components/game/units'
 
 interface RoundWithBid { round: AuctionRound; bid: Bid; won: boolean }
 
@@ -115,12 +115,10 @@ export default function ProfileClient() {
           <div className="flex flex-col gap-[14px] py-1">
             {won.map(r => {
               const others = isAllocation ? roundWinnerNames(r.round).filter(n => n !== participant.display_name) : []
-              const idx = r.round.trait?.sort_order ?? 0
               return (
                 <div key={r.round.id} className="overflow-hidden rounded-[18px] border-[3px] border-ink bg-card text-ink shadow-piece-md">
                   <div className="flex items-center justify-between gap-3 bg-ink px-[18px] py-[14px] text-white">
                     <b className="text-[24px] font-semibold leading-tight">{r.round.trait?.title}</b>
-                    {idx > 0 && <span className="shrink-0 text-[17px] font-semibold text-ink-soft">פריט {lotNo(idx)}</span>}
                   </div>
                   <div className="h-[6px] bg-sun" />
                   <div className="flex items-center justify-between px-[18px] pb-4 pt-3 text-[17px] text-ink-3">
@@ -135,7 +133,7 @@ export default function ProfileClient() {
 
         {lost.length > 0 && (
           <div className="rounded-[18px] border-[2.5px] border-ink bg-card px-4 py-3">
-            <p className="m-0 mb-2 text-[13px] font-semibold text-ink-3">{isAllocation ? 'הקצאות שלא זכו' : 'הצעות שלא זכו'}</p>
+            <p className="m-0 mb-2 text-[18px] font-bold text-ink">הצעות שלא זכו</p>
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
               {lost.map(r => (
                 <li key={r.round.id} className="flex items-baseline justify-between gap-3 text-[16px]">

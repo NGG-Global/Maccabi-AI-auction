@@ -101,6 +101,15 @@ function LiveBidderList({ bids, bidderCount }: LiveBidderListProps) {
   )
 }
 
+function TrendIcon({ dir, label, className }: { dir: 'up' | 'down' | 'flat'; label: string; className: string }) {
+  const path = dir === 'up' ? 'M8 13V3M4 7l4-4 4 4' : dir === 'down' ? 'M8 3v10M4 9l4 4 4-4' : 'M13 8H3M7 4 3 8l4 4'
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" role="img" aria-label={label} className={`inline-block align-[-2px] ${className}`}>
+      <path d={path} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 // ─── Round card ───────────────────────────────────────────────────────────────
 
 interface RoundCardProps {
@@ -125,12 +134,13 @@ function RoundCard({ summary, prev, showTrend = true }: RoundCardProps) {
     }
   }
 
-  const trendArrow = (): { symbol: string; className: string } => {
-    if (!prev) return { symbol: '→', className: 'text-ink-3' }
+  // Drawn as icons: Fredoka has no arrow glyphs, and a fallback font would break the single typeface.
+  const trendArrow = (): { dir: 'up' | 'down' | 'flat'; label: string; className: string } => {
+    if (!prev) return { dir: 'flat', label: 'ללא שינוי', className: 'text-ink-3' }
     const diff = summary.participationRate - prev.participationRate
-    if (diff > 0) return { symbol: '↑', className: 'text-ink' }
-    if (diff < 0) return { symbol: '↓', className: 'text-error' }
-    return { symbol: '→', className: 'text-ink-3' }
+    if (diff > 0) return { dir: 'up', label: 'עלייה', className: 'text-ink' }
+    if (diff < 0) return { dir: 'down', label: 'ירידה', className: 'text-error' }
+    return { dir: 'flat', label: 'ללא שינוי', className: 'text-ink-3' }
   }
 
   const trend = trendArrow()
@@ -175,7 +185,7 @@ function RoundCard({ summary, prev, showTrend = true }: RoundCardProps) {
       {/* Stats row: participation trend + average bid */}
       <div className="flex items-center justify-between text-xs">
         <span className="text-ink-2">
-          {showTrend && <><span className={`font-bold ${trend.className}`}>{trend.symbol}</span>{' '}</>}
+          {showTrend && <><TrendIcon dir={trend.dir} label={trend.label} className={trend.className} />{' '}</>}
           <span className="text-ink font-bold">{summary.participationRate}%</span> השתתפות
         </span>
         {summary.averageBid !== null && (

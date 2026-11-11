@@ -45,6 +45,16 @@ status pills, tomato primary action), and the session editor (outlined cards,
 mode cards with a sunflower-tint selected state, the dashed rule line, the
 sticky outlined action bar, and the preview on the fine dot grid).
 
+## Changes after the first review (Nov 2026)
+
+- **Values slide** shows every statement: places 4..N size their rows from the count, so ten statements fit at the full 49px / 36px and more shrink instead of being cut off.
+- **New results slide "סך ההשקעה בכל פריט"**: one horizontal bar per statement, highest first, all on one scale, with the total at each bar's end. It is the third results tab; the arrow keys step through the slides.
+- **Submission count**: the allocation phone no longer auto-saves. Nothing reaches the server, or the projected "{n} מתוך {total} שלחו", until "שליחת ההצעות". The unsent split is kept in the phone's localStorage so a refresh keeps it; a split that was never sent is not counted when the facilitator closes.
+- **Phone instructions removed**: the join screen is the session name plus the name field; the waiting screens and the send footers carry no rules.
+- **Numbering removed** from the winners plates (projector and phone) and from the allocation rows.
+- **Phone results**: won statements first, then a visible list of statements bid on but not won.
+- **One typeface**: every character the interface uses is in Fredoka, except the analytics trend arrows, which are now drawn as icons.
+
 ## Differences from the kit, with reasons
 
 - **Step per click** is a room setting (`rooms.bid_step`, migration 013), so the
