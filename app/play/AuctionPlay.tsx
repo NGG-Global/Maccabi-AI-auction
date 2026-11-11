@@ -6,7 +6,7 @@ import { DB_SCHEMA } from '@/lib/supabase/schema'
 import type { AuctionRound, Participant, Bid, PublicRoom } from '@/lib/types'
 import { ROUND_SELECT } from '@/lib/supabase/embeds'
 import { useRoundTimer } from '@/lib/hooks/useRoundTimer'
-import { PlaySkeleton, PlayError, PhoneShell, RulesList } from './PlayShell'
+import { PlaySkeleton, PlayError, PhoneShell } from './PlayShell'
 import WalletBar from '@/components/game/WalletBar'
 import LotTicket from '@/components/game/LotTicket'
 import NumberRoller from '@/components/game/NumberRoller'
@@ -296,9 +296,7 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
       />
       {bidError && <ErrorText>{bidError}</ErrorText>}
       <button type="submit" disabled={!canBid} className={CTA}>{ctaLabel}</button>
-      <p className="m-0 min-h-[22px] text-center text-[15px] text-ink-3">
-        {bidSuccess ? <span className="font-semibold text-tomato-text">ההצעה נשלחה</span> : 'המטבעות יורדים מהיתרה רק אם תזכו בפריט.'}
-      </p>
+      {bidSuccess && <p className="m-0 text-center text-[15px] font-semibold text-tomato-text">ההצעה נשלחה</p>}
     </form>
   ) : undefined
 
@@ -312,14 +310,6 @@ export default function AuctionPlay({ room, participantId, sessionToken }: Props
           <div className="text-center">
             <p className="m-0 text-[34px] font-bold leading-tight text-ink">ממתינים להתחלה</p>
             <p className="mt-2 mb-0 text-[17px] text-ink-2">הפריט הבא ייפתח בקרוב</p>
-          </div>
-          <div className="rounded-[24px] border-[3px] border-ink bg-card px-5 py-5 shadow-piece-md">
-            <RulesList rules={[
-              'בכל סבב מוצג פריט אחד.',
-              'שולחים הצעה ומעלים אותה כל עוד הסבב פתוח.',
-              'רק הזוכה משלם את הצעתו.',
-              'בשוויון זוכה מי שהציע את הסכום ראשון.',
-            ]} />
           </div>
         </div>
       )}

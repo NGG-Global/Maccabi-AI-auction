@@ -13,13 +13,13 @@ import {
   isRoundWinner,
   roundWinnerNames,
 } from '@/lib/game/allocation'
-import { PlaySkeleton, PlayError, PhoneShell, RulesList } from './PlayShell'
+import { PlaySkeleton, PlayError, PhoneShell } from './PlayShell'
 import WalletBar from '@/components/game/WalletBar'
 import Stepper from '@/components/game/Stepper'
 import CoinIcon from '@/components/game/CoinIcon'
 import ParticipantMark from '@/components/game/ParticipantMark'
 import { CTA, btnClass } from '@/components/game/ui'
-import { UNIT_LABEL, defaultBidStep, fmt, lotNo } from '@/components/game/units'
+import { UNIT_LABEL, defaultBidStep, fmt } from '@/components/game/units'
 
 interface Props {
   room: PublicRoom
@@ -29,13 +29,41 @@ interface Props {
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
-const AUTOSAVE_DELAY_MS = 1200
+/*
+ * The unsent split lives only on this phone until "שליחת ההצעות": nothing
+ * reaches the server (and the projected count) before the participant
+ * sends. It is kept in localStorage so a refresh does not lose it.
+ */
+const draftKey = (roomId: string, participantId: string) => `auction:draft:${roomId}:${participantId}`
+
+function readStoredDraft(key: string): Record<string, string> | null {
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return null
+    const out: Record<string, string> = {}
+    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) if (typeof v === 'string') out[k] = v
+    return out
+  } catch {
+    return null
+  }
+}
+
+function writeStoredDraft(key: string, draft: Record<string, string> | null): void {
+  try {
+    if (draft) window.localStorage.setItem(key, JSON.stringify(draft))
+    else window.localStorage.removeItem(key)
+  } catch {
+    // Private mode or full storage: the draft simply is not kept across a refresh.
+  }
+}
 
 /**
  * Budget-allocation mode: every trait is open at once and the participant
- * splits their wallet across them. Changes auto-save (and can be sent on
- * demand) until the facilitator closes the allocation. Participants see
- * only their own split; group results appear on the facilitator screen.
+ * splits their wallet across them, then sends. They can change and send
+ * again until the facilitator closes the allocation. Participants see only
+ * their own split; group results appear on the facilitator screen.
  */
 export default function AllocationPlay({ room, participantId, sessionToken }: Props) {
   const supabase = useMemo(() => createClient(), [])
@@ -122,12 +150,18 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
     setLoadError(null)
     setLoading(false)
 
-    // Never overwrite edits the participant has not saved yet.
+    // Never overwrite edits the participant has not sent yet. On the first
+    // load an unsent draft kept on this phone wins over the server's copy.
     if (!dirtyRef.current) {
+      const stored = readStoredDraft(draftKey(room.id, participantId))
       const next: Record<string, string> = {}
-      for (const r of list) if (r.status === 'open') next[r.id] = mine[r.id] ? String(mine[r.id]) : ''
+      for (const r of list) {
+        if (r.status !== 'open') continue
+        next[r.id] = stored && r.id in stored ? stored[r.id] : mine[r.id] ? String(mine[r.id]) : ''
+      }
       setDraft(next)
     }
+    if (!list.some(r => r.status === 'open')) writeStoredDraft(draftKey(room.id, participantId), null)
   }, [supabase, participantId, room.id])
 
   useEffect(() => {
@@ -204,13 +238,11 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
     return ok
   }, [fetchState, sessionToken, room.id])
 
-  // Auto-save shortly after the last change, so nobody loses their split
-  // because they forgot to press send before the facilitator closed it.
+  // Keep the unsent split on this phone; drop it once it matches what was sent.
   useEffect(() => {
-    if (phase !== 'open' || !dirty || !check.valid) return
-    const t = setTimeout(save, AUTOSAVE_DELAY_MS)
-    return () => clearTimeout(t)
-  }, [phase, dirty, check.valid, draft, save])
+    if (phase !== 'open') return
+    writeStoredDraft(draftKey(room.id, participantId), dirty ? draft : null)
+  }, [phase, dirty, draft, room.id, participantId])
 
   function setAmount(roundId: string, value: string) {
     setDraft(prev => ({ ...prev, [roundId]: value }))
@@ -246,9 +278,9 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
     check.error ? <span className="font-semibold text-error">{check.error}</span>
     : saveState === 'saving' ? <span className="text-ink-3">שולחים…</span>
     : saveState === 'error' ? <span className="font-semibold text-error">{saveError}</span>
-    : dirty ? <span className="font-semibold text-tomato-text">השינויים יישלחו אוטומטית בעוד רגע</span>
-    : totalSaved > 0 ? <span className="text-ink-3">ההצעות נשמרו. אפשר לשנות עד הסגירה.</span>
-    : <span className="text-ink-3">מחלקים את התקציב בין הפריטים ושולחים.</span>
+    : dirty && totalSaved > 0 ? <span className="font-semibold text-tomato-text">יש שינויים שעוד לא נשלחו</span>
+    : !dirty && totalSaved > 0 ? <span className="text-ink-3">ההצעות נשלחו</span>
+    : null
 
   const footer = phase === 'open' && !sentView ? (
     <>
@@ -256,10 +288,10 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
       <button
         type="button"
         onClick={send}
-        disabled={!check.valid || check.total === 0 || saveState === 'saving'}
+        disabled={!check.valid || check.total === 0 || saveState === 'saving' || (!dirty && totalSaved > 0)}
         className={CTA}
       >
-        {saveState === 'saving' ? 'שולחים…' : check.total === 0 ? `חלקו לפחות ${fmt(STEP)}` : 'שליחת ההצעות'}
+        {saveState === 'saving' ? 'שולחים…' : check.total === 0 ? `חלקו לפחות ${fmt(STEP)}` : !dirty && totalSaved > 0 ? 'ההצעות נשלחו' : 'שליחת ההצעות'}
       </button>
     </>
   ) : undefined
@@ -291,21 +323,13 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
             <p className="m-0 text-[34px] font-bold leading-tight text-ink">ממתינים לפתיחת המכירה</p>
             <p className="mt-2 mb-0 text-[17px] text-ink-2">כל הפריטים ייפתחו יחד</p>
           </div>
-          <div className="rounded-[24px] border-[3px] border-ink bg-card px-5 py-5 shadow-piece-md">
-            <RulesList rules={[
-              `לכל משתתף ${fmt(room.starting_coins)} ${UNIT_LABEL}.`,
-              'כל הפריטים פתוחים יחד. מחלקים את התקציב ביניהם.',
-              'אפשר לשנות את ההצעות עד שהמנחה סוגר את המכירה.',
-              'ההקצאה הגבוהה בכל פריט זוכה בו. בשוויון כל המובילים זוכים יחד.',
-            ]} />
-          </div>
         </div>
       )}
 
       {/* Open: the list of lots with steppers */}
       {phase === 'open' && !sentView && (
         <div className="gm-rise flex flex-col gap-2.5">
-          {openRounds.map((r, i) => {
+          {openRounds.map(r => {
             const raw = draft[r.id] ?? ''
             const amount = parseAllocationInput(raw) ?? 0
             const has = amount > 0
@@ -317,7 +341,6 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
                   has ? 'bg-sun-tint' : 'bg-card'
                 }`}
               >
-                <span aria-hidden="true" className="num w-[26px] shrink-0 text-[17px] text-ink-3">{lotNo(i + 1)}</span>
                 <span className="min-w-0 flex-1 text-[19px] font-medium leading-[1.2] text-ink">{title}</span>
                 <Stepper
                   size="sm"
@@ -337,9 +360,6 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
               </div>
             )
           })}
-          <p className="m-0 px-2 pt-2 text-center text-[14px] leading-relaxed text-ink-3">
-            בסגירה כל מה שהקציתם יורד מהיתרה, גם בפריטים שלא זכיתם בהם. מה שלא חולק נשאר אצלכם.
-          </p>
         </div>
       )}
 
@@ -376,12 +396,10 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
             <div className="flex flex-col gap-[14px] py-1">
               {wonRounds.map(r => {
                 const others = roundWinnerNames(r).filter(n => n !== participant.display_name)
-                const idx = rounds.findIndex(x => x.id === r.id) + 1
                 return (
                   <div key={r.id} className="overflow-hidden rounded-[18px] border-[3px] border-ink bg-card text-ink shadow-piece-md">
                     <div className="flex items-center justify-between bg-ink px-[18px] py-[14px] text-white">
                       <b className="text-[24px] font-semibold leading-tight">{r.trait?.title}</b>
-                      <span className="text-[17px] font-semibold text-ink-soft">פריט {lotNo(idx)}</span>
                     </div>
                     <div className="h-[6px] bg-sun" />
                     <div className="flex items-center justify-between px-[18px] pb-4 pt-3 text-[17px] text-ink-3">
@@ -401,20 +419,17 @@ export default function AllocationPlay({ room, participantId, sessionToken }: Pr
           )}
 
           {lostRounds.length > 0 && (
-            <details className="mx-1 text-[15px] text-ink-3">
-              <summary className="cursor-pointer select-none py-1">הצעות שלא זכו ({lostRounds.length})</summary>
-              <ul className="m-0 mt-2 flex list-none flex-col gap-1.5 p-0">
+            <div className="rounded-[18px] border-[2.5px] border-ink bg-card px-4 py-3">
+              <p className="m-0 mb-2 text-[18px] font-bold text-ink">הצעות שלא זכו</p>
+              <ul className="m-0 flex list-none flex-col gap-2 p-0">
                 {lostRounds.map(r => (
-                  <li key={r.id} className="flex items-baseline justify-between gap-3">
+                  <li key={r.id} className="flex items-baseline justify-between gap-3 text-[17px]">
                     <span className="min-w-0 flex-1 truncate text-ink-2">{r.trait?.title}</span>
-                    <span className="num shrink-0 text-[17px] text-ink-2">{fmt(saved[r.id] ?? 0)}</span>
-                    {r.winning_bid_amount !== null && (
-                      <span className="shrink-0 text-[13px]">הזוכה: <span className="num">{fmt(r.winning_bid_amount)}</span></span>
-                    )}
+                    <span className="num shrink-0 text-[19px] text-ink-2">{fmt(saved[r.id] ?? 0)}</span>
                   </li>
                 ))}
               </ul>
-            </details>
+            </div>
           )}
 
           <WalletBar

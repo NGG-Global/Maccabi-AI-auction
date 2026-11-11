@@ -23,14 +23,14 @@ export default function RoomBrand({ title, clientName, logoPath, size = 'md', al
     ) : null
   }
   return (
-    <div className={`flex min-w-0 items-center gap-3 ${align === 'center' ? 'flex-col justify-center text-center' : ''}`}>
+    <div className={`flex min-w-0 items-center gap-3 ${align === 'center' ? 'w-full flex-col justify-center text-center' : ''}`}>
       {url && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt={clientName || title} className={`${LOGO_H[size]} w-auto max-w-[160px] shrink-0 rounded-[10px] border-2 border-ink bg-card object-contain p-1`} />
       )}
       <div className="min-w-0">
-        <p className={`m-0 truncate font-bold leading-tight text-ink ${TITLE[size]}`}>{title}</p>
-        {clientName && <p className="m-0 truncate text-[14px] text-ink-3">{clientName}</p>}
+        <p className={`m-0 font-bold leading-tight text-ink ${TITLE[size]} ${align === 'center' ? '[text-wrap:balance]' : 'truncate'}`}>{title}</p>
+        {clientName && <p className={`m-0 text-[14px] text-ink-3 ${align === 'center' ? '[text-wrap:balance]' : 'truncate'}`}>{clientName}</p>}
       </div>
     </div>
   )
